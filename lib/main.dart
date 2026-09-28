@@ -267,12 +267,10 @@ class LoginScreen extends StatefulWidget {
 }
 class _LoginScreenState extends State<LoginScreen>{
   bool hide=true,busy=false,googleBusy=false;
-  final name=TextEditingController(),email=TextEditingController(),pass=TextEditingController();
-  @override void dispose(){name.dispose();email.dispose();pass.dispose();super.dispose();}
+  final email=TextEditingController(),pass=TextEditingController();
+  @override void dispose(){email.dispose();pass.dispose();super.dispose();}
   Future<void> submit() async {
-    final n=name.text.trim(),ph=phone.text.trim(),e=email.text.trim(),p=pass.text;
-    if(n.length<2){snack(context,'اكتب اسمك بالكامل');return;}
-    if(ph.length<8){snack(context,'اكتب رقم هاتف صحيح');return;}
+    final e=email.text.trim(),p=pass.text;
     if(e.isEmpty||!e.contains('@')){snack(context,'اكتب بريد إلكتروني صحيح');return;}
     if(p.length<6){snack(context,'كلمة المرور يجب أن تكون 6 أحرف على الأقل');return;}
     setState(()=>busy=true);
