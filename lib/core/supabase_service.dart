@@ -67,6 +67,7 @@ class NovaSupabase {
     required String email,
     required String password,
     required String role,
+    String? fullName,
   }) async {
     _requireReady();
     return client.auth.signUp(
@@ -75,7 +76,7 @@ class NovaSupabase {
       emailRedirectTo: authRedirectUrl,
       data: {
         'requested_role': role,
-        'full_name': email.trim().split('@').first,
+        'full_name': (fullName==null||fullName.trim().isEmpty) ? email.trim().split('@').first : fullName.trim(),
       },
     );
   }
@@ -136,6 +137,7 @@ class NovaSupabase {
 
   static Future<String?> uploadAvatar(String userId, Uint8List bytes) async {
     if (!_initialized) return null;
+    if(currentUser==null || currentUser!.id!=userId) throw const AuthException('لا يمكنك تعديل صورة حساب مستخدم آخر.');
     final path = 'avatars/' + userId + '/avatar.jpg';
     await client.storage.from('nova-media').uploadBinary(
       path,
