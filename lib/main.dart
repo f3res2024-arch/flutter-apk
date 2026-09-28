@@ -179,7 +179,7 @@ class _NovaState extends State<Nova>{
       inputDecorationTheme:InputDecorationTheme(filled:true,fillColor:Colors.white,contentPadding:const EdgeInsets.symmetric(horizontal:17,vertical:16),border:OutlineInputBorder(borderRadius:BorderRadius.circular(18),borderSide:BorderSide.none),enabledBorder:OutlineInputBorder(borderRadius:BorderRadius.circular(18),borderSide:BorderSide.none),focusedBorder:OutlineInputBorder(borderRadius:BorderRadius.circular(18),borderSide:BorderSide(color:orange,width:1.4))),
       filledButtonTheme:FilledButtonThemeData(style:FilledButton.styleFrom(backgroundColor:orange,foregroundColor:Colors.white,minimumSize:const Size.fromHeight(54),elevation:0,shape:RoundedRectangleBorder(borderRadius:BorderRadius.circular(17)),textStyle:const TextStyle(fontWeight:FontWeight.w900,fontSize:14))),
       outlinedButtonTheme:OutlinedButtonThemeData(style:OutlinedButton.styleFrom(minimumSize:const Size.fromHeight(52),shape:RoundedRectangleBorder(borderRadius:BorderRadius.circular(17)),side:const BorderSide(color:Color(0xFFE8E8EA)),textStyle:const TextStyle(fontWeight:FontWeight.w800))),
-      navigationBarTheme:NavigationBarThemeData(height:76,elevation:0,backgroundColor:Colors.white,indicatorColor:orange.withValues(alpha:.14),labelTextStyle:const WidgetStatePropertyAll(TextStyle(fontSize:10,fontWeight:FontWeight.w800,color:ink))),
+      navigationBarTheme:NavigationBarThemeData(height:76,elevation:0,backgroundColor:Colors.white,indicatorColor:orange.withValues(alpha:.12),labelTextStyle:WidgetStateProperty.resolveWith<TextStyle>((states)=>TextStyle(fontSize:10,fontWeight:FontWeight.w800,color:states.contains(WidgetState.selected)?orange:ink))),
     ),
     home:Directionality(
       textDirection:TextDirection.rtl,
@@ -1063,10 +1063,10 @@ class _ShellState extends State<Shell> {
                 selectedIndex:tab,
                 onDestinationSelected:(v)=>setState(()=>tab=v),
                 destinations:const[
-                  NavigationDestination(icon:Icon(Icons.home_outlined),selectedIcon:Icon(Icons.home_rounded),label:'الرئيسية'),
-                  NavigationDestination(icon:Icon(Icons.search_rounded),label:'اكتشف'),
-                  NavigationDestination(icon:Icon(Icons.receipt_long_outlined),label:'طلباتي'),
-                  NavigationDestination(icon:Icon(Icons.person_outline),label:'حسابي'),
+                  NavigationDestination(icon:Icon(Icons.home_outlined,color:ink),selectedIcon:Icon(Icons.home_rounded,color:orange),label:'الرئيسية'),
+                  NavigationDestination(icon:Icon(Icons.search_rounded,color:ink),selectedIcon:Icon(Icons.search_rounded,color:orange),label:'اكتشف'),
+                  NavigationDestination(icon:Icon(Icons.receipt_long_outlined,color:ink),selectedIcon:Icon(Icons.receipt_long_rounded,color:orange),label:'طلباتي'),
+                  NavigationDestination(icon:Icon(Icons.person_outline,color:ink),selectedIcon:Icon(Icons.person_rounded,color:orange),label:'حسابي'),
                 ],
               ),
               floatingActionButton:count==0?null:FloatingActionButton(
@@ -1101,10 +1101,10 @@ class _ShellState extends State<Shell> {
                       ),
                     ),
                     destinations:const[
-                      NavigationRailDestination(icon:Icon(Icons.home_outlined),selectedIcon:Icon(Icons.home_rounded),label:Text('الرئيسية')),
-                      NavigationRailDestination(icon:Icon(Icons.search_rounded),label:Text('اكتشف')),
-                      NavigationRailDestination(icon:Icon(Icons.receipt_long_outlined),label:Text('طلباتي')),
-                      NavigationRailDestination(icon:Icon(Icons.person_outline),label:Text('حسابي')),
+                      NavigationRailDestination(icon:Icon(Icons.home_outlined,color:ink),selectedIcon:Icon(Icons.home_rounded,color:orange),label:Text('الرئيسية')),
+                      NavigationRailDestination(icon:Icon(Icons.search_rounded,color:ink),selectedIcon:Icon(Icons.search_rounded,color:orange),label:Text('اكتشف')),
+                      NavigationRailDestination(icon:Icon(Icons.receipt_long_outlined,color:ink),selectedIcon:Icon(Icons.receipt_long_rounded,color:orange),label:Text('طلباتي')),
+                      NavigationRailDestination(icon:Icon(Icons.person_outline,color:ink),selectedIcon:Icon(Icons.person_rounded,color:orange),label:Text('حسابي')),
                     ],
                   ),
                 ),
@@ -1130,15 +1130,6 @@ class Home extends StatefulWidget {
   @override State<Home> createState()=>_HomeState();
 }
 class _HomeState extends State<Home>{
-  String deliveryAddress='جاري تحديد عنوان التوصيل…';
-  @override void initState(){super.initState();_loadAddress();}
-  Future<void> _loadAddress() async {
-    try{
-      final rows=await NovaSupabase.addresses();
-      if(!mounted)return;
-      setState(()=>deliveryAddress=rows.isEmpty?'اختر عنوانك من الخريطة':(rows.first['address']??'اختر عنوانك من الخريطة').toString());
-    }catch(_){if(mounted)setState(()=>deliveryAddress='اختر عنوانك من الخريطة');}
-  }
   @override Widget build(BuildContext context)=>ListView(padding:const EdgeInsets.fromLTRB(18,10,18,110),children:[
     Row(children:[
       Expanded(child:Center(child:RichText(text:TextSpan(children:[
@@ -1148,7 +1139,6 @@ class _HomeState extends State<Home>{
       IconButton.filledTonal(onPressed:()=>showNotifications(context),icon:const Icon(Icons.notifications_none_rounded,color:ink)),
     ]),
     const SizedBox(height:16),
-    InkWell(onTap:widget.onMap,borderRadius:BorderRadius.circular(18),child:Container(padding:const EdgeInsets.all(14),decoration:BoxDecoration(color:Theme.of(context).colorScheme.surface,borderRadius:BorderRadius.circular(18)),child:Row(children:[const Icon(Icons.location_on_rounded,color:orange),const SizedBox(width:9),Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[const Text('عنوان التوصيل',style:TextStyle(color:muted,fontSize:10)),FutureBuilder<String>(future:resolveCurrentAddress(),builder:(c,s){return Text(s.data??'جاري تحديد عنوانك الحالي…',maxLines:2,overflow:TextOverflow.ellipsis,style:const TextStyle(fontWeight:FontWeight.bold));})])),const Icon(Icons.chevron_left_rounded)]))),
     const SizedBox(height:18),
     Container(
       height:210,
@@ -1167,7 +1157,7 @@ class _HomeState extends State<Home>{
         ]),
       ),
     ),
-    const SizedBox(height:23),title(appCopy['mood_title']??'اختار إللي على مزاجك','عرض الكل'),const SizedBox(height:11),
+    const SizedBox(height:23),Text(appCopy['mood_title']??'اختار إللي على مزاجك',style:const TextStyle(fontSize:20,fontWeight:FontWeight.w900)),const SizedBox(height:11),
     SizedBox(height:112,child:ListView(scrollDirection:Axis.horizontal,children:[Cat(Icons.lunch_dining_rounded,'برجر',onAdd:widget.onAdd),Cat(Icons.restaurant_rounded,'فراخ',onAdd:widget.onAdd),Cat(Icons.local_pizza_rounded,'بيتزا',onAdd:widget.onAdd),Cat(Icons.cake_rounded,'حلويات',onAdd:widget.onAdd),Cat(Icons.local_drink_rounded,'مشروبات',onAdd:widget.onAdd),Cat(Icons.spa_rounded,'صحي',onAdd:widget.onAdd),Cat(Icons.coffee_rounded,'قهوة',onAdd:widget.onAdd),Cat(Icons.breakfast_dining_rounded,'فطار',onAdd:widget.onAdd)])),
     const SizedBox(height:20),
     const Text('عروض معمولة ليك',style:TextStyle(fontSize:20,fontWeight:FontWeight.w900)),
