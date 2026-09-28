@@ -180,7 +180,7 @@ class _NovaState extends State<Nova>{
       inputDecorationTheme:InputDecorationTheme(filled:true,fillColor:Colors.white,contentPadding:const EdgeInsets.symmetric(horizontal:17,vertical:16),border:OutlineInputBorder(borderRadius:BorderRadius.circular(18),borderSide:BorderSide.none),enabledBorder:OutlineInputBorder(borderRadius:BorderRadius.circular(18),borderSide:BorderSide.none),focusedBorder:OutlineInputBorder(borderRadius:BorderRadius.circular(18),borderSide:BorderSide(color:orange,width:1.4))),
       filledButtonTheme:FilledButtonThemeData(style:FilledButton.styleFrom(backgroundColor:orange,foregroundColor:Colors.white,minimumSize:const Size.fromHeight(54),elevation:0,shape:RoundedRectangleBorder(borderRadius:BorderRadius.circular(17)),textStyle:const TextStyle(fontWeight:FontWeight.w900,fontSize:14))),
       outlinedButtonTheme:OutlinedButtonThemeData(style:OutlinedButton.styleFrom(minimumSize:const Size.fromHeight(52),shape:RoundedRectangleBorder(borderRadius:BorderRadius.circular(17)),side:const BorderSide(color:Color(0xFFE8E8EA)),textStyle:const TextStyle(fontWeight:FontWeight.w800))),
-      navigationBarTheme:NavigationBarThemeData(height:76,elevation:0,backgroundColor:Colors.white,indicatorColor:orange.withValues(alpha:.12),labelTextStyle:WidgetStateProperty.resolveWith<TextStyle>((states)=>TextStyle(fontSize:10,fontWeight:FontWeight.w800,color:states.contains(WidgetState.selected)?orange:ink))),
+      navigationBarTheme:NavigationBarThemeData(height:76,elevation:0,backgroundColor:Colors.white,indicatorColor:orange.withValues(alpha:.12),labelTextStyle:WidgetStateProperty.resolveWith<TextStyle>((states)=>TextStyle(fontSize:10,fontWeight:FontWeight.w800,color:states.contains(WidgetState.selected)?orange:muted))),
     ),
     home:Directionality(
       textDirection:TextDirection.rtl,
@@ -1064,10 +1064,10 @@ class _ShellState extends State<Shell> {
                 selectedIndex:tab,
                 onDestinationSelected:(v)=>setState(()=>tab=v),
                 destinations:const[
-                  NavigationDestination(icon:Icon(Icons.home_outlined,color:ink),selectedIcon:Icon(Icons.home_rounded,color:orange),label:'الرئيسية'),
-                  NavigationDestination(icon:Icon(Icons.search_rounded,color:ink),selectedIcon:Icon(Icons.search_rounded,color:orange),label:'اكتشف'),
-                  NavigationDestination(icon:Icon(Icons.receipt_long_outlined,color:ink),selectedIcon:Icon(Icons.receipt_long_rounded,color:orange),label:'طلباتي'),
-                  NavigationDestination(icon:Icon(Icons.person_outline,color:ink),selectedIcon:Icon(Icons.person_rounded,color:orange),label:'حسابي'),
+                  NavigationDestination(icon:Icon(Icons.home_outlined,color:muted),selectedIcon:Icon(Icons.home_rounded,color:orange),label:'الرئيسية'),
+                  NavigationDestination(icon:Icon(Icons.search_rounded,color:muted),selectedIcon:Icon(Icons.search_rounded,color:orange),label:'اكتشف'),
+                  NavigationDestination(icon:Icon(Icons.receipt_long_outlined,color:muted),selectedIcon:Icon(Icons.receipt_long_rounded,color:orange),label:'طلباتي'),
+                  NavigationDestination(icon:Icon(Icons.person_outline,color:muted),selectedIcon:Icon(Icons.person_rounded,color:orange),label:'حسابي'),
                 ],
               ),
               floatingActionButton:count==0?null:FloatingActionButton(
@@ -1102,10 +1102,10 @@ class _ShellState extends State<Shell> {
                       ),
                     ),
                     destinations:const[
-                      NavigationRailDestination(icon:Icon(Icons.home_outlined,color:ink),selectedIcon:Icon(Icons.home_rounded,color:orange),label:Text('الرئيسية')),
-                      NavigationRailDestination(icon:Icon(Icons.search_rounded,color:ink),selectedIcon:Icon(Icons.search_rounded,color:orange),label:Text('اكتشف')),
-                      NavigationRailDestination(icon:Icon(Icons.receipt_long_outlined,color:ink),selectedIcon:Icon(Icons.receipt_long_rounded,color:orange),label:Text('طلباتي')),
-                      NavigationRailDestination(icon:Icon(Icons.person_outline,color:ink),selectedIcon:Icon(Icons.person_rounded,color:orange),label:Text('حسابي')),
+                      NavigationRailDestination(icon:Icon(Icons.home_outlined,color:muted),selectedIcon:Icon(Icons.home_rounded,color:orange),label:Text('الرئيسية')),
+                      NavigationRailDestination(icon:Icon(Icons.search_rounded,color:muted),selectedIcon:Icon(Icons.search_rounded,color:orange),label:Text('اكتشف')),
+                      NavigationRailDestination(icon:Icon(Icons.receipt_long_outlined,color:muted),selectedIcon:Icon(Icons.receipt_long_rounded,color:orange),label:Text('طلباتي')),
+                      NavigationRailDestination(icon:Icon(Icons.person_outline,color:muted),selectedIcon:Icon(Icons.person_rounded,color:orange),label:Text('حسابي')),
                     ],
                   ),
                 ),
@@ -1494,49 +1494,6 @@ class _ProfilePageState extends State<ProfilePage>{
   Map<String,dynamic>? profile;String? role;
   @override void initState(){super.initState();load();}
   Future<void> load()async{try{profile=await NovaSupabase.profile();role=await NovaSupabase.currentUserRole();}catch(_){ }if(mounted)setState((){});}
-  Future<void> editProfile()async{
-    final name=TextEditingController(text:(profile?['full_name']??'').toString());
-    String? pickedAvatar;
-    await showDialog(context:context,builder:(d)=>StatefulBuilder(builder:(d,setDialogState)=>AlertDialog(
-      title:const Text('تعديل الملف الشخصي'),
-      content:Column(mainAxisSize:MainAxisSize.min,children:[
-        GestureDetector(
-          onTap:()async{
-            final file=await ImagePicker().pickImage(source:ImageSource.gallery,imageQuality:90,maxWidth:1400);
-            if(file==null)return;
-            try{
-              final user=NovaSupabase.currentUser;
-              if(user==null)throw const AuthException('يجب تسجيل الدخول أولاً.');
-              pickedAvatar=await NovaSupabase.uploadAvatar(user.id,await file.readAsBytes());
-              setDialogState((){});
-            }catch(e){if(d.mounted)snack(d,'تعذر رفع الصورة: '+e.toString());}
-          },
-          child:CircleAvatar(
-            radius:42,
-            backgroundColor:orange.withValues(alpha:.12),
-            backgroundImage:pickedAvatar!=null?NetworkImage(pickedAvatar!):((profile?['avatar_url']??'').toString().isEmpty?null:NetworkImage(profile!['avatar_url'].toString())),
-            child:(pickedAvatar==null&&(profile?['avatar_url']??'').toString().isEmpty)?const Icon(Icons.add_a_photo_rounded,color:orange,size:30):null,
-          ),
-        ),
-        const SizedBox(height:9),
-        const Text('اضغط على الصورة لاختيار صورة بروفايل',style:TextStyle(color:muted,fontSize:11)),
-        const SizedBox(height:14),
-        TextField(controller:name,decoration:const InputDecoration(labelText:'اسمك الظاهر في التطبيق',prefixIcon:Icon(Icons.person_outline))),
-      ]),
-      actions:[
-        TextButton(onPressed:()=>Navigator.pop(d),child:const Text('إلغاء')),
-        FilledButton(onPressed:()async{
-          try{
-            await NovaSupabase.updateProfile(fullName:name.text.trim(),avatarUrl:pickedAvatar);
-            if(d.mounted)Navigator.pop(d);
-            await load();
-          }catch(e){if(d.mounted)snack(d,'تعذر الحفظ: '+e.toString());}
-        },child:const Text('حفظ')),
-      ],
-    )));
-    name.dispose();
-  }
-  Future<void> changeAvatar()async{try{final file=await ImagePicker().pickImage(source:ImageSource.gallery,imageQuality:88,maxWidth:1200);if(file==null)return;final url=await NovaSupabase.uploadAvatar(NovaSupabase.currentUser!.id,await file.readAsBytes());await NovaSupabase.updateProfile(avatarUrl:url);await load();}catch(e){if(mounted)snack(context,'تعذر تحديث الصورة: '+e.toString());}}
   Future<void> logout()async{
     final ok=await showDialog<bool>(context:context,builder:(d)=>AlertDialog(title:const Text('تأكيد تسجيل الخروج'),content:const Text('هل تريد تسجيل الخروج من حسابك؟'),actions:[TextButton(onPressed:()=>Navigator.pop(d,false),child:const Text('إلغاء')),FilledButton(onPressed:()=>Navigator.pop(d,true),child:const Text('تسجيل الخروج'))]));
     if(ok==true){try{await NovaSupabase.signOut();widget.onLogout();}catch(e){if(mounted)snack(context,'تعذر تسجيل الخروج: '+e.toString());}}
@@ -1549,8 +1506,7 @@ class _ProfilePageState extends State<ProfilePage>{
       const Text('إدارة حسابك وطلباتك ومساعدتك في مكان واحد',style:TextStyle(color:muted)),
       const SizedBox(height:18),
       Container(padding:const EdgeInsets.all(18),decoration:BoxDecoration(color:ink,borderRadius:BorderRadius.circular(26)),child:Row(children:[
-        Container(width:48,height:48,decoration:BoxDecoration(color:orange,borderRadius:BorderRadius.circular(16)),child:const Icon(Icons.person_outline_rounded,color:Colors.white)),
-        const SizedBox(width:12),Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
+        Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
           Text(owner?'وضع المالك':'وضع العميل',style:const TextStyle(color:Colors.white,fontSize:17,fontWeight:FontWeight.w900)),
           const SizedBox(height:3),Text(owner?'لديك وصول كامل لمركز التحكم':'كل خدمات نوفا متاحة من هنا',style:const TextStyle(color:Colors.white70,fontSize:11)),
         ])),
