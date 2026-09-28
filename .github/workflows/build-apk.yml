@@ -23,7 +23,7 @@ jobs:
 
       - name: Generate Android project
         run: |
-          flutter create . --platforms=android,ios --project-name delivery --org nova
+          flutter create . --platforms=android,ios,web --project-name delivery --org nova
           python3 - <<'PY'
           from pathlib import Path
           import xml.etree.ElementTree as ET
@@ -95,6 +95,19 @@ jobs:
           case "$SUPABASE_URL" in https://*.supabase.co) ;; *) echo "SUPABASE_URL format is invalid"; exit 1;; esac
           status=$(curl -sS -o /tmp/supabase-settings.json -w "%{http_code}" -H "apikey: $SUPABASE_PUBLISHABLE_KEY" -H "Authorization: Bearer $SUPABASE_PUBLISHABLE_KEY" "$SUPABASE_URL/auth/v1/settings")
           test "$status" = "200" || (echo "Supabase Auth endpoint rejected the GitHub secrets (HTTP $status)" && cat /tmp/supabase-settings.json && exit 1)
+
+      - name: Build Web preview
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
+        run: flutter build web --release --dart-define=SUPABASE_URL="$SUPABASE_URL" --dart-define=SUPABASE_PUBLISHABLE_KEY="$SUPABASE_PUBLISHABLE_KEY"
+
+      - name: Upload Web preview
+        uses: actions/upload-artifact@v4
+        with:
+          name: nova-delivery-web
+          path: build/web
+          if-no-files-found: error
 
       - name: Build release APK
         env:
