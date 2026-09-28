@@ -8,6 +8,7 @@ import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:http/http.dart' as http;
+import 'package:url_launcher/url_launcher.dart';
 import 'core/supabase_service.dart';
 
 Future<void> main() async {
@@ -1577,6 +1578,18 @@ Future<List<LatLng>> _roadRoute(LatLng from,LatLng to) async {
   }catch(_){return [from,to];}
 }
 
+Future<void> callCourier(BuildContext c, String phone) async {
+  final normalized=phone.trim();
+  if(normalized.isEmpty)return;
+  final uri=Uri(scheme:'tel',path:normalized);
+  try{
+    final opened=await launchUrl(uri);
+    if(!opened&&c.mounted)snack(c,'تعذر فتح تطبيق الاتصال.');
+  }catch(_){
+    if(c.mounted)snack(c,'تعذر فتح تطبيق الاتصال.');
+  }
+}
+
 class CustomerOrderTrackingPage extends StatefulWidget{
   final Map<String,dynamic> order;
   const CustomerOrderTrackingPage({super.key,required this.order});
@@ -1636,6 +1649,28 @@ class _CustomerOrderTrackingPageState extends State<CustomerOrderTrackingPage>{
             Row(children:List.generate(steps.length,(i)=>Expanded(child:Container(height:7,margin:const EdgeInsets.symmetric(horizontal:2),decoration:BoxDecoration(color:i<=idx?orange:Colors.black12,borderRadius:BorderRadius.circular(8)))))),
             const SizedBox(height:12),
             Text((current['delivery_address']??'عنوان التوصيل').toString(),style:const TextStyle(color:muted,fontSize:11)),
+            if(current['courier_phone']!=null && current['courier_phone'].toString().trim().isNotEmpty && status!='pending' && status!='cancelled')
+              Padding(
+                padding:const EdgeInsets.only(top:14),
+                child:Container(
+                  padding:const EdgeInsets.all(12),
+                  decoration:BoxDecoration(color:orange.withValues(alpha:.08),borderRadius:BorderRadius.circular(18),border:Border.all(color:orange.withValues(alpha:.18))),
+                  child:Row(children:[
+                    const CircleAvatar(backgroundColor:orange,child:Icon(Icons.person_rounded,color:Colors.white)),
+                    const SizedBox(width:10),
+                    Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
+                      const Text('مندوبك',style:TextStyle(fontWeight:FontWeight.w900)),
+                      Text(current['courier_phone'].toString(),style:const TextStyle(color:muted,fontSize:11)),
+                    ])),
+                    FilledButton.icon(
+                      onPressed:()=>callCourier(c,current['courier_phone'].toString()),
+                      style:FilledButton.styleFrom(backgroundColor:orange,minimumSize:const Size(0,44),padding:const EdgeInsets.symmetric(horizontal:14)),
+                      icon:const Icon(Icons.call_rounded,size:19),
+                      label:const Text('اتصل'),
+                    ),
+                  ]),
+                ),
+              ),
           ]),
         ),
       ]),
