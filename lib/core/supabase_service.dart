@@ -160,7 +160,7 @@ class NovaSupabase {
   static Future<String?> uploadAvatar(String userId, Uint8List bytes) async {
     if (!_initialized) return null;
     if(currentUser==null || currentUser!.id!=userId) throw const AuthException('لا يمكنك تعديل صورة حساب مستخدم آخر.');
-    final path = 'avatars/' + userId + '/avatar.jpg';
+    final path = 'avatars/' + userId + '/avatar-' + DateTime.now().millisecondsSinceEpoch.toString() + '.jpg';
     await client.storage.from('nova-media').uploadBinary(
       path,
       bytes,
