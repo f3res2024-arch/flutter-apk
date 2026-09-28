@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'core/supabase_service.dart';
 
 const ownerOrange=Color(0xFFFF5A36);
