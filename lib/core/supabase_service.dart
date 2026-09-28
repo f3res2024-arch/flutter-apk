@@ -382,7 +382,10 @@ class NovaSupabase {
     final text = body.trim();
     if (text.isEmpty) return;
     await client.from('support_messages').insert({'conversation_id':conversationId,'sender_type':'customer','sender_id':currentUser!.id,'body':text});
-    await client.functions.invoke('nova-ai-support-v2', body:{'conversation_id':conversationId,'message':text});
+    final conversation=await client.from('support_conversations').select('status').eq('id',conversationId).single();
+    if(conversation['status']=='ai'){
+      await client.functions.invoke('nova-ai-support-v2', body:{'conversation_id':conversationId,'message':text});
+    }
   }
 
   static Future<String> uploadSupportImage(String conversationId,Uint8List bytes) async {
@@ -405,6 +408,13 @@ class NovaSupabase {
     return channel;
   }
 
+  static Future<int> ownerSupportWaitingCount() async {
+    _requireReady();
+    if(await currentUserRole()!='admin') return 0;
+    final rows=await client.from('support_conversations').select('id').eq('status','waiting_admin');
+    return (rows as List).length;
+  }
+
   static RealtimeChannel watchSupportInbox(Future<void> Function() onChanged) {
     final channel=client.channel('nova-support-inbox');
     channel.onPostgresChanges(event:PostgresChangeEvent.all,schema:'public',table:'support_conversations',callback:(_)=>onChanged()).subscribe();
@@ -421,8 +431,22 @@ class NovaSupabase {
   static Future<List<Map<String,dynamic>>> ownerSupportMessages(String conversationId) async {
     _requireReady();
     if(await currentUserRole()!='admin') throw const AuthException('هذه الصلاحية للمالك فقط.');
-    final rows=await client.from('support_messages').select().eq('conversation_id',conversationId).order('created_at');
+    final rows=await client.from('support_messages').select('id,conversation_id,sender_type,body,image_url,created_at').eq('conversation_id',conversationId).order('created_at');
     return List<Map<String,dynamic>>.from(rows);
+  }
+
+  static Future<bool> claimSupportConversation(String conversationId) async {
+    _requireReady();
+    if(await currentUserRole()!='admin') throw const AuthException('هذه الصلاحية للمالك فقط.');
+    final result=await client.rpc('claim_support_conversation',params:{'p_conversation_id':conversationId});
+    return result==true;
+  }
+
+  static Future<bool> rejectSupportConversation(String conversationId) async {
+    _requireReady();
+    if(await currentUserRole()!='admin') throw const AuthException('هذه الصلاحية للمالك فقط.');
+    final result=await client.rpc('reject_support_conversation',params:{'p_conversation_id':conversationId});
+    return result==true;
   }
 
   static Future<void> ownerReplySupport(String conversationId,String body) async {
@@ -431,13 +455,12 @@ class NovaSupabase {
     final text=body.trim();
     if(text.isEmpty)return;
     await client.from('support_messages').insert({'conversation_id':conversationId,'sender_type':'admin','sender_id':currentUser!.id,'body':text});
-    await client.from('support_conversations').update({'status':'admin_active','assigned_admin_id':currentUser!.id,'updated_at':DateTime.now().toUtc().toIso8601String()}).eq('id',conversationId);
   }
 
   static Future<void> closeSupportConversation(String conversationId) async {
     _requireReady();
     if(await currentUserRole()!='admin') throw const AuthException('هذه الصلاحية للمالك فقط.');
-    await client.from('support_conversations').update({'status':'closed','updated_at':DateTime.now().toUtc().toIso8601String()}).eq('id',conversationId);
+    await client.rpc('close_support_conversation',params:{'p_conversation_id':conversationId});
   }
 
   static Future<void> ownerUpdateOrderStatus(String id,String status) async {
