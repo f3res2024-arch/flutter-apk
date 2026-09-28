@@ -1,8 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
+import 'core/supabase_service.dart';
 
-void main() => runApp(const Nova());
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await NovaSupabase.initialize();
+  runApp(const Nova());
+}
 
 const orange = Color(0xFFFF5A36);
 const ink = Color(0xFF151922);
