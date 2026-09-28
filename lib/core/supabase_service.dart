@@ -106,6 +106,13 @@ class NovaSupabase {
     final row = await client.from('profiles').select('role').eq('id', currentUser!.id).maybeSingle();
     return row?['role']?.toString();
   }
+  static Future<Map<String,dynamic>?> profile() async { _requireReady(); if(currentUser==null)return null; final row=await client.from('profiles').select().eq('id',currentUser!.id).maybeSingle(); return row==null?null:Map<String,dynamic>.from(row); }
+  static Future<void> updateProfile({String? fullName,String? avatarUrl}) async { _requireReady(); if(currentUser==null)throw const AuthException('يجب تسجيل الدخول أولاً.'); final v=<String,dynamic>{'updated_at':DateTime.now().toUtc().toIso8601String()}; if(fullName!=null&&fullName.trim().isNotEmpty)v['full_name']=fullName.trim(); if(avatarUrl!=null)v['avatar_url']=avatarUrl; await client.from('profiles').update(v).eq('id',currentUser!.id); }
+  static Future<List<Map<String,dynamic>>> appContent() async { _requireReady(); final rows=await client.from('app_content').select().order('key'); return List<Map<String,dynamic>>.from(rows); }
+  static Future<void> updateAppContent(String key,String value) async { _requireReady(); if(await currentUserRole()!='admin')throw const AuthException('هذه الصلاحية للمالك فقط.'); await client.from('app_content').upsert({'key':key,'text_value':value,'updated_at':DateTime.now().toUtc().toIso8601String()},onConflict:'key'); }
+  static Future<void> updateRestaurant(String id,{String? name,String? description}) async { _requireReady(); if(await currentUserRole()!='admin')throw const AuthException('هذه الصلاحية للمالك فقط.'); final v=<String,dynamic>{'updated_at':DateTime.now().toUtc().toIso8601String()}; if(name!=null)v['name']=name;if(description!=null)v['description']=description; await client.from('restaurants').update(v).eq('id',id); }
+  static Future<void> updateMenuItem(String id,{String? name,double? price,String? description}) async { _requireReady(); if(await currentUserRole()!='admin')throw const AuthException('هذه الصلاحية للمالك فقط.'); final v=<String,dynamic>{'updated_at':DateTime.now().toUtc().toIso8601String()}; if(name!=null)v['name']=name;if(price!=null)v['price']=price;if(description!=null)v['description']=description; await client.from('menu_items').update(v).eq('id',id); }
+  static Future<void> addMenuItem(String restaurantId,{required String name,required double price,String description=''}) async { _requireReady(); if(await currentUserRole()!='admin')throw const AuthException('هذه الصلاحية للمالك فقط.'); await client.from('menu_items').insert({'restaurant_id':restaurantId,'name':name,'description':description,'price':price,'is_available':true}); }
 
   static Future<String?> uploadAvatar(String userId, Uint8List bytes) async {
     if (!_initialized) return null;

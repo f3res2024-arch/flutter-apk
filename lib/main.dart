@@ -4,6 +4,8 @@ import 'package:flutter/services.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:image_picker/image_picker.dart';
 import 'core/supabase_service.dart';
 
 Future<void> main() async {
@@ -87,7 +89,6 @@ class Nova extends StatefulWidget {
   @override State<Nova> createState()=>_NovaState();
 }
 class _NovaState extends State<Nova>{
-  bool dark=false;
   UserRole? role;
   bool logged=false;
   bool passwordRecovery=false;
@@ -107,69 +108,29 @@ class _NovaState extends State<Nova>{
   Future<void> _restoreAuthenticatedUser() async {
     final r=await NovaSupabase.currentUserRole();
     if(!mounted)return;
-    final restored=r=='courier'?UserRole.courier:r=='customer'?UserRole.customer:role;
+    final restored=r=='courier'?UserRole.courier:(r==null?null:UserRole.customer);
     if(restored!=null)setState(()=>role=restored);
-    setState(()=>logged=restored!=null);
+    setState(()=>logged=r!=null);
   }
   @override void dispose(){_authSubscription?.cancel();super.dispose();}
   @override Widget build(BuildContext context)=>MaterialApp(
     debugShowCheckedModeBanner:false,
     title:'نوفا ديليفري',
     theme:ThemeData(
-      useMaterial3:true,
-      fontFamily:'sans',
-      colorScheme:ColorScheme.fromSeed(
-        seedColor:orange,
-        brightness:dark?Brightness.dark:Brightness.light,
-        surface:dark?const Color(0xFF17191F):Colors.white,
-      ),
-      scaffoldBackgroundColor:dark?const Color(0xFF090A0E):const Color(0xFFF7F8FA),
-      appBarTheme:AppBarTheme(
-        elevation:0,scrolledUnderElevation:0,backgroundColor:Colors.transparent,
-        surfaceTintColor:Colors.transparent,centerTitle:false,
-        titleTextStyle:TextStyle(fontSize:20,fontWeight:FontWeight.w900,color:dark?Colors.white:ink),
-      ),
-      cardTheme:CardThemeData(
-        elevation:0,margin:EdgeInsets.zero,
-        color:dark?const Color(0xFF17191F):Colors.white,
-        shadowColor:Colors.black.withValues(alpha:.07),
-        surfaceTintColor:Colors.transparent,
-        shape:RoundedRectangleBorder(borderRadius:BorderRadius.circular(24)),
-      ),
-      inputDecorationTheme:InputDecorationTheme(
-        filled:true,fillColor:dark?const Color(0xFF15171D):Colors.white,
-        contentPadding:const EdgeInsets.symmetric(horizontal:17,vertical:16),
-        border:OutlineInputBorder(borderRadius:BorderRadius.circular(18),borderSide:BorderSide.none),
-        enabledBorder:OutlineInputBorder(borderRadius:BorderRadius.circular(18),borderSide:BorderSide.none),
-        focusedBorder:OutlineInputBorder(borderRadius:BorderRadius.circular(18),borderSide:BorderSide(color:orange,width:1.4)),
-      ),
-      filledButtonTheme:FilledButtonThemeData(
-        style:FilledButton.styleFrom(
-          backgroundColor:orange,foregroundColor:Colors.white,
-          minimumSize:const Size.fromHeight(54),elevation:0,
-          shape:RoundedRectangleBorder(borderRadius:BorderRadius.circular(17)),
-          textStyle:const TextStyle(fontWeight:FontWeight.w900,fontSize:14),
-        ),
-      ),
-      outlinedButtonTheme:OutlinedButtonThemeData(
-        style:OutlinedButton.styleFrom(
-          minimumSize:const Size.fromHeight(52),
-          shape:RoundedRectangleBorder(borderRadius:BorderRadius.circular(17)),
-          side:BorderSide(color:dark?const Color(0xFF30333B):const Color(0xFFE2DED8)),
-          textStyle:const TextStyle(fontWeight:FontWeight.w800),
-        ),
-      ),
-      navigationBarTheme:NavigationBarThemeData(
-        height:76,elevation:0,
-        backgroundColor:dark?const Color(0xFF111318):Colors.white,
-        indicatorColor:orange.withValues(alpha:.16),
-        labelTextStyle:WidgetStatePropertyAll(TextStyle(fontSize:10,fontWeight:FontWeight.w800,color:dark?Colors.white70:ink)),
-      ),
+      useMaterial3:true,brightness:Brightness.light,fontFamily:'sans',
+      colorScheme:ColorScheme.fromSeed(seedColor:orange,brightness:Brightness.light,surface:Colors.white),
+      scaffoldBackgroundColor:Colors.white,
+      appBarTheme:const AppBarTheme(elevation:0,scrolledUnderElevation:0,backgroundColor:Colors.white,surfaceTintColor:Colors.transparent,centerTitle:true,titleTextStyle:TextStyle(fontSize:20,fontWeight:FontWeight.w900,color:ink),iconTheme:IconThemeData(color:ink)),
+      cardTheme:CardThemeData(elevation:0,margin:EdgeInsets.zero,color:Colors.white,shadowColor:Color(0x12000000),surfaceTintColor:Colors.transparent,shape:RoundedRectangleBorder(borderRadius:BorderRadius.circular(24))),
+      inputDecorationTheme:InputDecorationTheme(filled:true,fillColor:Colors.white,contentPadding:const EdgeInsets.symmetric(horizontal:17,vertical:16),border:OutlineInputBorder(borderRadius:BorderRadius.circular(18),borderSide:BorderSide.none),enabledBorder:OutlineInputBorder(borderRadius:BorderRadius.circular(18),borderSide:BorderSide.none),focusedBorder:OutlineInputBorder(borderRadius:BorderRadius.circular(18),borderSide:BorderSide(color:orange,width:1.4))),
+      filledButtonTheme:FilledButtonThemeData(style:FilledButton.styleFrom(backgroundColor:orange,foregroundColor:Colors.white,minimumSize:const Size.fromHeight(54),elevation:0,shape:RoundedRectangleBorder(borderRadius:BorderRadius.circular(17)),textStyle:const TextStyle(fontWeight:FontWeight.w900,fontSize:14))),
+      outlinedButtonTheme:OutlinedButtonThemeData(style:OutlinedButton.styleFrom(minimumSize:const Size.fromHeight(52),shape:RoundedRectangleBorder(borderRadius:BorderRadius.circular(17)),side:const BorderSide(color:Color(0xFFE8E8EA)),textStyle:const TextStyle(fontWeight:FontWeight.w800))),
+      navigationBarTheme:NavigationBarThemeData(height:76,elevation:0,backgroundColor:Colors.white,indicatorColor:orange.withValues(alpha:.14),labelTextStyle:const WidgetStatePropertyAll(TextStyle(fontSize:10,fontWeight:FontWeight.w800,color:ink))),
     ),
     home:Directionality(
       textDirection:TextDirection.rtl,
       child:logged
-        ? (role==UserRole.courier?CourierDashboard(onLogout:()=>setState(()=>logged=false)):Shell(dark:dark,onDark:(v)=>setState(()=>dark=v)))
+        ? (role==UserRole.courier?CourierDashboard(onLogout:()=>setState(()=>logged=false)):const Shell())
         : (passwordRecovery
           ? UpdatePasswordScreen(onDone:()=>setState(()=>passwordRecovery=false))
           : (role==null ? RoleChooser(onRole:(r)=>setState(()=>role=r)) : LoginScreen(role:role!,onBack:()=>setState(()=>role=null),onSuccess:()=>setState(()=>logged=true)))),
@@ -269,16 +230,10 @@ class _RoleButton extends StatelessWidget{
 }
 class BrandHero extends StatelessWidget {
   const BrandHero({super.key});
-  @override
-  Widget build(BuildContext c)=>Row(mainAxisSize:MainAxisSize.min,children:[
-    Container(
-      width:38,height:38,
-      decoration:BoxDecoration(color:orange,borderRadius:BorderRadius.circular(12)),
-      child:const Icon(Icons.delivery_dining_rounded,color:Colors.white,size:24)
-    ),
-    const SizedBox(width:8),
-    const Text('نوفا ديليفري',style:TextStyle(color:Colors.white,fontSize:20,fontWeight:FontWeight.w900)),
-  ]);
+  @override Widget build(BuildContext c)=>const Center(child:RichText(text:TextSpan(children:[
+    TextSpan(text:'نوفا ',style:TextStyle(color:ink,fontSize:21,fontWeight:FontWeight.w900)),
+    TextSpan(text:'ديليفري',style:TextStyle(color:orange,fontSize:21,fontWeight:FontWeight.w900)),
+  ])));
 }
 
 class LoginScreen extends StatefulWidget {
@@ -900,8 +855,7 @@ class _CourierRoutePageState extends State<CourierRoutePage>{
 }
 
 class Shell extends StatefulWidget {
-  final bool dark; final ValueChanged<bool> onDark;
-  const Shell({super.key,required this.dark,required this.onDark});
+  const Shell({super.key});
   @override State<Shell> createState()=>_ShellState();
 }
 class _ShellState extends State<Shell> {
@@ -913,15 +867,10 @@ class _ShellState extends State<Shell> {
   void open(R r)=>Navigator.push(context,MaterialPageRoute(builder:(_)=>RestaurantPage(r:r,fav:fav.contains(r.name),onFav:()=>setState((){if(!fav.add(r.name))fav.remove(r.name);}),onAdd:add)));
   @override Widget build(BuildContext context){
     final pages=[
-      Home(
-        onOpen:open,
-        onMap:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>const MapPage())),
-        onSearch:(q)=>setState((){tab=1;}),
-      ),
+      Home(onOpen:open,onMap:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>const MapPage())),onSearch:(q)=>setState(()=>tab=1)),
       SearchPage(onAdd:add,onFav:(r)=>setState((){if(!fav.add(r.name))fav.remove(r.name);}),),
       OrdersPage(onTrack:(o)=>Navigator.push(context,MaterialPageRoute(builder:(_)=>CustomerOrderTrackingPage(order:o))),),
-      CartPage(cart:cart,total:total,onAdd:(x)=>add(x.r,x.m),onSub:sub,onCheckoutSuccess:()=>setState(cart.clear)),
-      ProfilePage(dark:widget.dark,onDark:widget.onDark,onMap:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>const MapPage()))),
+      ProfilePage(onMap:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>const MapPage()))),
     ];
     return Directionality(
       textDirection:TextDirection.rtl,
@@ -944,15 +893,16 @@ class _ShellState extends State<Shell> {
                   NavigationDestination(icon:Icon(Icons.home_outlined),selectedIcon:Icon(Icons.home_rounded),label:'الرئيسية'),
                   NavigationDestination(icon:Icon(Icons.search_rounded),label:'اكتشف'),
                   NavigationDestination(icon:Icon(Icons.receipt_long_outlined),label:'طلباتي'),
-                  NavigationDestination(icon:Icon(Icons.shopping_bag_outlined),label:'السلة'),
                   NavigationDestination(icon:Icon(Icons.person_outline),label:'حسابي'),
                 ],
               ),
-              floatingActionButton:count==0?null:FloatingActionButton.extended(
-                backgroundColor:orange,foregroundColor:Colors.white,
-                onPressed:()=>setState(()=>tab=3),
-                icon:const Icon(Icons.shopping_bag_outlined),
-                label:Text(count.toString()+' • '+total.toStringAsFixed(0)+' ج.م'),
+              floatingActionButton:count==0?null:FloatingActionButton(
+                backgroundColor:orange,foregroundColor:Colors.white,elevation:12,
+                onPressed:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>CartPage(cart:cart,total:total,onAdd:(x)=>add(x.r,x.m),onSub:sub,onCheckoutSuccess:()=>setState(cart.clear)))),
+                child:Stack(clipBehavior:Clip.none,children:[
+                  const Icon(Icons.shopping_cart_rounded,size:28),
+                  Positioned(right:-8,top:-9,child:Container(constraints:const BoxConstraints(minWidth:22,minHeight:22),padding:const EdgeInsets.symmetric(horizontal:5),alignment:Alignment.center,decoration:const BoxDecoration(color:ink,shape:BoxShape.circle),child:Text(count.toString(),style:const TextStyle(color:Colors.white,fontSize:10,fontWeight:FontWeight.w900)))),
+                ]),
               ),
             );
           }
@@ -981,7 +931,6 @@ class _ShellState extends State<Shell> {
                       NavigationRailDestination(icon:Icon(Icons.home_outlined),selectedIcon:Icon(Icons.home_rounded),label:Text('الرئيسية')),
                       NavigationRailDestination(icon:Icon(Icons.search_rounded),label:Text('اكتشف')),
                       NavigationRailDestination(icon:Icon(Icons.receipt_long_outlined),label:Text('طلباتي')),
-                      NavigationRailDestination(icon:Icon(Icons.shopping_bag_outlined),label:Text('السلة')),
                       NavigationRailDestination(icon:Icon(Icons.person_outline),label:Text('حسابي')),
                     ],
                   ),
@@ -1007,9 +956,11 @@ class Home extends StatelessWidget {
   const Home({super.key,required this.onOpen,required this.onMap,required this.onSearch});
   @override Widget build(BuildContext context)=>ListView(padding:const EdgeInsets.fromLTRB(18,10,18,110),children:[
     Row(children:[
-      Container(width:48,height:48,decoration:BoxDecoration(color:orange,borderRadius:BorderRadius.circular(15)),child:const Icon(Icons.delivery_dining_rounded,color:Colors.white,size:29)),
-      const SizedBox(width:12),const Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text('نوفا ديليفري',style:TextStyle(fontSize:23,fontWeight:FontWeight.w900)),Text('أكلك الحقيقي… في طريقه ليك 👋',style:TextStyle(color:muted,fontSize:12))])),
-      IconButton.filledTonal(onPressed:()=>showNotifications(context),icon:const Icon(Icons.notifications_none_rounded)),
+      const Expanded(child:Center(child:RichText(text:TextSpan(children:[
+        TextSpan(text:'نوفا ',style:TextStyle(color:ink,fontSize:25,fontWeight:FontWeight.w900)),
+        TextSpan(text:'ديليفري',style:TextStyle(color:orange,fontSize:25,fontWeight:FontWeight.w900)),
+      ])))),
+      IconButton.filledTonal(onPressed:()=>showNotifications(context),icon:const Icon(Icons.notifications_none_rounded,color:ink)),
     ]),
     const SizedBox(height:16),
     Container(
@@ -1047,8 +998,8 @@ class Home extends StatelessWidget {
         ]),
       ),
     ),
-    const SizedBox(height:23),title('اختار مزاجك','عرض الكل'),const SizedBox(height:11),
-    SizedBox(height:92,child:ListView(scrollDirection:Axis.horizontal,children:const[Cat('🍔','برجر'),Cat('🍗','فراخ'),Cat('🍕','بيتزا'),Cat('🍰','حلويات'),Cat('🥤','مشروبات'),Cat('🥗','صحي')])),
+    const SizedBox(height:23),title('اختار إللي على مزاجك','عرض الكل'),const SizedBox(height:11),
+    SizedBox(height:112,child:ListView(scrollDirection:Axis.horizontal,children:const[Cat(Icons.lunch_dining_rounded,'برجر'),Cat(Icons.restaurant_rounded,'فراخ'),Cat(Icons.local_pizza_rounded,'بيتزا'),Cat(Icons.cake_rounded,'حلويات'),Cat(Icons.local_drink_rounded,'مشروبات'),Cat(Icons.spa_rounded,'صحي'),Cat(Icons.coffee_rounded,'قهوة'),Cat(Icons.breakfast_dining_rounded,'فطار')])),
     const SizedBox(height:20),
     const Text('عروض معمولة ليك',style:TextStyle(fontSize:20,fontWeight:FontWeight.w900)),
     const SizedBox(height:11),
@@ -1069,8 +1020,8 @@ class Home extends StatelessWidget {
 Widget title(String a,String b)=>Row(children:[Expanded(child:Text(a,style:const TextStyle(fontSize:20,fontWeight:FontWeight.w900))),Text(b,style:const TextStyle(color:orange,fontSize:12,fontWeight:FontWeight.bold))]);
 
 class Cat extends StatelessWidget {
-  final String e,n; const Cat(this.e,this.n,{super.key});
-  @override Widget build(BuildContext c)=>Material(color:Colors.transparent,child:InkWell(onTap:()=>showDialog(context:c,builder:(_)=>AlertDialog(title:Text(n),content:Text('سيتم تصفية المطاعم حسب فئة $n في الإصدار المتصل بالكتالوج.'),actions:[TextButton(onPressed:()=>Navigator.pop(c),child:const Text('حسناً'))])),borderRadius:BorderRadius.circular(20),child:Container(width:82,margin:const EdgeInsets.only(left:10),decoration:BoxDecoration(color:Theme.of(c).colorScheme.surface,borderRadius:BorderRadius.circular(20)),child:Column(mainAxisAlignment:MainAxisAlignment.center,children:[Text(e,style:const TextStyle(fontSize:30)),const SizedBox(height:5),Text(n,style:const TextStyle(fontWeight:FontWeight.w700,fontSize:12))]))));
+  final IconData icon; final String n; const Cat(this.icon,this.n,{super.key});
+  @override Widget build(BuildContext c)=>Material(color:Colors.transparent,child:InkWell(onTap:()=>Navigator.push(c,MaterialPageRoute(builder:(_)=>CategoryPage(title:n,category:n))),borderRadius:BorderRadius.circular(22),child:Container(width:104,margin:const EdgeInsets.only(left:10),padding:const EdgeInsets.all(10),decoration:BoxDecoration(color:Colors.white,borderRadius:BorderRadius.circular(22),border:Border.all(color:const Color(0xFFEDEDEF)),boxShadow:const[BoxShadow(color:Color(0x0A000000),blurRadius:18,offset:Offset(0,7))]),child:Column(mainAxisAlignment:MainAxisAlignment.center,children:[Container(width:48,height:48,decoration:BoxDecoration(color:orange.withValues(alpha:.10),shape:BoxShape.circle),child:Icon(icon,color:orange,size:25)),const SizedBox(height:7),Text(n,style:const TextStyle(fontWeight:FontWeight.w900,fontSize:12))]))));
 }
 
 class _PromoCard extends StatelessWidget{
@@ -1341,7 +1292,25 @@ void snack(BuildContext c,String message){
 
 Widget line(String s,double v,{bool bold=false})=>Padding(padding:const EdgeInsets.symmetric(vertical:5),child:Row(children:[Expanded(child:Text(s,style:TextStyle(fontWeight:bold?FontWeight.w900:FontWeight.w500))),Text(v.toStringAsFixed(0)+' ج.م',style:TextStyle(fontWeight:FontWeight.w900,color:bold?orange:null))]));
 
-class ProfilePage extends StatelessWidget{final bool dark;final ValueChanged<bool> onDark;final VoidCallback onMap;const ProfilePage({super.key,required this.dark,required this.onDark,required this.onMap});@override Widget build(BuildContext c)=>ListView(padding:const EdgeInsets.fromLTRB(18,18,18,100),children:[Container(padding:const EdgeInsets.all(18),decoration:BoxDecoration(color:ink,borderRadius:BorderRadius.circular(26)),child:const Row(children:[CircleAvatar(radius:32,backgroundColor:orange,child:Icon(Icons.person,color:Colors.white,size:32)),SizedBox(width:14),Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text('نوفا ديليفري',style:TextStyle(color:Colors.white,fontSize:20,fontWeight:FontWeight.w900)),Text('حساب العميل',style:TextStyle(color:Colors.white70,fontSize:12))])])),const SizedBox(height:18),const Text('الإعدادات والخدمات',style:TextStyle(fontSize:21,fontWeight:FontWeight.w900)),const SizedBox(height:8),st(c,Icons.location_on_outlined,'العناوين والخريطة','حدد موقعك وفروع المطاعم',onMap),st(c,Icons.credit_card,'طرق الدفع','كاش • بطاقة • محفظة',()=>showFeature(c,'طرق الدفع','اختر طريقة الدفع أثناء إتمام الطلب: كاش، بطاقة، أو محفظة.')),st(c,Icons.favorite_border,'المفضلة','مطاعم وأطباق محفوظة',()=>showFeature(c,'المفضلة','اضغط قلب أي مطعم لحفظه في مفضلة حسابك.')),st(c,Icons.local_offer_outlined,'العروض والكوبونات','خصومات وعروض يومية',()=>showFeature(c,'العروض','NOVA20 و FREEDEL متاحان من شاشة إتمام الطلب.')),st(c,Icons.notifications_none,'الإشعارات','الطلب والعروض',()=>showNotifications(c)),st(c,Icons.dark_mode_outlined,'الوضع الليلي','تخصيص المظهر',()=>onDark(!dark),trailing:Switch(value:dark,onChanged:onDark)),st(c,Icons.security,'الأمان والخصوصية','حماية الحساب',()=>showFeature(c,'الأمان والخصوصية','حسابك يستخدم جلسة Supabase آمنة. استخدم استعادة كلمة المرور من شاشة الدخول عند الحاجة.')),st(c,Icons.help_outline,'مركز المساعدة','دعم وشكاوى ومحادثة',()=>showFeature(c,'مركز المساعدة','للدعم: افتح طلبك من «طلباتي» واضغط عليه للتتبع، أو تواصل معنا عبر القناة التي ستُربط لاحقاً.')),const SizedBox(height:12),OutlinedButton.icon(onPressed:()=>Navigator.push(c,MaterialPageRoute(builder:(_)=>const Roles())),icon:const Icon(Icons.dashboard_customize_outlined),label:const Text('لوحات المطعم والسائق والإدارة'))]);}
+class ProfilePage extends StatefulWidget{
+  final VoidCallback onMap;const ProfilePage({super.key,required this.onMap});
+  @override State<ProfilePage> createState()=>_ProfilePageState();
+}
+class _ProfilePageState extends State<ProfilePage>{
+  Map<String,dynamic>? profile;String? role;
+  @override void initState(){super.initState();load();}
+  Future<void> load()async{try{profile=await NovaSupabase.profile();role=await NovaSupabase.currentUserRole();}catch(_){ }if(mounted)setState((){});}
+  Future<void> editProfile()async{final name=TextEditingController(text:(profile?['full_name']??'').toString());await showDialog(context:context,builder:(d)=>AlertDialog(title:const Text('تعديل الملف الشخصي'),content:TextField(controller:name,decoration:const InputDecoration(labelText:'اسمك الظاهر في التطبيق',prefixIcon:Icon(Icons.person_outline))),actions:[TextButton(onPressed:()=>Navigator.pop(d),child:const Text('إلغاء')),FilledButton(onPressed:()async{try{await NovaSupabase.updateProfile(fullName:name.text.trim());if(d.mounted)Navigator.pop(d);await load();}catch(e){if(d.mounted)snack(d,'تعذر حفظ الاسم: '+e.toString());}},child:const Text('حفظ'))]));name.dispose();}
+  Future<void> changeAvatar()async{try{final file=await ImagePicker().pickImage(source:ImageSource.gallery,imageQuality:88,maxWidth:1200);if(file==null)return;final url=await NovaSupabase.uploadAvatar(NovaSupabase.currentUser!.id,await file.readAsBytes());await NovaSupabase.updateProfile(avatarUrl:url);await load();}catch(e){if(mounted)snack(context,'تعذر تحديث الصورة: '+e.toString());}}
+  @override Widget build(BuildContext c){final name=((profile?['full_name']??NovaSupabase.currentUser?.email?.split('@').first??'مستخدم')).toString();final avatar=(profile?['avatar_url']??'').toString();final owner=role=='admin';return ListView(padding:const EdgeInsets.fromLTRB(18,18,18,110),children:[
+    Container(padding:const EdgeInsets.all(18),decoration:BoxDecoration(gradient:const LinearGradient(colors:[ink,Color(0xFF2A303B)]),borderRadius:BorderRadius.circular(28)),child:Row(children:[
+      GestureDetector(onTap:changeAvatar,child:Stack(children:[CircleAvatar(radius:36,backgroundColor:orange,backgroundImage:avatar.isEmpty?null:NetworkImage(avatar),child:avatar.isEmpty?const Icon(Icons.person_rounded,color:Colors.white,size:36):null),Positioned(bottom:-1,left:-1,child:Container(width:25,height:25,decoration:const BoxDecoration(color:Colors.white,shape:BoxShape.circle),child:const Icon(Icons.camera_alt_rounded,color:orange,size:14)))])),
+      const SizedBox(width:14),Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text(name,style:const TextStyle(color:Colors.white,fontSize:21,fontWeight:FontWeight.w900)),const SizedBox(height:4),Text(owner?'حساب المالك • صلاحيات كاملة':'حساب العميل',style:const TextStyle(color:Colors.white70,fontSize:12)),const SizedBox(height:5),Text(NovaSupabase.currentUser?.email??'',maxLines:1,overflow:TextOverflow.ellipsis,style:const TextStyle(color:Colors.white54,fontSize:10))])),IconButton(onPressed:editProfile,icon:const Icon(Icons.edit_rounded,color:Colors.white)),
+    ])),const SizedBox(height:18),const Text('حسابي',style:TextStyle(fontSize:22,fontWeight:FontWeight.w900)),const SizedBox(height:9),
+    st(c,Icons.person_outline_rounded,'الاسم والصورة','غيّر الاسم أو صورة البروفايل',editProfile),st(c,Icons.location_on_outlined,'العناوين والخريطة','موقعك الحالي وفروع المطاعم والصيدليات',widget.onMap),st(c,Icons.credit_card_rounded,'طرق الدفع','كاش • بطاقة • محفظة',()=>showFeature(c,'طرق الدفع','اختر طريقة الدفع أثناء إتمام الطلب.')),st(c,Icons.favorite_border_rounded,'المفضلة','مطاعم وأطباق محفوظة',()=>showFeature(c,'المفضلة','يمكنك حفظ مطعم أو طبق من خلال زر القلب.')),st(c,Icons.notifications_none_rounded,'الإشعارات','الطلبات والعروض',()=>showNotifications(c)),st(c,Icons.security_rounded,'الأمان والخصوصية','جلسة آمنة واستعادة كلمة المرور',()=>showFeature(c,'الأمان والخصوصية','حسابك محمي بجلسة Supabase.')),st(c,Icons.help_outline_rounded,'مركز المساعدة','الدعم والطلبات',()=>showFeature(c,'مركز المساعدة','افتح طلبك من «طلباتي» للوصول للتتبع والدعم.')),
+    if(owner)...[const SizedBox(height:12),Container(padding:const EdgeInsets.all(16),decoration:BoxDecoration(color:orange.withValues(alpha:.07),borderRadius:BorderRadius.circular(24),border:Border.all(color:orange.withValues(alpha:.18))),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[const Row(children:[Icon(Icons.verified_user_rounded,color:orange),SizedBox(width:8),Text('صلاحيات المالك',style:TextStyle(fontSize:18,fontWeight:FontWeight.w900))]),const SizedBox(height:5),const Text('إدارة المنتجات والمطاعم ومحتوى التطبيق من داخله.',style:TextStyle(color:muted,fontSize:11)),const SizedBox(height:12),FilledButton.icon(onPressed:()=>Navigator.push(c,MaterialPageRoute(builder:(_)=>const OwnerStudioPage())),icon:const Icon(Icons.tune_rounded),label:const Text('فتح استوديو المالك'))]))],
+  );}
+}
 class CustomerOrderTrackingPage extends StatefulWidget{
   final Map<String,dynamic> order;
   const CustomerOrderTrackingPage({super.key,required this.order});
@@ -1406,71 +1375,29 @@ class _CustomerOrderTrackingPageState extends State<CustomerOrderTrackingPage>{
   }
 }
 
-class MapPage extends StatelessWidget {
-  final R? restaurant;
-  const MapPage({super.key, this.restaurant});
-  @override
-  Widget build(BuildContext c) {
-    final center = restaurant == null ? const LatLng(31.0445, 31.3540) : LatLng(restaurant!.lat, restaurant!.lng);
-    final list = restaurant == null ? data : [restaurant!];
-    return Scaffold(
-      appBar: AppBar(title: Text(restaurant == null ? 'خريطة المطاعم' : 'موقع ' + restaurant!.name)),
-      body: FlutterMap(
-        options: MapOptions(initialCenter: center, initialZoom: restaurant == null ? 14.2 : 15.2),
-        children: [
-          TileLayer(urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png', userAgentPackageName: 'com.nova.delivery'),
-          MarkerLayer(
-            markers: list.map<Marker>((r) => Marker(
-              point: LatLng(r.lat, r.lng),
-              width: 48,
-              height: 48,
-              child: GestureDetector(
-                onTap: () => showModalBottomSheet(
-                  context: c,
-                  showDragHandle: true,
-                  builder: (_) => Padding(
-                    padding: const EdgeInsets.all(20),
-                    child: Column(mainAxisSize: MainAxisSize.min, children: [
-                      Text(r.name, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900)),
-                      const SizedBox(height: 8),
-                      Text(r.address, style: const TextStyle(color: muted)),
-                      const SizedBox(height: 12),
-                      FilledButton(onPressed: () => Navigator.pop(c), child: const Text('اختيار المطعم')),
-                    ]),
-                  ),
-                ),
-                child: Container(
-                  decoration: BoxDecoration(color: orange, shape: BoxShape.circle, border: Border.all(color: Colors.white, width: 3)),
-                  child: const Icon(Icons.restaurant, color: Colors.white),
-                ),
-              ),
-            )).toList(),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-
-class Roles extends StatelessWidget{const Roles({super.key});@override Widget build(BuildContext c)=>Scaffold(appBar:AppBar(title:const Text('مركز نوفا')),body:ListView(padding:const EdgeInsets.all(18),children:[const Text('لوحات النظام',style:TextStyle(fontSize:28,fontWeight:FontWeight.w900)),const SizedBox(height:18),role(c,Icons.restaurant_menu,'لوحة المطعم','الطلبات • المنيو • المخزون • الأرباح'),role(c,Icons.delivery_dining,'لوحة السائق','التكليفات • الملاحة • المحفظة • الأرباح'),role(c,Icons.admin_panel_settings,'لوحة الإدارة','المطاعم • العملاء • السائقين • التقارير') ]));}
-Widget role(BuildContext c, IconData icon, String titleText, String sub) {
-  return Container(
-    margin: const EdgeInsets.only(bottom: 13),
-    padding: const EdgeInsets.all(18),
-    decoration: BoxDecoration(color: Theme.of(c).colorScheme.surface, borderRadius: BorderRadius.circular(23)),
-    child: Row(children: [
-      CircleAvatar(backgroundColor: orange.withValues(alpha: .1), child: Icon(icon, color: orange)),
-      const SizedBox(width: 13),
-      Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text(titleText, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 17)),
-        Text(sub, style: const TextStyle(color: muted, fontSize: 11)),
-      ])),
-      const Icon(Icons.chevron_left),
-    ]),
-  );
-}
-
+class MapPage extends StatefulWidget{final R? restaurant;const MapPage({super.key,this.restaurant});@override State<MapPage> createState()=>_MapPageState();}
+class _MapPageState extends State<MapPage>{LatLng? me;bool locating=true;String? locationError;
+@override void initState(){super.initState();locate();}
+Future<void> locate()async{try{if(!await Geolocator.isLocationServiceEnabled())throw Exception('فعّل خدمة الموقع من الهاتف.');var permission=await Geolocator.checkPermission();if(permission==LocationPermission.denied)permission=await Geolocator.requestPermission();if(permission==LocationPermission.denied||permission==LocationPermission.deniedForever)throw Exception('اسمح لنوفا بالوصول إلى موقعك.');final p=await Geolocator.getCurrentPosition(locationSettings:const LocationSettings(accuracy:LocationAccuracy.high));if(mounted)setState(()=>me=LatLng(p.latitude,p.longitude));}catch(e){if(mounted)setState(()=>locationError=e.toString().replaceFirst('Exception: ',''));}if(mounted)setState(()=>locating=false);}
+@override Widget build(BuildContext c){final center=me??(widget.restaurant==null?const LatLng(31.0445,31.3540):LatLng(widget.restaurant!.lat,widget.restaurant!.lng));final restaurants=widget.restaurant==null?data:[widget.restaurant!];const pharmacies=[MapPlace('صيدليات خليفة - حي الجامعة',31.0399,31.3549),MapPlace('صيدليات خليفة - المشاية',31.0432,31.3479),MapPlace('صيدليات 19011',31.0414,31.3508)];
+return Scaffold(appBar:AppBar(title:const BrandHero(),actions:[IconButton(onPressed:locate,icon:const Icon(Icons.my_location_rounded,color:orange))]),body:Stack(children:[
+FlutterMap(options:MapOptions(initialCenter:center,initialZoom:14.5),children:[TileLayer(urlTemplate:'https://tile.openstreetmap.org/{z}/{x}/{y}.png',userAgentPackageName:'nova.delivery/2.1'),MarkerLayer(markers:[
+...restaurants.map((r)=>Marker(point:LatLng(r.lat,r.lng),width:62,height:70,child:Container(decoration:BoxDecoration(color:Colors.white,shape:BoxShape.circle,border:Border.all(color:orange,width:3),boxShadow:const[BoxShadow(color:Color(0x33000000),blurRadius:10)]),padding:const EdgeInsets.all(5),child:ClipOval(child:Image.network(r.image,fit:BoxFit.cover,errorBuilder:(_,__,___)=>const Icon(Icons.restaurant_rounded,color:orange))))),
+...pharmacies.map((p)=>Marker(point:LatLng(p.lat,p.lng),width:54,height:60,child:Container(decoration:BoxDecoration(color:Colors.white,borderRadius:BorderRadius.circular(17),border:Border.all(color:const Color(0xFF6C63FF),width:2)),child:const Icon(Icons.local_pharmacy_rounded,color:Color(0xFF6C63FF),size:28)))),
+if(me!=null)Marker(point:me!,width:56,height:56,child:Container(decoration:BoxDecoration(color:orange,shape:BoxShape.circle,border:Border.all(color:Colors.white,width:4),boxShadow:const[BoxShadow(color:Color(0x44000000),blurRadius:14)]),child:const Icon(Icons.person_pin_circle_rounded,color:Colors.white,size:28))),
+]),RichAttributionWidget(attributions:[TextSourceAttribution('OpenStreetMap contributors')])]),
+Positioned(top:14,right:14,left:14,child:Container(padding:const EdgeInsets.symmetric(horizontal:14,vertical:12),decoration:BoxDecoration(color:Colors.white.withValues(alpha:.96),borderRadius:BorderRadius.circular(18)),child:Row(children:[Icon(locating?Icons.gps_not_fixed_rounded:Icons.gps_fixed_rounded,color:orange),const SizedBox(width:10),Expanded(child:Text(locationError??(locating?'جاري تحديد موقعك…':'أنت ظاهر على الخريطة الآن'),style:const TextStyle(fontWeight:FontWeight.w900,fontSize:13)))]))),
+]));}}
+class MapPlace{final String name;final double lat,lng;const MapPlace(this.name,this.lat,this.lng);}
+class CategoryPage extends StatelessWidget{final String title,category;const CategoryPage({super.key,required this.title,required this.category});bool matches(R r){final h=(r.type+' '+r.name+' '+r.menu.map((m)=>m.name+' '+m.desc).join(' ')).toLowerCase();switch(category){case 'برجر':return h.contains('برجر')||h.contains('burger')||r.name.contains('ماكدونالدز')||r.name.contains('كاتشاب');case 'فراخ':return h.contains('فراخ')||h.contains('chicken')||h.contains('دجاج');case 'بيتزا':return h.contains('بيتزا')||h.contains('pizza');case 'حلويات':return h.contains('حلويات')||h.contains('كيك')||h.contains('dessert');case 'مشروبات':return h.contains('مشروب')||h.contains('بيبسي');case 'صحي':return h.contains('صحي')||h.contains('سلطة');case 'قهوة':return h.contains('كافيه')||r.name.contains('ستريو');case 'فطار':return h.contains('فطار')||h.contains('breakfast');default:return true;}}@override Widget build(BuildContext c){final list=data.where(matches).toList();return Scaffold(appBar:AppBar(title:Text(title)),body:ListView(padding:const EdgeInsets.all(18),children:[Container(padding:const EdgeInsets.all(20),decoration:BoxDecoration(gradient:const LinearGradient(colors:[ink,Color(0xFF303746)]),borderRadius:BorderRadius.circular(26)),child:Text('اختيارات '+category,style:const TextStyle(color:Colors.white,fontSize:22,fontWeight:FontWeight.w900))),const SizedBox(height:16),...list.map((r)=>Padding(padding:const EdgeInsets.only(bottom:14),child:CardR(r:r,onTap:()=>Navigator.push(c,MaterialPageRoute(builder:(_)=>RestaurantPage(r:r,fav:false,onFav:(){},onAdd:(rr,m)=>showFeature(c,'السلة','افتح المطعم لإضافة المنتج.'))))))]));}}
+class OwnerStudioPage extends StatefulWidget{const OwnerStudioPage({super.key});@override State<OwnerStudioPage> createState()=>_OwnerStudioPageState();}
+class _OwnerStudioPageState extends State<OwnerStudioPage>{List<Map<String,dynamic>> restaurants=[];List<Map<String,dynamic>> content=[];bool loading=true;@override void initState(){super.initState();load();}Future<void> load()async{try{restaurants=await NovaSupabase.restaurants();content=await NovaSupabase.appContent();}catch(_){ }if(mounted)setState(()=>loading=false);}
+Future<void> editRestaurant(Map<String,dynamic> r)async{final n=TextEditingController(text:r['name']?.toString()??'');final d=TextEditingController(text:r['description']?.toString()??'');await showDialog(context:context,builder:(x)=>AlertDialog(title:const Text('تعديل المطعم'),content:Column(mainAxisSize:MainAxisSize.min,children:[TextField(controller:n,decoration:const InputDecoration(labelText:'اسم المطعم')),TextField(controller:d,decoration:const InputDecoration(labelText:'الوصف'))]),actions:[TextButton(onPressed:()=>Navigator.pop(x),child:const Text('إلغاء')),FilledButton(onPressed:()async{try{await NovaSupabase.updateRestaurant(r['id'].toString(),name:n.text,description:d.text);if(x.mounted)Navigator.pop(x);await load();}catch(e){if(x.mounted)snack(x,'تعذر الحفظ: '+e.toString());}},child:const Text('حفظ'))]));n.dispose();d.dispose();}
+Future<void> editMenu(String id)async{final items=await NovaSupabase.restaurantMenu(id);if(!mounted)return;showModalBottomSheet(context:context,showDragHandle:true,builder:(x)=>ListView(padding:const EdgeInsets.all(18),children:[const Text('المنتجات',style:TextStyle(fontSize:24,fontWeight:FontWeight.w900)),...items.map((m)=>ListTile(title:Text((m['name']??'').toString()),subtitle:Text((m['price']??0).toString()+' ج.م'),trailing:IconButton(icon:const Icon(Icons.edit,color:orange),onPressed:(){Navigator.pop(x);editMenuItem(m);}))),FilledButton.icon(onPressed:(){Navigator.pop(x);addMenuItem(id);},icon:const Icon(Icons.add),label:const Text('إضافة منتج'))]));}
+Future<void> editMenuItem(Map<String,dynamic> m)async{final n=TextEditingController(text:m['name']?.toString()??'');final p=TextEditingController(text:m['price']?.toString()??'');await showDialog(context:context,builder:(x)=>AlertDialog(title:const Text('تعديل المنتج'),content:Column(mainAxisSize:MainAxisSize.min,children:[TextField(controller:n,decoration:const InputDecoration(labelText:'اسم المنتج')),TextField(controller:p,keyboardType:TextInputType.number,decoration:const InputDecoration(labelText:'السعر'))]),actions:[FilledButton(onPressed:()async{try{await NovaSupabase.updateMenuItem(m['id'].toString(),name:n.text,price:double.parse(p.text));if(x.mounted)Navigator.pop(x);}catch(e){if(x.mounted)snack(x,'تعذر التحديث: '+e.toString());}},child:const Text('حفظ'))]));n.dispose();p.dispose();}
+Future<void> addMenuItem(String id)async{final n=TextEditingController();final p=TextEditingController();await showDialog(context:context,builder:(x)=>AlertDialog(title:const Text('إضافة منتج'),content:Column(mainAxisSize:MainAxisSize.min,children:[TextField(controller:n,decoration:const InputDecoration(labelText:'اسم المنتج')),TextField(controller:p,keyboardType:TextInputType.number,decoration:const InputDecoration(labelText:'السعر'))]),actions:[FilledButton(onPressed:()async{try{await NovaSupabase.addMenuItem(id,name:n.text,price:double.parse(p.text));if(x.mounted)Navigator.pop(x);}catch(e){if(x.mounted)snack(x,'تعذر الإضافة: '+e.toString());}},child:const Text('إضافة'))]));n.dispose();p.dispose();}
+Future<void> editContent(Map<String,dynamic> r)async{final v=TextEditingController(text:r['text_value']?.toString()??'');await showDialog(context:context,builder:(x)=>AlertDialog(title:const Text('تعديل نص التطبيق'),content:TextField(controller:v,maxLines:3),actions:[FilledButton(onPressed:()async{try{await NovaSupabase.updateAppContent(r['key'].toString(),v.text);if(x.mounted)Navigator.pop(x);await load();}catch(e){if(x.mounted)snack(x,'تعذر الحفظ: '+e.toString());}},child:const Text('حفظ'))]));v.dispose();}
+@override Widget build(BuildContext c)=>Scaffold(appBar:AppBar(title:const BrandHero()),body:loading?const Center(child:CircularProgressIndicator(color:orange)):ListView(padding:const EdgeInsets.all(18),children:[const Text('استوديو المالك',style:TextStyle(fontSize:30,fontWeight:FontWeight.w900)),const SizedBox(height:6),const Text('إضافة المنتجات وتعديل المطاعم ونصوص التطبيق.',style:TextStyle(color:muted)),const SizedBox(height:18),...restaurants.map((r)=>Card(child:ListTile(leading:const Icon(Icons.restaurant_rounded,color:orange),title:Text((r['name']??'').toString()),trailing:Wrap(children:[IconButton(onPressed:()=>editRestaurant(r),icon:const Icon(Icons.edit,color:orange)),IconButton(onPressed:()=>editMenu(r['id'].toString()),icon:const Icon(Icons.inventory_2,color:orange))]))),const SizedBox(height:16),const Text('نصوص التطبيق',style:TextStyle(fontSize:20,fontWeight:FontWeight.w900)),...content.map((r)=>st(c,Icons.text_fields,r['key'].toString(),r['text_value']?.toString()??'',()=>editContent(r)))]);}
 Widget st(BuildContext c, IconData icon, String titleText, String sub, VoidCallback onTap, {Widget? trailing}) {
   return Container(
     margin: const EdgeInsets.only(bottom: 9),
