@@ -71,7 +71,9 @@ class Nova extends StatefulWidget {
   @override State<Nova> createState() => _NovaState();
 }
 class _NovaState extends State<Nova> {
-  bool dark = false;
+  bool dark = true;
+  UserRole? role;
+  bool logged = false;
   @override Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner:false,
@@ -82,9 +84,156 @@ class _NovaState extends State<Nova> {
         scaffoldBackgroundColor:dark?const Color(0xFF101114):const Color(0xFFF8F7F4),
         cardTheme:CardThemeData(elevation:0,shape:RoundedRectangleBorder(borderRadius:BorderRadius.circular(22))),
       ),
-      home:Shell(dark:dark,onDark:(v)=>setState(()=>dark=v)),
+      home:Directionality(
+        textDirection:TextDirection.rtl,
+        child:logged
+          ? (role==UserRole.courier ? CourierDashboard(onLogout:()=>setState(()=>logged=false)) : Shell(dark:dark,onDark:(v)=>setState(()=>dark=v)))
+          : (role==null
+            ? RoleChooser(onRole:(r)=>setState(()=>role=r))
+            : LoginScreen(role:role!,onBack:()=>setState(()=>role=null),onSuccess:()=>setState(()=>logged=true))),
     );
   }
+}
+
+enum UserRole { customer, courier }
+
+class RoleChooser extends StatelessWidget {
+  final ValueChanged<UserRole> onRole;
+  const RoleChooser({super.key,required this.onRole});
+  @override Widget build(BuildContext c)=>Scaffold(
+    body:Stack(children:[
+      Positioned.fill(child:Image.network(
+        'https://images.unsplash.com/photo-1558981806-ec527fa84c39?auto=format&fit=crop&w=1200&q=85',
+        fit:BoxFit.cover,
+        errorBuilder:(_,__,___)=>Container(color:ink),
+      )),
+      Positioned.fill(child:Container(decoration:const BoxDecoration(
+        gradient:LinearGradient(begin:Alignment.topCenter,end:Alignment.bottomCenter,colors:[Color(0x22000000),Color(0xF2111318)]),
+      ))),
+      SafeArea(child:Padding(padding:const EdgeInsets.fromLTRB(22,24,22,30),child:Column(children:[
+        const BrandHero(),
+        const Spacer(),
+        const Text('توصيل أسرع.. تجربة أفضل',textAlign:TextAlign.center,style:TextStyle(color:Colors.white,fontSize:30,fontWeight:FontWeight.w900)),
+        const SizedBox(height:8),
+        const Text('اختار نوع حسابك علشان نجهزلك تجربة نوفا المناسبة',textAlign:TextAlign.center,style:TextStyle(color:Colors.white70)),
+        const SizedBox(height:28),
+        roleButton(c,Icons.person_rounded,'أنا عميل','اطلب من المطاعم وتابع طلبك لحظة بلحظة',()=>onRole(UserRole.customer),true),
+        const SizedBox(height:12),
+        roleButton(c,Icons.two_wheeler_rounded,'أنا مندوب','استقبل الطلبات واتابع أرباحي',()=>onRole(UserRole.courier),false),
+        const SizedBox(height:14),
+        const Text('نوفا ديليفري',style:TextStyle(color:Colors.white54,fontSize:11)),
+      ]))),
+    ],
+  );
+  Widget roleButton(BuildContext c,IconData icon,String title,String sub,VoidCallback tap,bool filled)=>Material(
+    color:filled?orange:const Color(0xE91A1D24),
+    borderRadius:BorderRadius.circular(20),
+    child:InkWell(onTap:tap,borderRadius:BorderRadius.circular(20),child:Padding(
+      padding:const EdgeInsets.all(15),
+      child:Row(children:[
+        CircleAvatar(backgroundColor:filled?Colors.white24:orange.withValues(alpha:.15),child:Icon(icon,color:filled?Colors.white:orange)),
+        const SizedBox(width:13),
+        Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
+          Text(title,style:TextStyle(color:filled?Colors.white:null,fontSize:17,fontWeight:FontWeight.w900)),
+          Text(sub,style:TextStyle(color:filled?Colors.white70:muted,fontSize:11)),
+        ])),
+        Icon(Icons.arrow_back_ios_new_rounded,size:15,color:filled?Colors.white:muted),
+      ]),
+    )),
+  );
+}
+
+class BrandHero extends StatelessWidget {
+  const BrandHero({super.key});
+  @override Widget build(BuildContext c)=>Row(mainAxisSize:MainAxisSize.min,children:[
+    Container(width:45,height:45,decoration:BoxDecoration(gradient:const LinearGradient(colors:[orange,Color(0xFFFF9A3D)]),borderRadius:BorderRadius.circular(14)),child:const Icon(Icons.delivery_dining_rounded,color:Colors.white,size:29)),
+    const SizedBox(width:10),
+    const Text('نوفا ديليفري',style:TextStyle(color:Colors.white,fontSize:23,fontWeight:FontWeight.w900)),
+  ]);
+}
+
+class LoginScreen extends StatefulWidget {
+  final UserRole role; final VoidCallback onBack,onSuccess;
+  const LoginScreen({super.key,required this.role,required this.onBack,required this.onSuccess});
+  @override State<LoginScreen> createState()=>_LoginScreenState();
+}
+class _LoginScreenState extends State<LoginScreen> {
+  bool phoneMode=true,hide=true,busy=false;
+  final id=TextEditingController(),pass=TextEditingController();
+  @override void dispose(){id.dispose();pass.dispose();super.dispose();}
+  void submit(){
+    if(id.text.trim().isEmpty||pass.text.trim().isEmpty){snack(context,'اكتب بيانات الدخول أولاً');return;}
+    setState(()=>busy=true);
+    Future.delayed(const Duration(milliseconds:700),widget.onSuccess);
+  }
+  @override Widget build(BuildContext c)=>Scaffold(
+    appBar:AppBar(leading:IconButton(onPressed:widget.onBack,icon:const Icon(Icons.arrow_forward_rounded)),title:const BrandHero()),
+    body:ListView(padding:const EdgeInsets.fromLTRB(20,25,20,35),children:[
+      Text(widget.role==UserRole.customer?'أهلاً بيك 👋':'أهلاً يا كابتن 🛵',style:const TextStyle(fontSize:29,fontWeight:FontWeight.w900)),
+      const SizedBox(height:6),
+      Text(widget.role==UserRole.customer?'سجّل دخولك وابدأ طلبك':'سجّل دخولك واستقبل طلباتك',style:const TextStyle(color:muted)),
+      const SizedBox(height:25),
+      SegmentedButton<bool>(
+        segments:const[ButtonSegment(value:true,label:Text('رقم الهاتف'),icon:Icon(Icons.phone)),ButtonSegment(value:false,label:Text('البريد الإلكتروني'),icon:Icon(Icons.email_outlined))],
+        selected:{phoneMode},
+        onSelectionChanged:(v)=>setState(()=>phoneMode=v.first),
+      ),
+      const SizedBox(height:17),
+      TextField(controller:id,keyboardType:phoneMode?TextInputType.phone:TextInputType.emailAddress,decoration:InputDecoration(labelText:phoneMode?'رقم الهاتف':'البريد الإلكتروني',prefixIcon:Icon(phoneMode?Icons.phone:Icons.email_outlined))),
+      const SizedBox(height:12),
+      TextField(controller:pass,obscureText:hide,decoration:InputDecoration(labelText:'كلمة المرور',prefixIcon:const Icon(Icons.lock_outline),suffixIcon:IconButton(onPressed:()=>setState(()=>hide=!hide),icon:Icon(hide?Icons.visibility_outlined:Icons.visibility_off_outlined)))),
+      Align(alignment:Alignment.centerRight,child:TextButton(onPressed:()=>snack(c,'سيتم إرسال رابط الاستعادة'),child:const Text('نسيت كلمة المرور؟',style:TextStyle(color:orange)))),
+      const SizedBox(height:5),
+      FilledButton(onPressed:busy?null:submit,style:FilledButton.styleFrom(backgroundColor:orange,minimumSize:const Size.fromHeight(55)),child:busy?const SizedBox(width:22,height:22,child:CircularProgressIndicator(strokeWidth:2,color:Colors.white)):const Text('تسجيل الدخول',style:TextStyle(fontWeight:FontWeight.w900))),
+      const SizedBox(height:16),
+      Row(children:[const Expanded(child:Divider()),Padding(padding:const EdgeInsets.symmetric(horizontal:10),child:Text('أو',style:const TextStyle(color:muted))),const Expanded(child:Divider())]),
+      const SizedBox(height:15),
+      OutlinedButton.icon(
+        onPressed:()=>snack(c,'تسجيل Google جاهز للربط بخدمة OAuth عند إضافة مفاتيح المشروع'),
+        icon:const CircleAvatar(radius:11,backgroundColor:Colors.white,child:Text('G',style:TextStyle(color:Colors.blue,fontWeight:FontWeight.w900))),
+        label:const Text('تسجيل الدخول عبر Google'),
+        style:OutlinedButton.styleFrom(minimumSize:const Size.fromHeight(52)),
+      ),
+      const SizedBox(height:16),
+      TextButton(onPressed:()=>snack(c,'شاشة إنشاء الحساب سيتم ربطها بقاعدة البيانات'),child:const Text('ليس لديك حساب؟ إنشاء حساب',style:TextStyle(color:orange,fontWeight:FontWeight.w800))),
+    ],
+  );
+}
+
+class CourierDashboard extends StatefulWidget {
+  final VoidCallback onLogout;
+  const CourierDashboard({super.key,required this.onLogout});
+  @override State<CourierDashboard> createState()=>_CourierDashboardState();
+}
+class _CourierDashboardState extends State<CourierDashboard>{
+  bool online=true; int tab=0;
+  @override Widget build(BuildContext c)=>Scaffold(
+    appBar:AppBar(title:const BrandHero(),actions:[IconButton(onPressed:onLogout,icon:const Icon(Icons.logout))]),
+    body:SafeArea(child:IndexedStack(index:tab,children:[dashboard(),earnings(),account()])),
+    bottomNavigationBar:NavigationBar(selectedIndex:tab,onDestinationSelected:(v)=>setState(()=>tab=v),destinations:const[
+      NavigationDestination(icon:Icon(Icons.dashboard_outlined),label:'الرئيسية'),
+      NavigationDestination(icon:Icon(Icons.account_balance_wallet_outlined),label:'الأرباح'),
+      NavigationDestination(icon:Icon(Icons.person_outline),label:'حسابي'),
+    ]),
+  );
+  Widget dashboard()=>ListView(padding:const EdgeInsets.all(18),children:[
+    Container(padding:const EdgeInsets.all(18),decoration:BoxDecoration(color:ink,borderRadius:BorderRadius.circular(24)),child:Row(children:[
+      const Icon(Icons.two_wheeler,color:orange,size:38),const SizedBox(width:12),
+      const Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text('حالة المندوب',style:TextStyle(color:Colors.white70)),Text('متاح لاستقبال الطلبات',style:TextStyle(color:Colors.white,fontWeight:FontWeight.w900,fontSize:17))])),
+      Switch(value:online,onChanged:(v)=>setState(()=>online=v)),
+    ])),
+    const SizedBox(height:20),const Text('طلبات قريبة منك',style:TextStyle(fontSize:23,fontWeight:FontWeight.w900)),const SizedBox(height:10),
+    job('NV-2850','ماكدونالدز','جامعة المنصورة → حي الجامعة','52 ج.م'),
+    job('NV-2851','بازوكا','شارع الجيش → توريل','68 ج.م'),
+  ]);
+  Widget job(String id,String shop,String route,String pay)=>Container(margin:const EdgeInsets.only(bottom:12),padding:const EdgeInsets.all(15),decoration:BoxDecoration(color:Theme.of(context).colorScheme.surface,borderRadius:BorderRadius.circular(20)),child:Column(children:[
+    Row(children:[const CircleAvatar(backgroundColor:Color(0x20FF5A36),child:Icon(Icons.delivery_dining,color:orange)),const SizedBox(width:10),Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text(shop,style:const TextStyle(fontWeight:FontWeight.w900)),Text('#$id',style:const TextStyle(color:muted,fontSize:10))])),Text(pay,style:const TextStyle(color:orange,fontWeight:FontWeight.w900))]),
+    const SizedBox(height:8),Align(alignment:Alignment.centerRight,child:Text(route,style:const TextStyle(color:muted,fontSize:11))),
+    const SizedBox(height:9),Row(children:[const Icon(Icons.access_time,size:16,color:muted),const SizedBox(width:4),const Text('18 دقيقة',style:TextStyle(color:muted,fontSize:11)),const Spacer(),FilledButton(onPressed:()=>snack(context,'تم قبول الطلب $id'),style:FilledButton.styleFrom(backgroundColor:orange),child:const Text('قبول الطلب'))]),
+  ]));
+  Widget earnings()=>ListView(padding:const EdgeInsets.all(18),children:[const Text('الأرباح',style:TextStyle(fontSize:29,fontWeight:FontWeight.w900)),const SizedBox(height:14),metric('دخل اليوم','486 ج.م',Icons.trending_up),metric('طلبات اليوم','9 طلبات',Icons.local_shipping),metric('الرصيد','1,840 ج.م',Icons.account_balance_wallet)]);
+  Widget metric(String a,String b,IconData i)=>Container(margin:const EdgeInsets.only(bottom:11),padding:const EdgeInsets.all(17),decoration:BoxDecoration(color:Theme.of(context).colorScheme.surface,borderRadius:BorderRadius.circular(20)),child:Row(children:[CircleAvatar(backgroundColor:orange.withValues(alpha:.1),child:Icon(i,color:orange)),const SizedBox(width:12),Text(a,style:const TextStyle(color:muted)),const Spacer(),Text(b,style:const TextStyle(fontSize:18,fontWeight:FontWeight.w900))]));
+  Widget account()=>ListView(padding:const EdgeInsets.all(18),children:[const CircleAvatar(radius:40,backgroundColor:orange,child:Icon(Icons.person,color:Colors.white,size:40)),const SizedBox(height:12),const Center(child:Text('مندوب نوفا',style:TextStyle(fontSize:23,fontWeight:FontWeight.w900))),const SizedBox(height:15),ListTile(onTap:()=>snack(context,'البيانات الشخصية'),leading:const Icon(Icons.person_outline,color:orange),title:const Text('البيانات الشخصية'),trailing:const Icon(Icons.chevron_left)),ListTile(onTap:()=>snack(context,'المركبة والمستندات'),leading:const Icon(Icons.two_wheeler,color:orange),title:const Text('المركبة والمستندات'),trailing:const Icon(Icons.chevron_left)),ListTile(onTap:()=>snack(context,'الدعم'),leading:const Icon(Icons.support_agent,color:orange),title:const Text('الدعم'),trailing:const Icon(Icons.chevron_left)),OutlinedButton.icon(onPressed:onLogout,icon:const Icon(Icons.logout),label:const Text('تسجيل الخروج'))]);
 }
 
 class Shell extends StatefulWidget {
