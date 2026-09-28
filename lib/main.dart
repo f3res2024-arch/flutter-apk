@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -6,6 +7,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:http/http.dart' as http;
 import 'core/supabase_service.dart';
 
 Future<void> main() async {
@@ -862,7 +864,17 @@ class _ShellState extends State<Shell> {
   int tab=0; final cart=<Line>[]; final fav=<String>{};
   double get total=>cart.fold(0,(s,x)=>s+x.m.price*x.qty);
   int get count=>cart.fold(0,(s,x)=>s+x.qty);
-  void add(R r,M m){setState((){final i=cart.indexWhere((x)=>x.r.name==r.name&&x.m.name==m.name);if(i>=0){cart[i].qty++;}else{cart.add(Line(r,m));}});}
+  Future<void> add(R r,M m) async {
+    final ok=await showDialog<bool>(context:context,builder:(d)=>AlertDialog(
+      shape:RoundedRectangleBorder(borderRadius:BorderRadius.circular(24)),
+      title:const Text('إضافة للسلة',style:TextStyle(fontWeight:FontWeight.w900)),
+      content:Row(children:[ClipRRect(borderRadius:BorderRadius.circular(14),child:Image.network(m.image,width:72,height:72,fit:BoxFit.cover,errorBuilder:(_,__,___)=>Container(width:72,height:72,color:const Color(0xFFF1F1F2),child:const Icon(Icons.fastfood_rounded,color:orange)))),const SizedBox(width:12),Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,mainAxisSize:MainAxisSize.min,children:[Text(m.name,style:const TextStyle(fontWeight:FontWeight.w900)),const SizedBox(height:5),Text(r.name,style:const TextStyle(color:muted,fontSize:11)),const SizedBox(height:5),Text(m.price.toStringAsFixed(0)+' ج.م',style:const TextStyle(color:orange,fontWeight:FontWeight.w900))]))]),
+      actions:[TextButton(onPressed:()=>Navigator.pop(d,false),child:const Text('إلغاء')),FilledButton.icon(onPressed:()=>Navigator.pop(d,true),icon:const Icon(Icons.add_shopping_cart_rounded),label:const Text('أضف للسلة'))],
+    ));
+    if(ok!=true||!mounted)return;
+    setState(()=>cart.add(Line(r,m)));
+    if(mounted)ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('تمت إضافة المنتج للسلة ✓'),duration:Duration(milliseconds:900)));
+  }
   void sub(Line x)=>setState((){if(x.qty>1){x.qty--;}else{cart.remove(x);}});
   void open(R r)=>Navigator.push(context,MaterialPageRoute(builder:(_)=>RestaurantPage(r:r,fav:fav.contains(r.name),onFav:()=>setState((){if(!fav.add(r.name))fav.remove(r.name);}),onAdd:add)));
   @override Widget build(BuildContext context){
@@ -870,7 +882,7 @@ class _ShellState extends State<Shell> {
       Home(onOpen:open,onMap:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>const MapPage())),onSearch:(q)=>setState(()=>tab=1)),
       SearchPage(onAdd:add,onFav:(r)=>setState((){if(!fav.add(r.name))fav.remove(r.name);}),),
       OrdersPage(onTrack:(o)=>Navigator.push(context,MaterialPageRoute(builder:(_)=>CustomerOrderTrackingPage(order:o))),),
-      ProfilePage(onMap:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>const MapPage()))),
+      ProfilePage(onMap:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>const MapPage())),onLogout:()=>NovaSupabase.signOut()),
     ];
     return Directionality(
       textDirection:TextDirection.rtl,
@@ -1293,7 +1305,7 @@ void snack(BuildContext c,String message){
 Widget line(String s,double v,{bool bold=false})=>Padding(padding:const EdgeInsets.symmetric(vertical:5),child:Row(children:[Expanded(child:Text(s,style:TextStyle(fontWeight:bold?FontWeight.w900:FontWeight.w500))),Text(v.toStringAsFixed(0)+' ج.م',style:TextStyle(fontWeight:FontWeight.w900,color:bold?orange:null))]));
 
 class ProfilePage extends StatefulWidget{
-  final VoidCallback onMap;const ProfilePage({super.key,required this.onMap});
+  final VoidCallback onMap,onLogout;const ProfilePage({super.key,required this.onMap,required this.onLogout});
   @override State<ProfilePage> createState()=>_ProfilePageState();
 }
 class _ProfilePageState extends State<ProfilePage>{
