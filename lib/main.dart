@@ -1347,11 +1347,42 @@ class _ProfilePageState extends State<ProfilePage>{
   Future<void> load()async{try{profile=await NovaSupabase.profile();role=await NovaSupabase.currentUserRole();}catch(_){ }if(mounted)setState((){});}
   Future<void> editProfile()async{
     final name=TextEditingController(text:(profile?['full_name']??'').toString());
-    await showDialog(context:context,builder:(d)=>AlertDialog(
+    String? pickedAvatar;
+    await showDialog(context:context,builder:(d)=>StatefulBuilder(builder:(d,setDialogState)=>AlertDialog(
       title:const Text('تعديل الملف الشخصي'),
-      content:TextField(controller:name,decoration:const InputDecoration(labelText:'اسمك الظاهر في التطبيق',prefixIcon:Icon(Icons.person_outline))),
-      actions:[TextButton(onPressed:()=>Navigator.pop(d),child:const Text('إلغاء')),FilledButton(onPressed:()async{try{await NovaSupabase.updateProfile(fullName:name.text.trim());if(d.mounted)Navigator.pop(d);await load();}catch(e){if(d.mounted)snack(d,'تعذر الحفظ: '+e.toString());}},child:const Text('حفظ'))],
-    ));
+      content:Column(mainAxisSize:MainAxisSize.min,children:[
+        GestureDetector(
+          onTap:()async{
+            final file=await ImagePicker().pickImage(source:ImageSource.gallery,imageQuality:90,maxWidth:1400);
+            if(file==null)return;
+            try{
+              pickedAvatar=await NovaSupabase.uploadAvatar(NovaSupabase.currentUser!.id,await file.readAsBytes());
+              setDialogState((){});
+            }catch(e){if(d.mounted)snack(d,'تعذر رفع الصورة: '+e.toString());}
+          },
+          child:CircleAvatar(
+            radius:42,
+            backgroundColor:orange.withValues(alpha:.12),
+            backgroundImage:pickedAvatar!=null?NetworkImage(pickedAvatar!):((profile?['avatar_url']??'').toString().isEmpty?null:NetworkImage(profile!['avatar_url'].toString())),
+            child:(pickedAvatar==null&&(profile?['avatar_url']??'').toString().isEmpty)?const Icon(Icons.add_a_photo_rounded,color:orange,size:30):null,
+          ),
+        ),
+        const SizedBox(height:9),
+        const Text('اضغط على الصورة لاختيار صورة بروفايل',style:TextStyle(color:muted,fontSize:11)),
+        const SizedBox(height:14),
+        TextField(controller:name,decoration:const InputDecoration(labelText:'اسمك الظاهر في التطبيق',prefixIcon:Icon(Icons.person_outline))),
+      ]),
+      actions:[
+        TextButton(onPressed:()=>Navigator.pop(d),child:const Text('إلغاء')),
+        FilledButton(onPressed:()async{
+          try{
+            await NovaSupabase.updateProfile(fullName:name.text.trim(),avatarUrl:pickedAvatar);
+            if(d.mounted)Navigator.pop(d);
+            await load();
+          }catch(e){if(d.mounted)snack(d,'تعذر الحفظ: '+e.toString());}
+        },child:const Text('حفظ')),
+      ],
+    )));
     name.dispose();
   }
   Future<void> changeAvatar()async{try{final file=await ImagePicker().pickImage(source:ImageSource.gallery,imageQuality:88,maxWidth:1200);if(file==null)return;final url=await NovaSupabase.uploadAvatar(NovaSupabase.currentUser!.id,await file.readAsBytes());await NovaSupabase.updateProfile(avatarUrl:url);await load();}catch(e){if(mounted)snack(context,'تعذر تحديث الصورة: '+e.toString());}}
@@ -1458,14 +1489,21 @@ class MapPage extends StatefulWidget {
   const MapPage({super.key,this.restaurant});
   @override State<MapPage> createState()=>_MapPageState();
 }
-class _MapPageState extends State<MapPage> {
+
+class _MapPageState extends State<MapPage>{
+  final MapController mapController=MapController();
+  final TextEditingController searchController=TextEditingController();
   LatLng? me;
-  bool locating=true,loadingNearby=false;
+  String currentAddress='جاري تحديد عنوانك الحالي…';
   String? locationError;
-  List<NearbyPlace> nearby=[];
+  bool locating=true,searching=false;
+  List<MapPlace> results=[];
   @override void initState(){super.initState();locate();}
+  @override void dispose(){searchController.dispose();super.dispose();}
+
   Future<void> locate() async {
-    try {
+    if(mounted)setState(()=>locating=true);
+    try{
       if(!await Geolocator.isLocationServiceEnabled()) throw Exception('فعّل خدمة الموقع من الهاتف.');
       var permission=await Geolocator.checkPermission();
       if(permission==LocationPermission.denied) permission=await Geolocator.requestPermission();
@@ -1474,85 +1512,156 @@ class _MapPageState extends State<MapPage> {
       final point=LatLng(p.latitude,p.longitude);
       if(!mounted)return;
       setState(()=>me=point);
-      await loadNearby(point);
+      mapController.move(point,16);
+      await reverseGeocode(point);
     }catch(e){
       if(mounted)setState(()=>locationError=e.toString().replaceFirst('Exception: ',''));
+    }finally{
+      if(mounted)setState(()=>locating=false);
     }
-    if(mounted)setState(()=>locating=false);
   }
-  Future<void> loadNearby(LatLng p) async {
-    if(mounted)setState(()=>loadingNearby=true);
-    try {
-      final q='[out:json][timeout:15];(node(around:5000,'+p.latitude.toString()+','+p.longitude.toString()+')[amenity=restaurant];node(around:5000,'+p.latitude.toString()+','+p.longitude.toString()+')[amenity=pharmacy];node(around:5000,'+p.latitude.toString()+','+p.longitude.toString()+')[shop=supermarket];);out tags;';
-      final u=Uri.parse('https://overpass-api.de/api/interpreter?data='+Uri.encodeQueryComponent(q));
-      final r=await http.get(u,headers:{'User-Agent':'NovaDelivery/2.1'});
-      if(r.statusCode!=200)throw Exception('تعذر تحميل الأماكن القريبة');
-      final j=jsonDecode(r.body) as Map<String,dynamic>;
-      final list=<NearbyPlace>[];
-      for(final raw in (j['elements'] as List)){
-        final e=Map<String,dynamic>.from(raw as Map);
-        final t=Map<String,dynamic>.from((e['tags']??{}) as Map);
-        final lat=e['lat'] as num?,lng=e['lon'] as num?;
-        if(lat==null||lng==null)continue;
-        final amen=(t['amenity']??'').toString(),shop=(t['shop']??'').toString();
-        final type=amen=='pharmacy'?'صيدلية':shop=='supermarket'?'سوبر ماركت':'مطعم';
-        final name=(t['name:ar']??t['name']??type).toString();
-        list.add(NearbyPlace(name,type,lat.toDouble(),lng.toDouble()));
+
+  Future<void> reverseGeocode(LatLng point) async {
+    try{
+      final uri=Uri.https('nominatim.openstreetmap.org','/reverse',{
+        'lat':point.latitude.toString(),'lon':point.longitude.toString(),
+        'format':'jsonv2','accept-language':'ar','zoom':'18','addressdetails':'1',
+      });
+      final response=await http.get(uri,headers:{'User-Agent':'NovaDelivery/2.1'});
+      if(response.statusCode!=200)throw Exception('تعذر قراءة عنوان موقعك');
+      final json=Map<String,dynamic>.from(jsonDecode(response.body) as Map);
+      final display=(json['display_name']??'موقعك الحالي').toString();
+      if(mounted)setState(()=>currentAddress=display);
+    }catch(_){
+      if(mounted)setState(()=>currentAddress='الموقع الحالي ('+point.latitude.toStringAsFixed(5)+', '+point.longitude.toStringAsFixed(5)+')');
+    }
+  }
+
+  Future<void> searchPlaces(String raw) async {
+    final q=raw.trim();
+    if(q.length<2)return;
+    FocusManager.instance.primaryFocus?.unfocus();
+    setState(()=>searching=true);
+    try{
+      final uri=Uri.https('nominatim.openstreetmap.org','/search',{
+        'q':q,'format':'jsonv2','accept-language':'ar','addressdetails':'1','limit':'12',
+      });
+      final response=await http.get(uri,headers:{'User-Agent':'NovaDelivery/2.1'});
+      if(response.statusCode!=200)throw Exception('تعذر البحث على الخريطة');
+      final rawResults=jsonDecode(response.body) as List;
+      final places=<MapPlace>[];
+      for(final item in rawResults){
+        final m=Map<String,dynamic>.from(item as Map);
+        final lat=double.tryParse(m['lat']?.toString()??'');
+        final lon=double.tryParse(m['lon']?.toString()??'');
+        if(lat==null||lon==null)continue;
+        places.add(MapPlace((m['display_name']??m['name']??q).toString(),lat,lon));
       }
-      list.sort((x,y)=>const Distance().as(LengthUnit.Meter,p,LatLng(x.lat,x.lng)).compareTo(const Distance().as(LengthUnit.Meter,p,LatLng(y.lat,y.lng))));
-      if(mounted)setState(()=>nearby=list.take(50).toList());
+      if(mounted){
+        setState(()=>results=places);
+        if(places.isNotEmpty)mapController.move(LatLng(places.first.lat,places.first.lng),15.5);
+      }
     }catch(e){
-      if(mounted)setState(()=>locationError=e.toString().replaceFirst('Exception: ',''));
+      if(mounted)showFeature(context,'البحث على الخريطة',e.toString().replaceFirst('Exception: ',''));
+    }finally{
+      if(mounted)setState(()=>searching=false);
     }
-    if(mounted)setState(()=>loadingNearby=false);
   }
-  Color markerColor(String type)=>type=='صيدلية'?const Color(0xFF6558E8):type=='سوبر ماركت'?const Color(0xFF1D9B72):orange;
-  IconData markerIcon(String type)=>type=='صيدلية'?Icons.local_pharmacy_rounded:type=='سوبر ماركت'?Icons.local_grocery_store_rounded:Icons.restaurant_rounded;
+
+  void selectPlace(MapPlace p){
+    mapController.move(LatLng(p.lat,p.lng),16);
+    setState(()=>currentAddress=p.name);
+    FocusManager.instance.primaryFocus?.unfocus();
+  }
+
   @override Widget build(BuildContext c){
-    final center=me??(widget.restaurant==null?const LatLng(31.0445,31.3540):LatLng(widget.restaurant!.lat,widget.restaurant!.lng));
-    final restaurants=widget.restaurant==null?data:[widget.restaurant!];
+    final fallback=widget.restaurant==null?const LatLng(31.0445,31.3540):LatLng(widget.restaurant!.lat,widget.restaurant!.lng);
+    final center=me??fallback;
     return Scaffold(
-      appBar:AppBar(title:const BrandHero(),actions:[IconButton(onPressed:locate,icon:const Icon(Icons.my_location_rounded,color:orange))]),
+      appBar:AppBar(
+        title:const BrandHero(),
+        actions:[IconButton(tooltip:'موقعي الحالي',onPressed:locate,icon:const Icon(Icons.my_location_rounded,color:orange))],
+      ),
       body:Stack(children:[
         FlutterMap(
-          options:MapOptions(initialCenter:center,initialZoom:14.5),
+          mapController:mapController,
+          options:MapOptions(initialCenter:center,initialZoom:me==null?14.5:16),
           children:[
-            TileLayer(urlTemplate:'https://tile.openstreetmap.org/{z}/{x}/{y}.png',userAgentPackageName:'nova.delivery/2.1'),
+            TileLayer(
+              urlTemplate:'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+              userAgentPackageName:'nova.delivery/2.1',
+            ),
             MarkerLayer(markers:[
-              ...restaurants.map((r)=>Marker(
-                point:LatLng(r.lat,r.lng),width:62,height:70,
+              if(widget.restaurant!=null)Marker(
+                point:LatLng(widget.restaurant!.lat,widget.restaurant!.lng),width:64,height:72,
                 child:Container(
                   decoration:BoxDecoration(color:Colors.white,shape:BoxShape.circle,border:Border.all(color:orange,width:3),boxShadow:const[BoxShadow(color:Color(0x33000000),blurRadius:10)]),
                   padding:const EdgeInsets.all(5),
-                  child:ClipOval(child:Image.network(r.image,fit:BoxFit.cover,errorBuilder:(_,__,___)=>const Icon(Icons.restaurant_rounded,color:orange))),
+                  child:ClipOval(child:Image.network(widget.restaurant!.image,fit:BoxFit.cover,errorBuilder:(_,error,stack)=>const Icon(Icons.restaurant_rounded,color:orange))),
                 ),
-              )),
-              ...nearby.map((p)=>Marker(
-                point:LatLng(p.lat,p.lng),width:54,height:60,
-                child:Container(
-                  decoration:BoxDecoration(color:Colors.white,borderRadius:BorderRadius.circular(17),border:Border.all(color:markerColor(p.type),width:2)),
-                  child:Icon(markerIcon(p.type),color:markerColor(p.type),size:28),
-                ),
-              )),
+              ),
               if(me!=null)Marker(
-                point:me!,width:56,height:56,
+                point:me!,width:60,height:60,
                 child:Container(
                   decoration:BoxDecoration(color:orange,shape:BoxShape.circle,border:Border.all(color:Colors.white,width:4),boxShadow:const[BoxShadow(color:Color(0x44000000),blurRadius:14)]),
-                  child:const Icon(Icons.person_pin_circle_rounded,color:Colors.white,size:28),
+                  child:const Icon(Icons.my_location_rounded,color:Colors.white,size:28),
                 ),
               ),
             ]),
             RichAttributionWidget(attributions:[TextSourceAttribution('OpenStreetMap contributors')]),
           ],
         ),
-        Positioned(top:14,right:14,left:14,child:Container(
-          padding:const EdgeInsets.symmetric(horizontal:14,vertical:12),
-          decoration:BoxDecoration(color:Colors.white.withValues(alpha:.96),borderRadius:BorderRadius.circular(18)),
-          child:Row(children:[
-            Icon(locating?Icons.gps_not_fixed_rounded:Icons.gps_fixed_rounded,color:orange),
-            const SizedBox(width:10),
-            Expanded(child:Text(loadingNearby?'جاري البحث عن الالمطاعم والصيدليات والسوبر ماركت القريبة…':locationError??(locating?'جاري تحديد موقعك…':'أنت ظاهر على الخريطة الآن'),style:const TextStyle(fontWeight:FontWeight.w900,fontSize:13))),
-          ]),
+        Positioned(top:12,left:12,right:12,child:Column(children:[
+          Material(
+            color:Colors.white,
+            elevation:8,
+            borderRadius:BorderRadius.circular(20),
+            child:TextField(
+              controller:searchController,
+              onSubmitted:searchPlaces,
+              textInputAction:TextInputAction.search,
+              decoration:InputDecoration(
+                hintText:'ابحث عن مطعم، شارع، صيدلية، مكان…',
+                prefixIcon:const Icon(Icons.search_rounded,color:orange),
+                suffixIcon:searching
+                  ? const Padding(padding:EdgeInsets.all(14),child:SizedBox(width:20,height:20,child:CircularProgressIndicator(strokeWidth:2,color:orange)))
+                  : IconButton(onPressed:()=>searchPlaces(searchController.text),icon:const Icon(Icons.arrow_forward_rounded,color:orange)),
+              ),
+            ),
+          ),
+          if(currentAddress.isNotEmpty)Container(
+            margin:const EdgeInsets.only(top:8),
+            padding:const EdgeInsets.symmetric(horizontal:14,vertical:11),
+            decoration:BoxDecoration(color:Colors.white.withValues(alpha:.96),borderRadius:BorderRadius.circular(18),boxShadow:const[BoxShadow(color:Color(0x14000000),blurRadius:12)]),
+            child:Row(children:[
+              const Icon(Icons.location_on_rounded,color:orange,size:21),const SizedBox(width:8),
+              Expanded(child:Text(currentAddress,maxLines:2,overflow:TextOverflow.ellipsis,style:const TextStyle(fontSize:12,fontWeight:FontWeight.w800))),
+              IconButton(tooltip:'إظهار موقعي',onPressed:locate,icon:const Icon(Icons.gps_fixed_rounded,color:orange)),
+            ]),
+          ),
+        ])),
+        if(results.isNotEmpty)Positioned(left:12,right:12,top:132,bottom:18,child:Container(
+          decoration:BoxDecoration(color:Colors.white,borderRadius:BorderRadius.circular(24),boxShadow:const[BoxShadow(color:Color(0x22000000),blurRadius:24)]),
+          child:ListView.separated(
+            padding:const EdgeInsets.all(10),
+            itemCount:results.length,
+            separatorBuilder:(_,__)=>const Divider(height:1),
+            itemBuilder:(_,i){
+              final p=results[i];
+              return ListTile(
+                onTap:()=>selectPlace(p),
+                leading:const CircleAvatar(backgroundColor:Color(0x12FF5A36),child:Icon(Icons.place_rounded,color:orange)),
+                title:Text(p.name,maxLines:2,overflow:TextOverflow.ellipsis,style:const TextStyle(fontSize:12,fontWeight:FontWeight.w800)),
+                subtitle:Text(p.lat.toStringAsFixed(5)+', '+p.lng.toStringAsFixed(5),style:const TextStyle(color:muted,fontSize:10)),
+                trailing:const Icon(Icons.chevron_left_rounded),
+              );
+            },
+          ),
+        )),
+        if(locationError!=null)Positioned(left:16,right:16,bottom:22,child:Container(
+          padding:const EdgeInsets.all(13),
+          decoration:BoxDecoration(color:Colors.white,borderRadius:BorderRadius.circular(18),boxShadow:const[BoxShadow(color:Color(0x22000000),blurRadius:18)]),
+          child:Row(children:[const Icon(Icons.info_outline_rounded,color:orange),const SizedBox(width:8),Expanded(child:Text(locationError!,style:const TextStyle(fontSize:11,fontWeight:FontWeight.w700))),IconButton(onPressed:locate,icon:const Icon(Icons.refresh_rounded,color:orange))]),
         )),
       ]),
     );
