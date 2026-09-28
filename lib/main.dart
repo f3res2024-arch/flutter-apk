@@ -1442,7 +1442,7 @@ class _OrdersPageState extends State<OrdersPage>{
         const SizedBox(height:15),
         if(loading)const Padding(padding:EdgeInsets.all(35),child:Center(child:CircularProgressIndicator(color:orange)))
         else if(list.isEmpty)Container(padding:const EdgeInsets.all(28),decoration:BoxDecoration(color:Theme.of(c).colorScheme.surface,borderRadius:BorderRadius.circular(22)),child:const Column(children:[Icon(Icons.receipt_long_outlined,size:58,color:orange),SizedBox(height:10),Text('لا توجد طلبات هنا',style:TextStyle(fontSize:18,fontWeight:FontWeight.w900)),SizedBox(height:5),Text('طلباتك الجديدة ستظهر هنا تلقائياً',style:TextStyle(color:muted))]))
-        else ...list.map((o)=>orderTile(c,o,statusText(o['status']?.toString()??''))),
+         else ...[for (final o in list) orderTile(c, o, statusText(o['status']?.toString() ?? ''))],
       ],
     ));
   }
