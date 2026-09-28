@@ -395,6 +395,11 @@ class NovaSupabase {
     final row=await client.from('menu_items').insert({'restaurant_id':restaurantId,'name':name.trim(),'description':description.trim(),'price':price,'image_url':imageUrl,'category_id':categoryId,'is_available':true}).select('id').single();
     return row['id'].toString();
   }
+  static Future<List<Map<String,dynamic>>> activeOffers() async {
+    _requireReady();
+    final rows=await client.from('offers').select('*, coupons(code,title,discount_type,discount_value)').eq('is_active',true).order('sort_order').order('created_at',ascending:false);
+    return List<Map<String,dynamic>>.from(rows);
+  }
   static Future<List<Map<String,dynamic>>> ownerCoupons() async {
     _requireReady();
     if(await currentUserRole()!='admin') throw const AuthException('هذه الصلاحية للمالك فقط.');
