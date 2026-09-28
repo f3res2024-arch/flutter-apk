@@ -97,6 +97,7 @@ class _NovaState extends State<Nova>{
   StreamSubscription<dynamic>? _authSubscription;
   @override void initState(){
     super.initState();
+    _loadRealCatalog();
     if(NovaSupabase.initialized){
       if(NovaSupabase.client.auth.currentSession!=null) _restoreAuthenticatedUser();
       _authSubscription=NovaSupabase.client.auth.onAuthStateChange.listen((event){
@@ -106,6 +107,33 @@ class _NovaState extends State<Nova>{
         else if(event.event.toString().contains('signedOut') || event.event.toString().contains('SIGNED_OUT')){setState(()=>logged=false);}
       });
     }
+  }
+  Future<void> _loadRealCatalog() async {
+    try {
+      final rows=await NovaSupabase.catalog();
+      if(rows.isEmpty)return;
+      data
+        ..clear()
+        ..addAll(rows.map((r)=>R(
+          (r['name']??'مطعم').toString(),
+          (r['type']??'مطعم').toString(),
+          (r['address']??'').toString(),
+          (r['logo_url']??r['cover_url']??burger).toString(),
+          'Nova Catalog',
+          (r['rating'] as num?)?.toDouble()??0,
+          (r['reviews'] as num?)?.toInt()??0,
+          (r['lat'] as num?)?.toDouble()??31.0376,
+          (r['lng'] as num?)?.toDouble()??31.3865,
+          List<String>.from((r['branches']??[]) as List),
+          ((r['menu']??[]) as List).map((m)=>M(
+            (m['name']??'منتج').toString(),
+            (m['description']??'').toString(),
+            (m['price'] as num?)?.toDouble()??0,
+            (m['image_url']??burger).toString(),
+          )).toList(),
+        )));
+      if(mounted)setState((){});
+    }catch(_){}
   }
   Future<void> _restoreAuthenticatedUser() async {
     final r=await NovaSupabase.currentUserRole();
@@ -145,26 +173,12 @@ class RoleChooser extends StatelessWidget{
   final ValueChanged<UserRole> onRole;
   const RoleChooser({super.key,required this.onRole});
   @override Widget build(BuildContext c)=>Scaffold(
-    backgroundColor:ink,
+    backgroundColor:Colors.white,
     body:SafeArea(child:SingleChildScrollView(
       padding:const EdgeInsets.fromLTRB(18,18,18,28),
       child:Column(children:[
-        Row(children:[
-          Container(width:48,height:48,decoration:BoxDecoration(
-            gradient:const LinearGradient(colors:[orange,Color(0xFFFF875E)]),
-            borderRadius:BorderRadius.circular(16),
-            boxShadow:const[BoxShadow(color:Color(0x55FF5A36),blurRadius:24,spreadRadius:2)],
-          ),child:const Icon(Icons.delivery_dining_rounded,color:Colors.white,size:30)),
-          const SizedBox(width:10),
-          const Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
-            Text('نوفا ديليفري',style:TextStyle(color:Colors.white,fontSize:24,fontWeight:FontWeight.w900)),
-            Text('THE DELIVERY EXPERIENCE',style:TextStyle(color:Colors.white38,fontSize:8,fontWeight:FontWeight.w800,letterSpacing:1.5)),
-          ])),
-          Container(padding:const EdgeInsets.symmetric(horizontal:10,vertical:7),decoration:BoxDecoration(
-            color:Colors.white.withValues(alpha:.06),borderRadius:BorderRadius.circular(20),border:Border.all(color:Colors.white10)),
-            child:const Row(children:[Icon(Icons.bolt_rounded,color:orange,size:15),SizedBox(width:4),Text('سريع',style:TextStyle(color:Colors.white70,fontSize:10,fontWeight:FontWeight.w800))]),
-          ),
-        ]),
+        const Center(child:BrandHero()),
+        const SizedBox(height:4),
         const SizedBox(height:18),
         Container(
           height:365,
@@ -1487,12 +1501,23 @@ class CategoryPage extends StatelessWidget{
 }
 class OwnerStudioPage extends StatefulWidget{const OwnerStudioPage({super.key});@override State<OwnerStudioPage> createState()=>_OwnerStudioPageState();}
 class _OwnerStudioPageState extends State<OwnerStudioPage>{List<Map<String,dynamic>> restaurants=[];List<Map<String,dynamic>> content=[];bool loading=true;@override void initState(){super.initState();load();}Future<void> load()async{try{restaurants=await NovaSupabase.restaurants();content=await NovaSupabase.appContent();}catch(_){ }if(mounted)setState(()=>loading=false);}
-Future<void> editRestaurant(Map<String,dynamic> r)async{final n=TextEditingController(text:r['name']?.toString()??'');final d=TextEditingController(text:r['description']?.toString()??'');await showDialog(context:context,builder:(x)=>AlertDialog(title:const Text('تعديل المطعم'),content:Column(mainAxisSize:MainAxisSize.min,children:[TextField(controller:n,decoration:const InputDecoration(labelText:'اسم المطعم')),TextField(controller:d,decoration:const InputDecoration(labelText:'الوصف'))]),actions:[TextButton(onPressed:()=>Navigator.pop(x),child:const Text('إلغاء')),FilledButton(onPressed:()async{try{await NovaSupabase.updateRestaurant(r['id'].toString(),name:n.text,description:d.text);if(x.mounted)Navigator.pop(x);await load();}catch(e){if(x.mounted)snack(x,'تعذر الحفظ: '+e.toString());}},child:const Text('حفظ'))]));n.dispose();d.dispose();}
+Future<void> editRestaurant(Map<String,dynamic> r)async{final n=TextEditingController(text:r['name']?.toString()??'');final d=TextEditingController(text:r['description']?.toString()??'');await showDialog(context:context,builder:(x)=>AlertDialog(title:const Text('تعديل المطعم'),content:Column(mainAxisSize:MainAxisSize.min,children:[
+TextField(controller:n,decoration:const InputDecoration(labelText:'اسم المطعم')),
+TextField(controller:d,decoration:const InputDecoration(labelText:'الوصف')),
+const SizedBox(height:8),OutlinedButton.icon(onPressed:()async{final file=await ImagePicker().pickImage(source:ImageSource.gallery,imageQuality:88,maxWidth:1600);if(file==null)return;try{final url=await NovaSupabase.uploadRestaurantImage(r['id'].toString(),await file.readAsBytes());await NovaSupabase.updateRestaurant(r['id'].toString(),logoUrl:url,coverUrl:url);if(x.mounted)snack(x,'تم تحديث صورة المطعم');}catch(e){if(x.mounted)snack(x,'تعذر رفع الصورة: '+e.toString());}},icon:const Icon(Icons.image_rounded),label:const Text('تغيير صورة المطعم'))
+]),actions:[TextButton(onPressed:()=>Navigator.pop(x),child:const Text('إلغاء')),FilledButton(onPressed:()async{try{await NovaSupabase.updateRestaurant(r['id'].toString(),name:n.text,description:d.text);if(x.mounted)Navigator.pop(x);await load();}catch(e){if(x.mounted)snack(x,'تعذر الحفظ: '+e.toString());}},child:const Text('حفظ'))]));n.dispose();d.dispose();}
 Future<void> editMenu(String id)async{final items=await NovaSupabase.restaurantMenu(id);if(!mounted)return;showModalBottomSheet(context:context,showDragHandle:true,builder:(x)=>ListView(padding:const EdgeInsets.all(18),children:[const Text('المنتجات',style:TextStyle(fontSize:24,fontWeight:FontWeight.w900)),...items.map((m)=>ListTile(title:Text((m['name']??'').toString()),subtitle:Text((m['price']??0).toString()+' ج.م'),trailing:IconButton(icon:const Icon(Icons.edit,color:orange),onPressed:(){Navigator.pop(x);editMenuItem(m);}))),FilledButton.icon(onPressed:(){Navigator.pop(x);addMenuItem(id);},icon:const Icon(Icons.add),label:const Text('إضافة منتج'))]));}
-Future<void> editMenuItem(Map<String,dynamic> m)async{final n=TextEditingController(text:m['name']?.toString()??'');final p=TextEditingController(text:m['price']?.toString()??'');await showDialog(context:context,builder:(x)=>AlertDialog(title:const Text('تعديل المنتج'),content:Column(mainAxisSize:MainAxisSize.min,children:[TextField(controller:n,decoration:const InputDecoration(labelText:'اسم المنتج')),TextField(controller:p,keyboardType:TextInputType.number,decoration:const InputDecoration(labelText:'السعر'))]),actions:[FilledButton(onPressed:()async{try{await NovaSupabase.updateMenuItem(m['id'].toString(),name:n.text,price:double.parse(p.text));if(x.mounted)Navigator.pop(x);}catch(e){if(x.mounted)snack(x,'تعذر التحديث: '+e.toString());}},child:const Text('حفظ'))]));n.dispose();p.dispose();}
+Future<void> editMenuItem(Map<String,dynamic> m)async{final n=TextEditingController(text:m['name']?.toString()??'');final p=TextEditingController(text:m['price']?.toString()??'');await showDialog(context:context,builder:(x)=>AlertDialog(title:const Text('تعديل المنتج'),content:Column(mainAxisSize:MainAxisSize.min,children:[
+TextField(controller:n,decoration:const InputDecoration(labelText:'اسم المنتج')),
+TextField(controller:p,keyboardType:TextInputType.number,decoration:const InputDecoration(labelText:'السعر')),
+const SizedBox(height:8),OutlinedButton.icon(onPressed:()async{final file=await ImagePicker().pickImage(source:ImageSource.gallery,imageQuality:88,maxWidth:1600);if(file==null)return;try{final url=await NovaSupabase.uploadMenuImage(m['id'].toString(),await file.readAsBytes());await NovaSupabase.updateMenuItem(m['id'].toString(),imageUrl:url);if(x.mounted)snack(x,'تم تحديث صورة المنتج');}catch(e){if(x.mounted)snack(x,'تعذر رفع الصورة: '+e.toString());}},icon:const Icon(Icons.image_rounded),label:const Text('تغيير صورة المنتج'))
+]),actions:[TextButton(onPressed:()=>Navigator.pop(x),child:const Text('إلغاء')),FilledButton(onPressed:()async{try{await NovaSupabase.updateMenuItem(m['id'].toString(),name:n.text,price:double.parse(p.text));if(x.mounted)Navigator.pop(x);await load();}catch(e){if(x.mounted)snack(x,'تعذر التحديث: '+e.toString());}},child:const Text('حفظ'))]));n.dispose();p.dispose();}
 Future<void> addMenuItem(String id)async{final n=TextEditingController();final p=TextEditingController();await showDialog(context:context,builder:(x)=>AlertDialog(title:const Text('إضافة منتج'),content:Column(mainAxisSize:MainAxisSize.min,children:[TextField(controller:n,decoration:const InputDecoration(labelText:'اسم المنتج')),TextField(controller:p,keyboardType:TextInputType.number,decoration:const InputDecoration(labelText:'السعر'))]),actions:[FilledButton(onPressed:()async{try{await NovaSupabase.addMenuItem(id,name:n.text,price:double.parse(p.text));if(x.mounted)Navigator.pop(x);}catch(e){if(x.mounted)snack(x,'تعذر الإضافة: '+e.toString());}},child:const Text('إضافة'))]));n.dispose();p.dispose();}
-Future<void> editContent(Map<String,dynamic> r)async{final v=TextEditingController(text:r['text_value']?.toString()??'');await showDialog(context:context,builder:(x)=>AlertDialog(title:const Text('تعديل نص التطبيق'),content:TextField(controller:v,maxLines:3),actions:[FilledButton(onPressed:()async{try{await NovaSupabase.updateAppContent(r['key'].toString(),v.text);if(x.mounted)Navigator.pop(x);await load();}catch(e){if(x.mounted)snack(x,'تعذر الحفظ: '+e.toString());}},child:const Text('حفظ'))]));v.dispose();}
-@override Widget build(BuildContext c)=>Scaffold(appBar:AppBar(title:const BrandHero()),body:loading?const Center(child:CircularProgressIndicator(color:orange)):ListView(padding:const EdgeInsets.all(18),children:[const Text('استوديو المالك',style:TextStyle(fontSize:30,fontWeight:FontWeight.w900)),const SizedBox(height:6),const Text('إضافة المنتجات وتعديل المطاعم ونصوص التطبيق.',style:TextStyle(color:muted)),const SizedBox(height:18),...restaurants.map((r)=>Card(child:ListTile(leading:const Icon(Icons.restaurant_rounded,color:orange),title:Text((r['name']??'').toString()),trailing:Wrap(children:[IconButton(onPressed:()=>editRestaurant(r),icon:const Icon(Icons.edit,color:orange)),IconButton(onPressed:()=>editMenu(r['id'].toString()),icon:const Icon(Icons.inventory_2,color:orange))]))),const SizedBox(height:16),const Text('نصوص التطبيق',style:TextStyle(fontSize:20,fontWeight:FontWeight.w900)),...content.map((r)=>st(c,Icons.text_fields,r['key'].toString(),r['text_value']?.toString()??'',()=>editContent(r)))]);}
+Future<void> editContent(Map<String,dynamic> r)async{final v=TextEditingController(text:r['text_value']?.toString()??'');await showDialog(context:context,builder:(x)=>AlertDialog(title:const Text('تعديل محتوى التطبيق'),content:Column(mainAxisSize:MainAxisSize.min,children:[
+TextField(controller:v,maxLines:3,decoration:const InputDecoration(labelText:'النص')),
+const SizedBox(height:8),OutlinedButton.icon(onPressed:()async{final file=await ImagePicker().pickImage(source:ImageSource.gallery,imageQuality:88,maxWidth:1600);if(file==null)return;try{final url=await NovaSupabase.uploadContentImage(r['key'].toString(),await file.readAsBytes());await NovaSupabase.updateAppContentImage(r['key'].toString(),url);if(x.mounted)snack(x,'تم تحديث صورة المحتوى');}catch(e){if(x.mounted)snack(x,'تعذر رفع الصورة: '+e.toString());}},icon:const Icon(Icons.image_rounded),label:const Text('تغيير الصورة'))
+]),actions:[TextButton(onPressed:()=>Navigator.pop(x),child:const Text('إلغاء')),FilledButton(onPressed:()async{try{await NovaSupabase.updateAppContent(r['key'].toString(),v.text);if(x.mounted)Navigator.pop(x);await load();}catch(e){if(x.mounted)snack(x,'تعذر الحفظ: '+e.toString());}},child:const Text('حفظ'))]));v.dispose();}
+@override Widget build(BuildContext c)=>Scaffold(appBar:AppBar(title:const BrandHero()),body:loading?const Center(child:CircularProgressIndicator(color:orange)):ListView(padding:const EdgeInsets.all(18),children:[const Text('استوديو المالك',style:TextStyle(fontSize:30,fontWeight:FontWeight.w900)),const SizedBox(height:6),const Text('المالك فقط: المنتجات والأسعار والصور والمطاعم والنصوص ومحتوى الواجهة.',style:TextStyle(color:muted)),const SizedBox(height:18),...restaurants.map((r)=>Card(child:ListTile(leading:const Icon(Icons.restaurant_rounded,color:orange),title:Text((r['name']??'').toString()),trailing:Wrap(children:[IconButton(onPressed:()=>editRestaurant(r),icon:const Icon(Icons.edit,color:orange)),IconButton(onPressed:()=>editMenu(r['id'].toString()),icon:const Icon(Icons.inventory_2,color:orange))]))),const SizedBox(height:16),const Text('نصوص التطبيق',style:TextStyle(fontSize:20,fontWeight:FontWeight.w900)),...content.map((r)=>st(c,Icons.text_fields,r['key'].toString(),r['text_value']?.toString()??'',()=>editContent(r)))]);}
 Widget st(BuildContext c, IconData icon, String titleText, String sub, VoidCallback onTap, {Widget? trailing}) {
   return Container(
     margin: const EdgeInsets.only(bottom: 9),
