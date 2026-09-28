@@ -53,6 +53,8 @@ const pizza = 'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?auto
 const chicken = 'https://images.unsplash.com/photo-1626082927389-6cd097cdc6ec?auto=format&fit=crop&w=900&q=85';
 const dessert = 'https://images.unsplash.com/photo-1551024506-0bccd828d307?auto=format&fit=crop&w=900&q=85';
 
+final appCopy = <String,String>{};
+
 final data = <R>[
   R('دجاج كنتاكي','فراخ مقلية','40 شارع الجمهورية، أمام بوابة جامعة المنصورة','https://s3-eu-west-1.amazonaws.com/elmenusv5-stg/Normal/dc5de1f8-2580-11e8-add5-0242ac110011.jpg','المنيوز',4.7,171,31.0429,31.3564,[
     'حي الجامعة — طريق عبد الرحمن بن عوف، بجوار القرية الأولمبية','توريل — شارع قناة السويس، برج جرين بلازا','جامعة المنصورة — 40 شارع الجمهورية، أمام بوابة الجامعة'
@@ -110,6 +112,8 @@ class _NovaState extends State<Nova>{
   }
   Future<void> _loadRealCatalog() async {
     try {
+      final copy=await NovaSupabase.appContent();
+      for(final row in copy){ final k=(row['key']??'').toString(); final v=(row['text_value']??'').toString(); if(k.isNotEmpty&&v.isNotEmpty)appCopy[k]=v; }
       final rows=await NovaSupabase.catalog();
       if(rows.isEmpty)return;
       data
@@ -1027,7 +1031,7 @@ class Home extends StatelessWidget {
         ]),
       ),
     ),
-    const SizedBox(height:23),title('اختار إللي على مزاجك','عرض الكل'),const SizedBox(height:11),
+    const SizedBox(height:23),title(appCopy['mood_title']??'اختار إللي على مزاجك','عرض الكل'),const SizedBox(height:11),
     SizedBox(height:112,child:ListView(scrollDirection:Axis.horizontal,children:[Cat(Icons.lunch_dining_rounded,'برجر',onAdd:onAdd),Cat(Icons.restaurant_rounded,'فراخ',onAdd:onAdd),Cat(Icons.local_pizza_rounded,'بيتزا',onAdd:onAdd),Cat(Icons.cake_rounded,'حلويات',onAdd:onAdd),Cat(Icons.local_drink_rounded,'مشروبات',onAdd:onAdd),Cat(Icons.spa_rounded,'صحي',onAdd:onAdd),Cat(Icons.coffee_rounded,'قهوة',onAdd:onAdd),Cat(Icons.breakfast_dining_rounded,'فطار',onAdd:onAdd)])),
     const SizedBox(height:20),
     const Text('عروض معمولة ليك',style:TextStyle(fontSize:20,fontWeight:FontWeight.w900)),
@@ -1755,7 +1759,7 @@ class _OwnerStudioPageState extends State<OwnerStudioPage> {
       actions:[
         TextButton(onPressed:()=>Navigator.pop(x),child:const Text('إلغاء')),
         FilledButton(onPressed:()async{
-          try{await NovaSupabase.updateAppContent(r['key'].toString(),v.text);if(x.mounted)Navigator.pop(x);await load();}
+          try{await NovaSupabase.updateAppContent(r['key'].toString(),v.text);appCopy[r['key'].toString()]=v.text;if(x.mounted)Navigator.pop(x);await load();}
           catch(e){if(x.mounted)snack(x,'تعذر الحفظ: '+e.toString());}
         },child:const Text('حفظ')),
       ],
