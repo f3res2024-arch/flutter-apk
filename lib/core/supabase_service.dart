@@ -378,6 +378,24 @@ class NovaSupabase {
     if(await currentUserRole()!='admin') throw const AuthException('هذه الصلاحية للمالك فقط.');
     await client.from('restaurants').update({'is_active':false,'updated_at':DateTime.now().toUtc().toIso8601String()}).eq('id',id);
   }
+  static Future<void> deleteMenuItem(String id) async {
+    _requireReady();
+    if(await currentUserRole()!='admin') throw const AuthException('هذه الصلاحية للمالك فقط.');
+    await client.from('menu_items').update({'is_available':false,'updated_at':DateTime.now().toUtc().toIso8601String()}).eq('id',id);
+  }
+
+  static Future<void> deleteCoupon(String id) async {
+    _requireReady();
+    if(await currentUserRole()!='admin') throw const AuthException('هذه الصلاحية للمالك فقط.');
+    await client.from('coupons').update({'is_active':false,'updated_at':DateTime.now().toUtc().toIso8601String()}).eq('id',id);
+  }
+
+  static Future<void> deleteOffer(String id) async {
+    _requireReady();
+    if(await currentUserRole()!='admin') throw const AuthException('هذه الصلاحية للمالك فقط.');
+    await client.from('offers').update({'is_active':false,'updated_at':DateTime.now().toUtc().toIso8601String()}).eq('id',id);
+  }
+
   static Future<List<Map<String,dynamic>>> allRestaurantMenu(String restaurantId) async {
     _requireReady();
     if(await currentUserRole()!='admin') throw const AuthException('هذه الصلاحية للمالك فقط.');
