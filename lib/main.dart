@@ -53,6 +53,22 @@ const pizza = 'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?auto
 const chicken = 'https://images.unsplash.com/photo-1626082927389-6cd097cdc6ec?auto=format&fit=crop&w=900&q=85';
 const dessert = 'https://images.unsplash.com/photo-1551024506-0bccd828d307?auto=format&fit=crop&w=900&q=85';
 
+Future<String> resolveCurrentAddress() async {
+  try {
+    if(!await Geolocator.isLocationServiceEnabled()) return 'فعّل الموقع لإظهار عنوانك الحالي';
+    var permission=await Geolocator.checkPermission();
+    if(permission==LocationPermission.denied) permission=await Geolocator.requestPermission();
+    if(permission==LocationPermission.denied||permission==LocationPermission.deniedForever) return 'اسمح لنوفا بالموقع لإظهار عنوانك الحالي';
+    final p=await Geolocator.getCurrentPosition(locationSettings:const LocationSettings(accuracy:LocationAccuracy.medium));
+    final uri=Uri.https('nominatim.openstreetmap.org','/reverse',{'lat':p.latitude.toString(),'lon':p.longitude.toString(),'format':'jsonv2','accept-language':'ar','zoom':'18','addressdetails':'1'});
+    final response=await http.get(uri,headers:{'User-Agent':'NovaDelivery/2.1'});
+    if(response.statusCode!=200)return 'موقعك الحالي • '+p.latitude.toStringAsFixed(5)+'، '+p.longitude.toStringAsFixed(5);
+    final json=Map<String,dynamic>.from(jsonDecode(response.body) as Map);
+    return (json['display_name']??'موقعك الحالي').toString();
+  }catch(_){return 'اضغط لاختيار عنوانك الحالي';}
+}
+
+
 final appCopy = <String,String>{};
 final appMedia = <String,String>{};
 final favoriteRestaurants = <String>{};
@@ -1121,7 +1137,7 @@ class Home extends StatelessWidget {
       IconButton.filledTonal(onPressed:()=>showNotifications(context),icon:const Icon(Icons.notifications_none_rounded,color:ink)),
     ]),
     const SizedBox(height:16),
-    InkWell(onTap:onMap,borderRadius:BorderRadius.circular(18),child:Container(padding:const EdgeInsets.all(14),decoration:BoxDecoration(color:Theme.of(context).colorScheme.surface,borderRadius:BorderRadius.circular(18)),child:Row(children:[const Icon(Icons.location_on_rounded,color:orange),const SizedBox(width:9),Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[const Text('عنوان التوصيل',style:TextStyle(color:muted,fontSize:10)),FutureBuilder<Position>(future:Geolocator.getCurrentPosition(locationSettings:const LocationSettings(accuracy:LocationAccuracy.medium)),builder:(c,s){if(s.hasError)return const Text('اضغط لاختيار عنوانك الحالي',style:TextStyle(fontWeight:FontWeight.bold));if(!s.hasData)return const Text('جاري تحديد عنوانك الحالي…',style:TextStyle(fontWeight:FontWeight.bold));return Text(s.data!.latitude.toStringAsFixed(5)+'، '+s.data!.longitude.toStringAsFixed(5),style:const TextStyle(fontWeight:FontWeight.bold));})])),const Icon(Icons.chevron_left_rounded)]))),
+    InkWell(onTap:onMap,borderRadius:BorderRadius.circular(18),child:Container(padding:const EdgeInsets.all(14),decoration:BoxDecoration(color:Theme.of(context).colorScheme.surface,borderRadius:BorderRadius.circular(18)),child:Row(children:[const Icon(Icons.location_on_rounded,color:orange),const SizedBox(width:9),Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[const Text('عنوان التوصيل',style:TextStyle(color:muted,fontSize:10)),FutureBuilder<String>(future:resolveCurrentAddress(),builder:(c,s){return Text(s.data??'جاري تحديد عنوانك الحالي…',maxLines:2,overflow:TextOverflow.ellipsis,style:const TextStyle(fontWeight:FontWeight.bold));})])),const Icon(Icons.chevron_left_rounded)]))),
     const SizedBox(height:18),
     Container(
       height:210,
