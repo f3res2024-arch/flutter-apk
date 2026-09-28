@@ -123,7 +123,7 @@ class _NovaState extends State<Nova>{
         brightness:dark?Brightness.dark:Brightness.light,
         surface:dark?const Color(0xFF17191F):Colors.white,
       ),
-      scaffoldBackgroundColor:dark?const Color(0xFF090A0E):const Color(0xFFF6F4F1),
+      scaffoldBackgroundColor:dark?const Color(0xFF090A0E):const Color(0xFFF7F8FA),
       appBarTheme:AppBarTheme(
         elevation:0,scrolledUnderElevation:0,backgroundColor:Colors.transparent,
         surfaceTintColor:Colors.transparent,centerTitle:false,
@@ -132,6 +132,8 @@ class _NovaState extends State<Nova>{
       cardTheme:CardThemeData(
         elevation:0,margin:EdgeInsets.zero,
         color:dark?const Color(0xFF17191F):Colors.white,
+        shadowColor:Colors.black.withValues(alpha:.07),
+        surfaceTintColor:Colors.transparent,
         shape:RoundedRectangleBorder(borderRadius:BorderRadius.circular(24)),
       ),
       inputDecorationTheme:InputDecorationTheme(
@@ -180,7 +182,7 @@ class RoleChooser extends StatelessWidget{
   final ValueChanged<UserRole> onRole;
   const RoleChooser({super.key,required this.onRole});
   @override Widget build(BuildContext c)=>Scaffold(
-    backgroundColor:Colors.white,
+    backgroundColor:ink,
     body:SafeArea(child:SingleChildScrollView(
       padding:const EdgeInsets.fromLTRB(18,18,18,28),
       child:Column(children:[
@@ -910,18 +912,89 @@ class _ShellState extends State<Shell> {
   void sub(Line x)=>setState((){if(x.qty>1){x.qty--;}else{cart.remove(x);}});
   void open(R r)=>Navigator.push(context,MaterialPageRoute(builder:(_)=>RestaurantPage(r:r,fav:fav.contains(r.name),onFav:()=>setState((){if(!fav.add(r.name))fav.remove(r.name);}),onAdd:add)));
   @override Widget build(BuildContext context){
-    final pages=[Home(onOpen:open,onMap:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>const MapPage()))),const SearchPage(),const OrdersPage(),CartPage(cart:cart,total:total,onAdd:(x)=>add(x.r,x.m),onSub:sub),ProfilePage(dark:widget.dark,onDark:widget.onDark,onMap:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>const MapPage())))];
-    return Directionality(textDirection:TextDirection.rtl,child:Scaffold(
-      body:SafeArea(child:IndexedStack(index:tab,children:pages)),
-      bottomNavigationBar:NavigationBar(selectedIndex:tab,onDestinationSelected:(v)=>setState(()=>tab=v),destinations:const[
-        NavigationDestination(icon:Icon(Icons.home_outlined),selectedIcon:Icon(Icons.home_rounded),label:'الرئيسية'),
-        NavigationDestination(icon:Icon(Icons.search_rounded),label:'اكتشف'),
-        NavigationDestination(icon:Icon(Icons.receipt_long_outlined),label:'طلباتي'),
-        NavigationDestination(icon:Icon(Icons.shopping_bag_outlined),label:'السلة'),
-        NavigationDestination(icon:Icon(Icons.person_outline),label:'حسابي'),
-      ]),
-      floatingActionButton:count==0?null:FloatingActionButton.extended(backgroundColor:orange,foregroundColor:Colors.white,onPressed:()=>setState(()=>tab=3),icon:const Icon(Icons.shopping_bag_outlined),label:Text(count.toString()+' • '+total.toStringAsFixed(0)+' ج.م')),
-    ));
+    final pages=[
+      Home(onOpen:open,onMap:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>const MapPage()))),
+      SearchPage(onAdd:add),
+      const OrdersPage(),
+      CartPage(cart:cart,total:total,onAdd:(x)=>add(x.r,x.m),onSub:sub),
+      ProfilePage(dark:widget.dark,onDark:widget.onDark,onMap:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>const MapPage()))),
+    ];
+    return Directionality(
+      textDirection:TextDirection.rtl,
+      child:LayoutBuilder(
+        builder:(context,box){
+          final wide=box.maxWidth>=900;
+          final content=Center(
+            child:ConstrainedBox(
+              constraints:const BoxConstraints(maxWidth:1240),
+              child:IndexedStack(index:tab,children:pages),
+            ),
+          );
+          if(!wide){
+            return Scaffold(
+              body:SafeArea(child:content),
+              bottomNavigationBar:NavigationBar(
+                selectedIndex:tab,
+                onDestinationSelected:(v)=>setState(()=>tab=v),
+                destinations:const[
+                  NavigationDestination(icon:Icon(Icons.home_outlined),selectedIcon:Icon(Icons.home_rounded),label:'الرئيسية'),
+                  NavigationDestination(icon:Icon(Icons.search_rounded),label:'اكتشف'),
+                  NavigationDestination(icon:Icon(Icons.receipt_long_outlined),label:'طلباتي'),
+                  NavigationDestination(icon:Icon(Icons.shopping_bag_outlined),label:'السلة'),
+                  NavigationDestination(icon:Icon(Icons.person_outline),label:'حسابي'),
+                ],
+              ),
+              floatingActionButton:count==0?null:FloatingActionButton.extended(
+                backgroundColor:orange,foregroundColor:Colors.white,
+                onPressed:()=>setState(()=>tab=3),
+                icon:const Icon(Icons.shopping_bag_outlined),
+                label:Text(count.toString()+' • '+total.toStringAsFixed(0)+' ج.م'),
+              ),
+            );
+          }
+          return Scaffold(
+            body:SafeArea(
+              child:Row(children:[
+                Container(
+                  width:92,
+                  decoration:BoxDecoration(
+                    color:Theme.of(context).colorScheme.surface,
+                    border:Border(left:BorderSide(color:Theme.of(context).dividerColor.withValues(alpha:.35))),
+                  ),
+                  child:NavigationRail(
+                    selectedIndex:tab,
+                    onDestinationSelected:(v)=>setState(()=>tab=v),
+                    labelType:NavigationRailLabelType.all,
+                    leading:Padding(
+                      padding:const EdgeInsets.only(top:10,bottom:18),
+                      child:Container(
+                        width:48,height:48,
+                        decoration:BoxDecoration(color:orange,borderRadius:BorderRadius.circular(15)),
+                        child:const Icon(Icons.delivery_dining_rounded,color:Colors.white,size:29),
+                      ),
+                    ),
+                    destinations:const[
+                      NavigationRailDestination(icon:Icon(Icons.home_outlined),selectedIcon:Icon(Icons.home_rounded),label:Text('الرئيسية')),
+                      NavigationRailDestination(icon:Icon(Icons.search_rounded),label:Text('اكتشف')),
+                      NavigationRailDestination(icon:Icon(Icons.receipt_long_outlined),label:Text('طلباتي')),
+                      NavigationRailDestination(icon:Icon(Icons.shopping_bag_outlined),label:Text('السلة')),
+                      NavigationRailDestination(icon:Icon(Icons.person_outline),label:Text('حسابي')),
+                    ],
+                  ),
+                ),
+                Expanded(child:content),
+              ]),
+            ),
+            floatingActionButton:count==0?null:FloatingActionButton.extended(
+              backgroundColor:orange,foregroundColor:Colors.white,
+              onPressed:()=>setState(()=>tab=3),
+              icon:const Icon(Icons.shopping_bag_outlined),
+              label:Text(count.toString()+' • '+total.toStringAsFixed(0)+' ج.م'),
+            ),
+          );
+        },
+      ),
+    );
   }
 }
 
@@ -935,6 +1008,20 @@ class Home extends StatelessWidget {
       IconButton.filledTonal(onPressed:()=>showNotifications(context),icon:const Icon(Icons.notifications_none_rounded)),
     ]),
     const SizedBox(height:16),
+    Container(
+      padding:const EdgeInsets.symmetric(horizontal:15,vertical:4),
+      decoration:BoxDecoration(color:Theme.of(context).colorScheme.surface,borderRadius:BorderRadius.circular(18),boxShadow:const[BoxShadow(color:Color(0x0B000000),blurRadius:18,offset:Offset(0,6))]),
+      child:const TextField(
+        decoration:InputDecoration(
+          hintText:'إيه نفسك فيه النهارده؟',
+          prefixIcon:Icon(Icons.search_rounded,color:orange),
+          suffixIcon:Icon(Icons.tune_rounded,color:muted),
+          border:InputBorder.none,
+          filled:false,
+        ),
+      ),
+    ),
+    const SizedBox(height:12),
     InkWell(onTap:onMap,borderRadius:BorderRadius.circular(18),child:Container(padding:const EdgeInsets.all(14),decoration:BoxDecoration(color:Theme.of(context).colorScheme.surface,borderRadius:BorderRadius.circular(18)),child:const Row(children:[Icon(Icons.location_on_rounded,color:orange),SizedBox(width:9),Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text('عنوان التوصيل',style:TextStyle(color:muted,fontSize:10)),Text('المنصورة • اختر موقعك على الخريطة',style:TextStyle(fontWeight:FontWeight.bold))])),Icon(Icons.chevron_left_rounded)]))),
     const SizedBox(height:18),
     Container(
@@ -979,7 +1066,7 @@ class CardR extends StatelessWidget {
     ]),
     Padding(padding:const EdgeInsets.all(14),child:Column(children:[
       Row(children:[Expanded(child:Text(r.name,style:const TextStyle(fontSize:17,fontWeight:FontWeight.w900))),Text(r.reviews.toString()+' تقييم',style:const TextStyle(color:muted,fontSize:10))]),
-      const SizedBox(height:6),Row(children:[const Icon(Icons.restaurant_menu,size:15,color:muted),const SizedBox(width:5),Text(r.type,style:const TextStyle(color:muted,fontSize:11)),const Spacer(),const Icon(Icons.access_time,size:15,color:muted),const SizedBox(width:4),Text('توصيل سريع',style:const TextStyle(color:muted,fontSize:11))]),
+      const SizedBox(height:6),Row(children:[const Icon(Icons.restaurant_menu,size:15,color:muted),const SizedBox(width:5),Text(r.type,style:const TextStyle(color:muted,fontSize:11)),const Spacer(),const Icon(Icons.access_time,size:15,color:muted),const SizedBox(width:4),Text('25–40 دقيقة',style:const TextStyle(color:muted,fontSize:11))]),
       const SizedBox(height:7),Row(children:[const Icon(Icons.location_on_outlined,size:15,color:orange),const SizedBox(width:4),Expanded(child:Text(r.address,maxLines:1,overflow:TextOverflow.ellipsis,style:const TextStyle(color:muted,fontSize:10)))]),
     ])),
   ])));
@@ -1037,7 +1124,7 @@ class _SearchPageState extends State<SearchPage> {
           child: CardR(
             r: r,
             onTap: () => Navigator.push(c, MaterialPageRoute(
-              builder: (_) => RestaurantPage(r: r, fav: false, onFav: () {}, onAdd: (_, __) {}),
+              builder: (_) => RestaurantPage(r: r, fav: false, onFav: () {}, onAdd: widget.onAdd),
             )),
           ),
         )),
@@ -1045,7 +1132,7 @@ class _SearchPageState extends State<SearchPage> {
     );
   }
 }
-class SearchPage extends StatefulWidget{const SearchPage({super.key});@override State<SearchPage> createState()=>_SearchPageState();}
+class SearchPage extends StatefulWidget{final void Function(R,M) onAdd; const SearchPage({super.key,required this.onAdd}); @override State<SearchPage> createState()=>_SearchPageState();}
 class OTile extends StatelessWidget {
   final String id, shop, status;
   final bool active;
