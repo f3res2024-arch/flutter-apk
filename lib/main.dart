@@ -1015,8 +1015,10 @@ class Home extends StatelessWidget {
     Container(
       padding:const EdgeInsets.symmetric(horizontal:15,vertical:4),
       decoration:BoxDecoration(color:Theme.of(context).colorScheme.surface,borderRadius:BorderRadius.circular(18),boxShadow:const[BoxShadow(color:Color(0x0B000000),blurRadius:18,offset:Offset(0,6))]),
-      child:const TextField(
-        decoration:InputDecoration(
+      child:TextField(
+        readOnly:true,
+        onTap:()=>onSearch(''),
+        decoration:const InputDecoration(
           hintText:'إيه نفسك فيه النهارده؟',
           prefixIcon:Icon(Icons.search_rounded,color:orange),
           suffixIcon:Icon(Icons.tune_rounded,color:muted),
