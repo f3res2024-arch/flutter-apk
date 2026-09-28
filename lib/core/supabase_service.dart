@@ -356,6 +356,83 @@ class NovaSupabase {
     await client.from('notifications').update({'is_read': true}).eq('id', id).eq('user_id', currentUser!.id);
   }
 
+  static Future<String> createRestaurant({required String name, String description='', String phone='', double deliveryFee=0, double minOrder=0}) async {
+    _requireReady();
+    if(await currentUserRole()!='admin') throw const AuthException('هذه الصلاحية للمالك فقط.');
+    final row=await client.from('restaurants').insert({'name':name.trim(),'description':description.trim(),'phone':phone.trim(),'delivery_fee':deliveryFee,'min_order':minOrder,'is_active':true}).select('id').single();
+    return row['id'].toString();
+  }
+  static Future<void> deleteRestaurant(String id) async {
+    _requireReady();
+    if(await currentUserRole()!='admin') throw const AuthException('هذه الصلاحية للمالك فقط.');
+    await client.from('restaurants').update({'is_active':false,'updated_at':DateTime.now().toUtc().toIso8601String()}).eq('id',id);
+  }
+  static Future<List<Map<String,dynamic>>> allRestaurantMenu(String restaurantId) async {
+    _requireReady();
+    if(await currentUserRole()!='admin') throw const AuthException('هذه الصلاحية للمالك فقط.');
+    final rows=await client.from('menu_items').select('*, menu_categories(name)').eq('restaurant_id',restaurantId).order('sort_order');
+    return List<Map<String,dynamic>>.from(rows);
+  }
+  static Future<void> setMenuItemAvailability(String id,bool available) async {
+    _requireReady();
+    if(await currentUserRole()!='admin') throw const AuthException('هذه الصلاحية للمالك فقط.');
+    await client.from('menu_items').update({'is_available':available,'updated_at':DateTime.now().toUtc().toIso8601String()}).eq('id',id);
+  }
+  static Future<void> addMenuItemFull(String restaurantId,{required String name,required double price,String description='',String? imageUrl,String? categoryId}) async {
+    _requireReady();
+    if(await currentUserRole()!='admin') throw const AuthException('هذه الصلاحية للمالك فقط.');
+    await client.from('menu_items').insert({'restaurant_id':restaurantId,'name':name.trim(),'description':description.trim(),'price':price,'image_url':imageUrl,'category_id':categoryId,'is_available':true});
+  }
+  static Future<List<Map<String,dynamic>>> ownerCoupons() async {
+    _requireReady();
+    if(await currentUserRole()!='admin') throw const AuthException('هذه الصلاحية للمالك فقط.');
+    final rows=await client.from('coupons').select().order('created_at',ascending:false);
+    return List<Map<String,dynamic>>.from(rows);
+  }
+  static Future<String> createCoupon({required String code,required String title,required String discountType,required double discountValue,double minOrder=0,double? maxDiscount,int? usageLimit,DateTime? startsAt,DateTime? endsAt,String description=''}) async {
+    _requireReady();
+    if(await currentUserRole()!='admin') throw const AuthException('هذه الصلاحية للمالك فقط.');
+    final row=await client.from('coupons').insert({'code':code.trim().toUpperCase(),'title':title.trim(),'description':description.trim(),'discount_type':discountType,'discount_value':discountValue,'min_order':minOrder,'max_discount':maxDiscount,'usage_limit':usageLimit,'starts_at':(startsAt??DateTime.now()).toUtc().toIso8601String(),'ends_at':endsAt?.toUtc().toIso8601String(),'is_active':true}).select('id').single();
+    return row['id'].toString();
+  }
+  static Future<void> updateCoupon(String id,Map<String,dynamic> values) async {
+    _requireReady();
+    if(await currentUserRole()!='admin') throw const AuthException('هذه الصلاحية للمالك فقط.');
+    values['updated_at']=DateTime.now().toUtc().toIso8601String();
+    await client.from('coupons').update(values).eq('id',id);
+  }
+  static Future<List<Map<String,dynamic>>> ownerOffers() async {
+    _requireReady();
+    if(await currentUserRole()!='admin') throw const AuthException('هذه الصلاحية للمالك فقط.');
+    final rows=await client.from('offers').select('*, coupons(code,title)').order('sort_order').order('created_at',ascending:false);
+    return List<Map<String,dynamic>>.from(rows);
+  }
+  static Future<String> createOffer({required String title,String subtitle='',String? imageUrl,String? couponId,int sortOrder=0}) async {
+    _requireReady();
+    if(await currentUserRole()!='admin') throw const AuthException('هذه الصلاحية للمالك فقط.');
+    final row=await client.from('offers').insert({'title':title.trim(),'subtitle':subtitle.trim(),'image_url':imageUrl,'coupon_id':couponId,'sort_order':sortOrder,'is_active':true}).select('id').single();
+    return row['id'].toString();
+  }
+  static Future<void> updateOffer(String id,Map<String,dynamic> values) async {
+    _requireReady();
+    if(await currentUserRole()!='admin') throw const AuthException('هذه الصلاحية للمالك فقط.');
+    values['updated_at']=DateTime.now().toUtc().toIso8601String();
+    await client.from('offers').update(values).eq('id',id);
+  }
+  static Future<String?> uploadOfferImage(String offerId, Uint8List bytes) async {
+    _requireReady();
+    if(await currentUserRole()!='admin') throw const AuthException('هذه الصلاحية للمالك فقط.');
+    final path='content/offers/'+offerId+'/'+DateTime.now().millisecondsSinceEpoch.toString()+'.jpg';
+    await client.storage.from('nova-media').uploadBinary(path,bytes,fileOptions:const FileOptions(contentType:'image/jpeg'));
+    return client.storage.from('nova-media').getPublicUrl(path);
+  }
+  static Future<String?> uploadRestaurantCover(String restaurantId, Uint8List bytes) async {
+    _requireReady();
+    if(await currentUserRole()!='admin') throw const AuthException('هذه الصلاحية للمالك فقط.');
+    final path='restaurants/'+restaurantId+'/cover-'+DateTime.now().millisecondsSinceEpoch.toString()+'.jpg';
+    await client.storage.from('nova-media').uploadBinary(path,bytes,fileOptions:const FileOptions(contentType:'image/jpeg'));
+    return client.storage.from('nova-media').getPublicUrl(path);
+  }
   static void _requireReady() {
     if (!_initialized) {
       final error = _initializationError;
