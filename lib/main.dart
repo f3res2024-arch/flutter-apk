@@ -1784,6 +1784,22 @@ class _OwnerStudioPageState extends State<OwnerStudioPage> {
   }
 }
 
+Widget st(BuildContext c, IconData icon, String titleText, String sub, VoidCallback onTap, {Widget? trailing}) {
+  return Container(
+    margin:const EdgeInsets.only(bottom:9),
+    decoration:BoxDecoration(color:Theme.of(c).colorScheme.surface,borderRadius:BorderRadius.circular(18)),
+    child:ListTile(
+      onTap:onTap,
+      leading:Container(
+        padding:const EdgeInsets.all(10),
+        decoration:BoxDecoration(color:orange.withValues(alpha:.1),borderRadius:BorderRadius.circular(13)),
+        child:Icon(icon,color:orange),
+      ),
+      title:Text(titleText,style:const TextStyle(fontWeight:FontWeight.w800,fontSize:14)),
+      subtitle:Text(sub,style:const TextStyle(color:muted,fontSize:11)),
+      trailing:trailing??const Icon(Icons.chevron_left),
+    ),
+  );
 }
 
 void showNotifications(BuildContext c) {
