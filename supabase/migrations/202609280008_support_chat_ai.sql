@@ -49,9 +49,6 @@ create policy "support conversations customer read" on public.support_conversati
 drop policy if exists "support conversations customer create" on public.support_conversations;
 create policy "support conversations customer create" on public.support_conversations for insert to authenticated with check (customer_id = auth.uid());
 
-drop policy if exists "support conversations customer update" on public.support_conversations;
-create policy "support conversations customer update" on public.support_conversations for update to authenticated using (customer_id = auth.uid() or private.is_admin()) with check (customer_id = auth.uid() or private.is_admin());
-
 drop policy if exists "support messages read" on public.support_messages;
 create policy "support messages read" on public.support_messages for select to authenticated using (
   private.is_admin() or exists(select 1 from public.support_conversations c where c.id = conversation_id and c.customer_id = auth.uid())
@@ -70,7 +67,7 @@ create policy "support messages admin insert" on public.support_messages for ins
 );
 
 create or replace function public.touch_support_conversation()
-returns trigger language plpgsql security invoker as $$
+returns trigger language plpgsql security invoker set search_path = public, private as $
 begin
   update public.support_conversations
   set last_message_at = new.created_at, updated_at = now(),
