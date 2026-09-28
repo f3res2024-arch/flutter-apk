@@ -68,6 +68,7 @@ class NovaSupabase {
     required String password,
     required String role,
     String? fullName,
+    String? phone,
   }) async {
     _requireReady();
     return client.auth.signUp(
@@ -77,6 +78,7 @@ class NovaSupabase {
       data: {
         'requested_role': role,
         'full_name': (fullName==null||fullName.trim().isEmpty) ? email.trim().split('@').first : fullName.trim(),
+        'phone': (phone==null||phone.trim().isEmpty) ? null : phone.trim(),
       },
     );
   }
