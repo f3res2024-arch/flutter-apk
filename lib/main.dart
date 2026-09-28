@@ -1870,11 +1870,11 @@ Future<void> checkout(BuildContext c, List<Line> cart, double total, VoidCallbac
               ListTile(leading:const Icon(Icons.add_location_alt,color:orange),title:const Text('إضافة عنوان جديد'),onTap:()async{Navigator.pop(sheet);final created=await addAddressDialog(sheet);if(created!=null&&sheet.mounted)setSheet(()=>selected=created);}),
             ])));
           }),
-          st(sheet,Icons.payments_rounded,'طريقة الدفع',payment=='cash'?'الدفع عند الاستلام':payment=='card'?'بطاقة':'محفظة',(){
+          st(sheet,Icons.payments_rounded,'طريقة الدفع','الدفع عند الاستلام — الدفع الإلكتروني غير مفعّل بعد',(){
             showModalBottomSheet(context:sheet,builder:(_)=>Directionality(textDirection:TextDirection.rtl,child:Column(mainAxisSize:MainAxisSize.min,children:[
-              ListTile(title:const Text('الدفع عند الاستلام'),leading:const Icon(Icons.payments),onTap:(){setSheet(()=>payment='cash');Navigator.pop(sheet);}),
-              ListTile(title:const Text('بطاقة'),leading:const Icon(Icons.credit_card),onTap:(){setSheet(()=>payment='card');Navigator.pop(sheet);}),
-              ListTile(title:const Text('محفظة'),leading:const Icon(Icons.account_balance_wallet),onTap:(){setSheet(()=>payment='wallet');Navigator.pop(sheet);}),
+              ListTile(title:const Text('الدفع عند الاستلام'),leading:const Icon(Icons.payments,color:orange),onTap:(){setSheet(()=>payment='cash');Navigator.pop(sheet);}),
+              ListTile(title:const Text('بطاقة'),subtitle:const Text('سيتم تفعيلها بعد ربط بوابة دفع حقيقية',style:TextStyle(color:muted,fontSize:11)),leading:const Icon(Icons.credit_card,color:Colors.black26),enabled:false),
+              ListTile(title:const Text('محفظة'),subtitle:const Text('سيتم تفعيلها بعد ربط مزود المحفظة',style:TextStyle(color:muted,fontSize:11)),leading:const Icon(Icons.account_balance_wallet,color:Colors.black26),enabled:false),
             ])));
           }),
           st(sheet,Icons.local_offer_rounded,'كود الخصم','اضغط لإدخال كود NOVA20 أو FREEDEL',()=>showDialog(context:sheet,builder:(_)=>AlertDialog(title:const Text('العروض'),content:const Text('NOVA20: خصم 20% على أول طلب\nFREEDEL: توصيل مجاني على المطاعم المختارة'),actions:[TextButton(onPressed:()=>Navigator.pop(sheet),child:const Text('إغلاق'))]))),
