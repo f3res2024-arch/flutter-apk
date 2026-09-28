@@ -226,10 +226,20 @@ class NovaSupabase {
     if (currentUser == null) throw const AuthException('يجب تسجيل الدخول أولاً.');
     final restaurant = await client.from('restaurants').select('id').eq('name', restaurantName).eq('is_active', true).maybeSingle();
     if (restaurant == null) throw const AuthException('المطعم غير متاح حالياً.');
-    final normalized = items.map((x) => {
-      'menu_item_id': x['menu_item_id'],
-      'quantity': x['quantity'],
-    }).toList();
+    final normalized = <Map<String, dynamic>>[];
+    for (final item in items) {
+      final menu = await client.from('menu_items')
+          .select('id')
+          .eq('restaurant_id', restaurant['id'])
+          .eq('name', item['name'])
+          .eq('is_available', true)
+          .maybeSingle();
+      if (menu == null) throw AuthException('الصنف ${item['name']} غير متاح حالياً.');
+      normalized.add({
+        'menu_item_id': menu['id'],
+        'quantity': item['quantity'],
+      });
+    }
     final key = '${currentUser!.id}-${DateTime.now().microsecondsSinceEpoch}';
     final result = await client.rpc('create_customer_order', params: {
       'p_restaurant_id': restaurant['id'],
