@@ -124,6 +124,7 @@ class RoleChooser extends StatelessWidget {
         const Text('نوفا ديليفري',style:TextStyle(color:Colors.white54,fontSize:11)),
       ]))),
     ],
+    ),
   );
   Widget roleButton(BuildContext c,IconData icon,String title,String sub,VoidCallback tap,bool filled)=>Material(
     color:filled?orange:const Color(0xE91A1D24),
@@ -208,7 +209,7 @@ class CourierDashboard extends StatefulWidget {
 class _CourierDashboardState extends State<CourierDashboard>{
   bool online=true; int tab=0;
   @override Widget build(BuildContext c)=>Scaffold(
-    appBar:AppBar(title:const BrandHero(),actions:[IconButton(onPressed:onLogout,icon:const Icon(Icons.logout))]),
+    appBar:AppBar(title:const BrandHero(),actions:[IconButton(onPressed:widget.onLogout,icon:const Icon(Icons.logout))]),
     body:SafeArea(child:IndexedStack(index:tab,children:[dashboard(),earnings(),account()])),
     bottomNavigationBar:NavigationBar(selectedIndex:tab,onDestinationSelected:(v)=>setState(()=>tab=v),destinations:const[
       NavigationDestination(icon:Icon(Icons.dashboard_outlined),label:'الرئيسية'),
@@ -233,7 +234,7 @@ class _CourierDashboardState extends State<CourierDashboard>{
   ]));
   Widget earnings()=>ListView(padding:const EdgeInsets.all(18),children:[const Text('الأرباح',style:TextStyle(fontSize:29,fontWeight:FontWeight.w900)),const SizedBox(height:14),metric('دخل اليوم','486 ج.م',Icons.trending_up),metric('طلبات اليوم','9 طلبات',Icons.local_shipping),metric('الرصيد','1,840 ج.م',Icons.account_balance_wallet)]);
   Widget metric(String a,String b,IconData i)=>Container(margin:const EdgeInsets.only(bottom:11),padding:const EdgeInsets.all(17),decoration:BoxDecoration(color:Theme.of(context).colorScheme.surface,borderRadius:BorderRadius.circular(20)),child:Row(children:[CircleAvatar(backgroundColor:orange.withValues(alpha:.1),child:Icon(i,color:orange)),const SizedBox(width:12),Text(a,style:const TextStyle(color:muted)),const Spacer(),Text(b,style:const TextStyle(fontSize:18,fontWeight:FontWeight.w900))]));
-  Widget account()=>ListView(padding:const EdgeInsets.all(18),children:[const CircleAvatar(radius:40,backgroundColor:orange,child:Icon(Icons.person,color:Colors.white,size:40)),const SizedBox(height:12),const Center(child:Text('مندوب نوفا',style:TextStyle(fontSize:23,fontWeight:FontWeight.w900))),const SizedBox(height:15),ListTile(onTap:()=>snack(context,'البيانات الشخصية'),leading:const Icon(Icons.person_outline,color:orange),title:const Text('البيانات الشخصية'),trailing:const Icon(Icons.chevron_left)),ListTile(onTap:()=>snack(context,'المركبة والمستندات'),leading:const Icon(Icons.two_wheeler,color:orange),title:const Text('المركبة والمستندات'),trailing:const Icon(Icons.chevron_left)),ListTile(onTap:()=>snack(context,'الدعم'),leading:const Icon(Icons.support_agent,color:orange),title:const Text('الدعم'),trailing:const Icon(Icons.chevron_left)),OutlinedButton.icon(onPressed:onLogout,icon:const Icon(Icons.logout),label:const Text('تسجيل الخروج'))]);
+  Widget account()=>ListView(padding:const EdgeInsets.all(18),children:[const CircleAvatar(radius:40,backgroundColor:orange,child:Icon(Icons.person,color:Colors.white,size:40)),const SizedBox(height:12),const Center(child:Text('مندوب نوفا',style:TextStyle(fontSize:23,fontWeight:FontWeight.w900))),const SizedBox(height:15),ListTile(onTap:()=>snack(context,'البيانات الشخصية'),leading:const Icon(Icons.person_outline,color:orange),title:const Text('البيانات الشخصية'),trailing:const Icon(Icons.chevron_left)),ListTile(onTap:()=>snack(context,'المركبة والمستندات'),leading:const Icon(Icons.two_wheeler,color:orange),title:const Text('المركبة والمستندات'),trailing:const Icon(Icons.chevron_left)),ListTile(onTap:()=>snack(context,'الدعم'),leading:const Icon(Icons.support_agent,color:orange),title:const Text('الدعم'),trailing:const Icon(Icons.chevron_left)),OutlinedButton.icon(onPressed:widget.onLogout,icon:const Icon(Icons.logout),label:const Text('تسجيل الخروج'))]);
 }
 
 class Shell extends StatefulWidget {
@@ -460,6 +461,10 @@ class CartPage extends StatelessWidget {
       ],
     );
   }
+}
+
+void snack(BuildContext c,String message){
+  ScaffoldMessenger.of(c).showSnackBar(SnackBar(content:Text(message)));
 }
 
 Widget line(String s,double v,{bool bold=false})=>Padding(padding:const EdgeInsets.symmetric(vertical:5),child:Row(children:[Expanded(child:Text(s,style:TextStyle(fontWeight:bold?FontWeight.w900:FontWeight.w500))),Text(v.toStringAsFixed(0)+' ج.م',style:TextStyle(fontWeight:FontWeight.w900,color:bold?orange:null))]));
