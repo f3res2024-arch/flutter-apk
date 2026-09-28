@@ -19,10 +19,10 @@ class NovaSupabase {
     return client.auth.signInWithPassword(email: email.trim(), password: password);
   }
 
-  static Future<AuthResponse> signUp({required String email, required String password, required UserRole role}) async {
+  static Future<AuthResponse> signUp({required String email, required String password, required String role}) async {
     if (!configured) throw const AuthException('خدمة الحساب غير مهيأة بعد.');
-    final response = await client.auth.signUp(email: email.trim(), password: password, emailRedirectTo: authRedirectUrl, data: {'role': role.name});
-    if (response.user != null) { try { await setUserRole(response.user!.id, role.name); } catch (_) {} }
+    final response = await client.auth.signUp(email: email.trim(), password: password, emailRedirectTo: authRedirectUrl, data: {'role': role});
+    if (response.user != null) { try { await setUserRole(response.user!.id, role); } catch (_) {} }
     return response;
   }
 
