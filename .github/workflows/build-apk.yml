@@ -22,10 +22,12 @@ jobs:
 
       - name: Generate Android project
         run: |
-          flutter create . --platforms=android --project-name delivery --org nova
+          flutter create . --platforms=android,ios --project-name delivery --org nova
           # Generate the Android package directly as nova.delivery so the
           # MainActivity package, namespace, and application id all agree.
           sed -i 's/android:label="[^"]*"/android:label="نوفا ديليفري"/' android/app/src/main/AndroidManifest.xml
+          python3 -c "from pathlib import Path; p=Path('android/app/src/main/AndroidManifest.xml'); s=p.read_text(); s=s.replace('</activity>', '<intent-filter><action android:name=\"android.intent.action.VIEW\"/><category android:name=\"android.intent.category.DEFAULT\"/><category android:name=\"android.intent.category.BROWSABLE\"/><data android:scheme=\"nova\" android:host=\"auth-callback\"/></intent-filter></activity>', 1); p.write_text(s)"
+          python3 -c "from pathlib import Path; p=Path('ios/Runner/Info.plist'); s=p.read_text(); block='\\n\\t<key>CFBundleURLTypes</key>\\n\\t<array><dict><key>CFBundleTypeRole</key><string>Editor</string><key>CFBundleURLSchemes</key><array><string>nova</string></array></dict></array>'; s=s.replace('</dict>\\n</plist>', block+'\\n</dict>\\n</plist>'); p.write_text(s)"
           grep -R 'package nova.delivery' android/app/src/main/kotlin android/app/src/main/java
           grep -n 'applicationId = "nova.delivery"' android/app/build.gradle.kts
 
