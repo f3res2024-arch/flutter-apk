@@ -23,8 +23,54 @@ jobs:
       - name: Generate Android project
         run: |
           flutter create . --platforms=android,ios --project-name delivery --org nova
-          sed -i 's/android:label="[^"]*"/android:label="نوفا ديليفري"/' android/app/src/main/AndroidManifest.xml
-          python3 -c "from pathlib import Path; p=Path('android/app/src/main/AndroidManifest.xml'); s=p.read_text(); s=s.replace('</activity>', '<intent-filter><action android:name="android.intent.action.VIEW"/><category android:name="android.intent.category.DEFAULT"/><category android:name="android.intent.category.BROWSABLE"/><data android:scheme="nova" android:host="auth-callback"/></intent-filter></activity>', 1); p.write_text(s)"
+          python3 - <<'PY'
+          from pathlib import Path
+          import xml.etree.ElementTree as ET
+
+          manifest = Path("android/app/src/main/AndroidManifest.xml")
+          android_ns = "http://schemas.android.com/apk/res/android"
+          ET.register_namespace("android", android_ns)
+
+          tree = ET.parse(manifest)
+          root = tree.getroot()
+          application = root.find("application")
+          if application is None:
+              raise SystemExit("AndroidManifest.xml has no <application> element")
+
+          application.set(f"{{{android_ns}}}label", "نوفا ديليفري")
+
+          activity = None
+          for candidate in application.findall("activity"):
+              if any(
+                  intent.find("action").get(f"{{{android_ns}}}name") == "android.intent.action.MAIN"
+                  for intent in candidate.findall("intent-filter")
+                  if intent.find("action") is not None and intent.find("action").get(f"{{{android_ns}}}name")
+              ):
+                  activity = candidate
+                  break
+
+          if activity is None:
+              raise SystemExit("Could not locate the launcher activity in AndroidManifest.xml")
+
+          # Remove an old Nova callback filter if the template ever already contains one.
+          for intent in list(activity.findall("intent-filter")):
+              data = intent.find("data")
+              if data is not None and data.get(f"{{{android_ns}}}scheme") == "nova" and data.get(f"{{{android_ns}}}host") == "auth-callback":
+                  activity.remove(intent)
+
+          callback = ET.SubElement(activity, "intent-filter")
+          ET.SubElement(callback, "action", {f"{{{android_ns}}}name": "android.intent.action.VIEW"})
+          ET.SubElement(callback, "category", {f"{{{android_ns}}}name": "android.intent.category.DEFAULT"})
+          ET.SubElement(callback, "category", {f"{{{android_ns}}}name": "android.intent.category.BROWSABLE"})
+          ET.SubElement(callback, "data", {
+              f"{{{android_ns}}}scheme": "nova",
+              f"{{{android_ns}}}host": "auth-callback",
+          })
+
+          tree.write(manifest, encoding="utf-8", xml_declaration=False)
+          ET.parse(manifest)
+          print("AndroidManifest.xml validated successfully")
+          PY
           python3 -c "from pathlib import Path; p=Path('ios/Runner/Info.plist'); s=p.read_text(); block='\\n\\t<key>CFBundleURLTypes</key>\\n\\t<array><dict><key>CFBundleTypeRole</key><string>Editor</string><key>CFBundleURLSchemes</key><array><string>nova</string></array></dict></array>'; s=s.replace('</dict>\\n</plist>', block+'\\n</dict>\\n</plist>'); p.write_text(s)"
           grep -R 'package nova.delivery' android/app/src/main/kotlin android/app/src/main/java
           grep -n 'applicationId = "nova.delivery"' android/app/build.gradle.kts
