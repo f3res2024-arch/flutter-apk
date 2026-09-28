@@ -87,7 +87,7 @@ class Nova extends StatefulWidget {
   @override State<Nova> createState()=>_NovaState();
 }
 class _NovaState extends State<Nova>{
-  bool dark=true;
+  bool dark=false;
   UserRole? role;
   bool logged=false;
   bool passwordRecovery=false;
@@ -180,7 +180,7 @@ class RoleChooser extends StatelessWidget{
   final ValueChanged<UserRole> onRole;
   const RoleChooser({super.key,required this.onRole});
   @override Widget build(BuildContext c)=>Scaffold(
-    backgroundColor:const Color(0xFF050608),
+    backgroundColor:Colors.white,
     body:SafeArea(child:SingleChildScrollView(
       padding:const EdgeInsets.fromLTRB(18,18,18,28),
       child:Column(children:[
