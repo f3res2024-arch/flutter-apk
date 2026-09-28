@@ -336,7 +336,7 @@ class _SignupScreenState extends State<SignupScreen>{
     if(p!=confirm.text){snack(context,'كلمتا المرور غير متطابقتين');return;}
     setState(()=>busy=true);
     try{
-      final res=await NovaSupabase.signUp(email:e,password:p,role:widget.role.name,fullName:n.text.trim());
+      final res=await NovaSupabase.signUp(email:e,password:p,role:widget.role.name,fullName:name.text.trim());
       if(!mounted)return;
       if(res.session!=null){Navigator.pop(context);snack(context,'تم إنشاء حسابك بنجاح 🎉');}
       else{
