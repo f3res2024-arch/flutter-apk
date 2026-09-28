@@ -69,7 +69,7 @@ final data = <R>[
   R('بازوكا','فراخ مقلية','شارع الجيش أمام استاد المنصورة شيل أوت','https://s3-eu-west-1.amazonaws.com/elmenusv5-stg/Normal/63a9b1bd-370e-48c4-a1ae-a8803fe1af47.jpg','المنيوز',4.6,895,31.0470,31.3544,[
     'شارع الجيش — أمام استاد المنصورة شيل أوت','جامعة المنصورة — شارع الجمهورية، أمام مركز طب وجراحة العيون'
   ],[
-    M('وجبة بازوكا سنايبر','3 قطع دجاج + بطاطس + خبز + كول سلو',210,chicken),M('ريزو بقطع الدجاج','صوص حار أو باربيكيو',95,chicken),M('ساندوتش تشيكن رانش','دجاج مقرمش ورانش وموتزاريلا',145,chicken),M('أصابع الموتزاريلا','3 قطع مع صوص',50,chicken)
+    M('وجبة بازوكا سنايبر','3 قطع دجاج + بطاطس + خبز + كول سلو',225,chicken),M('ريزو بقطع الدجاج','صوص حار أو باربيكيو',95,chicken),M('ساندوتش تشيكن رانش','دجاج مقرمش ورانش وموتزاريلا',145,chicken),M('أصابع الموتزاريلا','3 قطع مع صوص',50,chicken)
   ]),
   R('كاتشاب','برجر وبيتزا','44 شارع جيهان، أمام الدفاع المدني، حي الجامعة',burger,'المنيوز',4.5,44,31.0450,31.3509,[
     '44 شارع جيهان، أمام الدفاع المدني، حي الجامعة'
@@ -114,6 +114,8 @@ class _NovaState extends State<Nova>{
     try {
       final copy=await NovaSupabase.appContent();
       for(final row in copy){ final k=(row['key']??'').toString(); final v=(row['text_value']??'').toString(); if(k.isNotEmpty&&v.isNotEmpty)appCopy[k]=v; }
+    } catch(_) {}
+    try {
       final rows=await NovaSupabase.catalog();
       if(rows.isEmpty)return;
       data
