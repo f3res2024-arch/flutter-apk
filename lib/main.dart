@@ -9,7 +9,6 @@ import 'package:geolocator/geolocator.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:http/http.dart' as http;
 import 'core/supabase_service.dart';
-import 'owner_studio.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -1197,34 +1196,6 @@ class Cat extends StatelessWidget {
   @override Widget build(BuildContext c)=>Material(color:Colors.transparent,child:InkWell(onTap:()=>Navigator.push(c,MaterialPageRoute(builder:(_)=>CategoryPage(title:n,category:n,onAdd:onAdd))),borderRadius:BorderRadius.circular(22),child:Container(width:104,margin:const EdgeInsets.only(left:10),padding:const EdgeInsets.all(10),decoration:BoxDecoration(color:Colors.white,borderRadius:BorderRadius.circular(22),border:Border.all(color:const Color(0xFFEDEDEF)),boxShadow:const[BoxShadow(color:Color(0x0A000000),blurRadius:18,offset:Offset(0,7))]),child:Column(mainAxisAlignment:MainAxisAlignment.center,children:[Container(width:48,height:48,decoration:BoxDecoration(color:orange.withValues(alpha:.10),shape:BoxShape.circle),child:Icon(icon,color:orange,size:25)),const SizedBox(height:7),Text(n,style:const TextStyle(fontWeight:FontWeight.w900,fontSize:12))]))));
 }
 
-void _openOfferTarget(BuildContext c,Map<String,dynamic> offer,String? code){
-  final type=(offer['target_type']??'coupon').toString();
-  final value=(offer['target_value']??'').toString();
-  if(type=='restaurant' && value.isNotEmpty){
-    final matches=data.where((r)=>r.name==value);
-    if(matches.isNotEmpty){
-      final r=matches.first;
-      Navigator.push(c,MaterialPageRoute(builder:(_)=>RestaurantPage(r:r,fav:false,onFav:(){},onAdd:(_r,m){})));
-      return;
-    }
-  }
-  if(type=='category' && value.isNotEmpty){
-    Navigator.push(c,MaterialPageRoute(builder:(_)=>CategoryPage(title:value,category:value,onAdd:(_r,m){})));
-    return;
-  }
-  if(type=='map'){
-    Navigator.push(c,MaterialPageRoute(builder:(_)=>const MapPage()));
-    return;
-  }
-  showDialog(context:c,builder:(_)=>AlertDialog(
-    title:Text((offer['title']??'عرض نوفا').toString()),
-    content:Text((offer['target_label']??offer['subtitle']??'').toString()+(code==null?'':'\n\nكود العرض: '+code)),
-    actions:[
-      if(code!=null)TextButton(onPressed:(){Clipboard.setData(ClipboardData(text:code));Navigator.pop(c);snack(c,'تم نسخ الكود '+code);},child:const Text('نسخ')),
-      TextButton(onPressed:()=>Navigator.pop(c),child:const Text('إغلاق')),
-    ],
-  ));
-}
 
 class _LivePromoCard extends StatelessWidget{
   final Map<String,dynamic> offer;
