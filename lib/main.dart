@@ -896,7 +896,7 @@ class _ShellState extends State<Shell> {
   void open(R r)=>Navigator.push(context,MaterialPageRoute(builder:(_)=>RestaurantPage(r:r,fav:fav.contains(r.name),onFav:()=>setState((){if(!fav.add(r.name))fav.remove(r.name);}),onAdd:add)));
   @override Widget build(BuildContext context){
     final pages=[
-      Home(onOpen:open,onMap:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>const MapPage())),onSearch:(q)=>setState(()=>tab=1)),
+      Home(onOpen:open,onMap:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>const MapPage())),onSearch:(q)=>setState(()=>tab=1),onAdd:add),
       SearchPage(onAdd:add,onFav:(r)=>setState((){if(!fav.add(r.name))fav.remove(r.name);}),),
       OrdersPage(onTrack:(o)=>Navigator.push(context,MaterialPageRoute(builder:(_)=>CustomerOrderTrackingPage(order:o))),),
       ProfilePage(onMap:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>const MapPage())),onLogout:()=>NovaSupabase.signOut()),
@@ -981,8 +981,8 @@ class _ShellState extends State<Shell> {
 }
 
 class Home extends StatelessWidget {
-  final ValueChanged<R> onOpen; final VoidCallback onMap; final ValueChanged<String> onSearch;
-  const Home({super.key,required this.onOpen,required this.onMap,required this.onSearch});
+  final ValueChanged<R> onOpen; final VoidCallback onMap; final ValueChanged<String> onSearch; final void Function(R,M) onAdd;
+  const Home({super.key,required this.onOpen,required this.onMap,required this.onSearch,required this.onAdd});
   @override Widget build(BuildContext context)=>ListView(padding:const EdgeInsets.fromLTRB(18,10,18,110),children:[
     Row(children:[
       Expanded(child:Center(child:RichText(text:TextSpan(children:[
@@ -1028,7 +1028,7 @@ class Home extends StatelessWidget {
       ),
     ),
     const SizedBox(height:23),title('اختار إللي على مزاجك','عرض الكل'),const SizedBox(height:11),
-    SizedBox(height:112,child:ListView(scrollDirection:Axis.horizontal,children:const[Cat(Icons.lunch_dining_rounded,'برجر'),Cat(Icons.restaurant_rounded,'فراخ'),Cat(Icons.local_pizza_rounded,'بيتزا'),Cat(Icons.cake_rounded,'حلويات'),Cat(Icons.local_drink_rounded,'مشروبات'),Cat(Icons.spa_rounded,'صحي'),Cat(Icons.coffee_rounded,'قهوة'),Cat(Icons.breakfast_dining_rounded,'فطار')])),
+    SizedBox(height:112,child:ListView(scrollDirection:Axis.horizontal,children:[Cat(Icons.lunch_dining_rounded,'برجر',onAdd:onAdd),Cat(Icons.restaurant_rounded,'فراخ',onAdd:onAdd),Cat(Icons.local_pizza_rounded,'بيتزا',onAdd:onAdd),Cat(Icons.cake_rounded,'حلويات',onAdd:onAdd),Cat(Icons.local_drink_rounded,'مشروبات',onAdd:onAdd),Cat(Icons.spa_rounded,'صحي',onAdd:onAdd),Cat(Icons.coffee_rounded,'قهوة',onAdd:onAdd),Cat(Icons.breakfast_dining_rounded,'فطار',onAdd:onAdd)])),
     const SizedBox(height:20),
     const Text('عروض معمولة ليك',style:TextStyle(fontSize:20,fontWeight:FontWeight.w900)),
     const SizedBox(height:11),
@@ -1049,8 +1049,8 @@ class Home extends StatelessWidget {
 Widget title(String a,String b)=>Row(children:[Expanded(child:Text(a,style:const TextStyle(fontSize:20,fontWeight:FontWeight.w900))),Text(b,style:const TextStyle(color:orange,fontSize:12,fontWeight:FontWeight.bold))]);
 
 class Cat extends StatelessWidget {
-  final IconData icon; final String n; const Cat(this.icon,this.n,{super.key});
-  @override Widget build(BuildContext c)=>Material(color:Colors.transparent,child:InkWell(onTap:()=>Navigator.push(c,MaterialPageRoute(builder:(_)=>CategoryPage(title:n,category:n,onAdd:add))),borderRadius:BorderRadius.circular(22),child:Container(width:104,margin:const EdgeInsets.only(left:10),padding:const EdgeInsets.all(10),decoration:BoxDecoration(color:Colors.white,borderRadius:BorderRadius.circular(22),border:Border.all(color:const Color(0xFFEDEDEF)),boxShadow:const[BoxShadow(color:Color(0x0A000000),blurRadius:18,offset:Offset(0,7))]),child:Column(mainAxisAlignment:MainAxisAlignment.center,children:[Container(width:48,height:48,decoration:BoxDecoration(color:orange.withValues(alpha:.10),shape:BoxShape.circle),child:Icon(icon,color:orange,size:25)),const SizedBox(height:7),Text(n,style:const TextStyle(fontWeight:FontWeight.w900,fontSize:12))]))));
+  final IconData icon; final String n; final void Function(R,M) onAdd; const Cat(this.icon,this.n,{super.key,required this.onAdd});
+  @override Widget build(BuildContext c)=>Material(color:Colors.transparent,child:InkWell(onTap:()=>Navigator.push(c,MaterialPageRoute(builder:(_)=>CategoryPage(title:n,category:n,onAdd:onAdd))),borderRadius:BorderRadius.circular(22),child:Container(width:104,margin:const EdgeInsets.only(left:10),padding:const EdgeInsets.all(10),decoration:BoxDecoration(color:Colors.white,borderRadius:BorderRadius.circular(22),border:Border.all(color:const Color(0xFFEDEDEF)),boxShadow:const[BoxShadow(color:Color(0x0A000000),blurRadius:18,offset:Offset(0,7))]),child:Column(mainAxisAlignment:MainAxisAlignment.center,children:[Container(width:48,height:48,decoration:BoxDecoration(color:orange.withValues(alpha:.10),shape:BoxShape.circle),child:Icon(icon,color:orange,size:25)),const SizedBox(height:7),Text(n,style:const TextStyle(fontWeight:FontWeight.w900,fontSize:12))]))));
 }
 
 class _PromoCard extends StatelessWidget{
@@ -1364,7 +1364,7 @@ class _ProfilePageState extends State<ProfilePage>{
       const SizedBox(height:9),
       st(c,Icons.person_outline_rounded,'الاسم والصورة','غيّر الاسم أو صورة البروفايل',editProfile),
       st(c,Icons.location_on_outlined,'العناوين والخريطة','موقعك الحالي والأماكن القريبة',widget.onMap),
-      st(c,Icons.credit_card_rounded,'طرق الدفع','كاش • بطاقة • محفظة',()=>showFeature(c,'طرق الدفع','اختر طريقة الدفع أثناء إتمام الطلب.')),
+      st(c,Icons.credit_card_rounded,'طرق الدفع','الدفع عند الاستلام متاح حالياً • الدفع الإلكتروني قيد الربط',()=>showFeature(c,'طرق الدفع','اختر طريقة الدفع أثناء إتمام الطلب.')),
       st(c,Icons.favorite_border_rounded,'المفضلة','مطاعم وأطباق محفوظة',()=>showFeature(c,'المفضلة','احفظ ما تحبه من صفحات المطاعم.')),
       st(c,Icons.notifications_none_rounded,'الإشعارات','الطلبات والعروض',()=>showNotifications(c)),
       st(c,Icons.security_rounded,'الأمان والخصوصية','إدارة جلسة الحساب',()=>showFeature(c,'الأمان والخصوصية','حسابك يعمل بجلسة Supabase آمنة.')),
