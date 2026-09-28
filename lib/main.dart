@@ -1126,8 +1126,8 @@ class _ShellState extends State<Shell> {
 }
 
 class Home extends StatefulWidget {
-  final ValueChanged<R> widget.onOpen; final VoidCallback widget.onMap; final ValueChanged<String> onSearch; final void Function(R,M) widget.onAdd;
-  const Home({super.key,required this.widget.onOpen,required this.widget.onMap,required this.onSearch,required this.widget.onAdd});
+  final ValueChanged<R> onOpen; final VoidCallback onMap; final ValueChanged<String> onSearch; final void Function(R,M) onAdd;
+  const Home({super.key,required this.onOpen,required this.onMap,required this.onSearch,required this.onAdd});
   @override State<Home> createState()=>_HomeState();
 }
 class _HomeState extends State<Home>{
