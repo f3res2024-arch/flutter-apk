@@ -260,40 +260,389 @@ class _LoginScreenState extends State<LoginScreen> {
   );
 }
 
+
 class CourierDashboard extends StatefulWidget {
   final VoidCallback onLogout;
   const CourierDashboard({super.key,required this.onLogout});
   @override State<CourierDashboard> createState()=>_CourierDashboardState();
 }
+
 class _CourierDashboardState extends State<CourierDashboard>{
-  bool online=true; int tab=0;
+  bool online=true;
+  int tab=0;
+  bool loadingOrders=true;
+  bool actionBusy=false;
+  List<Map<String,dynamic>> orders=[];
+  dynamic realtimeChannel;
+
+  @override void initState(){super.initState();refreshOrders();}
+  @override void dispose(){
+    final channel=realtimeChannel;
+    if(channel!=null) channel.unsubscribe();
+    super.dispose();
+  }
+
+  Future<void> refreshOrders() async {
+    if(!mounted) return;
+    setState(()=>loadingOrders=true);
+    try{
+      if(NovaSupabase.configured && NovaSupabase.client.auth.currentUser!=null){
+        final rows=await NovaSupabase.courierOrders();
+        if(!mounted) return;
+        setState(()=>orders=rows);
+        realtimeChannel ??= NovaSupabase.watchCourierOrders(refreshOrders);
+      }else{
+        setState(()=>orders=[
+          {
+            'id':'demo-2850','customer_name':'أحمد محمد','restaurant_name':'ماكدونالدز',
+            'total':312,'delivery_fee':52,'status':'pending',
+            'pickup_address':'فرع جامعة المنصورة — شارع الجمهورية',
+            'pickup_lat':31.0430,'pickup_lng':31.3560,
+            'delivery_address':'حي الجامعة — المنصورة',
+            'customer_lat':31.0474,'customer_lng':31.3499,
+            'notes':'الدفع عند الاستلام',
+            'order_items':[
+              {'item_name':'بيج ماك','quantity':1,'unit_price':180},
+              {'item_name':'بطاطس مقلية','quantity':2,'unit_price':66},
+            ],
+          },
+          {
+            'id':'demo-2851','customer_name':'محمد علي','restaurant_name':'بازوكا',
+            'total':358,'delivery_fee':68,'status':'pending',
+            'pickup_address':'فرع شارع الجيش — أمام الاستاد',
+            'pickup_lat':31.0470,'pickup_lng':31.3544,
+            'delivery_address':'توريل — المنصورة',
+            'customer_lat':31.0407,'customer_lng':31.3638,
+            'notes':'اتصل عند الوصول',
+            'order_items':[
+              {'item_name':'وجبة بازوكا سنايبر','quantity':1,'unit_price':210},
+              {'item_name':'ساندوتش تشيكن رانش','quantity':1,'unit_price':148},
+            ],
+          },
+        ]);
+      }
+    }catch(e){
+      if(mounted) snack(context,'تعذر تحديث الطلبات: '+e.toString());
+    }finally{
+      if(mounted) setState(()=>loadingOrders=false);
+    }
+  }
+
+  Future<void> acceptOrder(Map<String,dynamic> order) async {
+    if(actionBusy) return;
+    setState(()=>actionBusy=true);
+    try{
+      Map<String,dynamic> claimed=order;
+      if(NovaSupabase.configured && NovaSupabase.client.auth.currentUser!=null){
+        final result=await NovaSupabase.claimOrder(order['id'].toString());
+        if(result==null) throw Exception('الطلب تم أخذه بواسطة مندوب آخر');
+        claimed={...order,...result};
+      }
+      if(!mounted) return;
+      setState(()=>orders.removeWhere((x)=>x['id'].toString()==order['id'].toString()));
+      Navigator.push(context,MaterialPageRoute(builder:(_)=>CourierRoutePage(order:claimed)));
+    }catch(e){
+      if(mounted) snack(context,'لم يتم قبول الطلب: '+e.toString());
+      await refreshOrders();
+    }finally{
+      if(mounted) setState(()=>actionBusy=false);
+    }
+  }
+
+  Future<void> rejectOrder(Map<String,dynamic> order) async {
+    if(actionBusy) return;
+    setState(()=>actionBusy=true);
+    try{
+      if(NovaSupabase.configured && NovaSupabase.client.auth.currentUser!=null){
+        await NovaSupabase.rejectOrder(order['id'].toString());
+      }
+      if(mounted){
+        setState(()=>orders.removeWhere((x)=>x['id'].toString()==order['id'].toString()));
+        snack(context,'تم رفض الطلب وسيظل متاحًا لباقي المناديب');
+      }
+    }catch(e){
+      if(mounted) snack(context,'تعذر رفض الطلب: '+e.toString());
+    }finally{
+      if(mounted) setState(()=>actionBusy=false);
+    }
+  }
+
   @override Widget build(BuildContext c)=>Scaffold(
-    appBar:AppBar(title:const BrandHero(),actions:[IconButton(onPressed:widget.onLogout,icon:const Icon(Icons.logout))]),
+    appBar:AppBar(title:const BrandHero(),actions:[
+      IconButton(onPressed:refreshOrders,icon:const Icon(Icons.refresh_rounded)),
+      IconButton(onPressed:widget.onLogout,icon:const Icon(Icons.logout)),
+    ]),
     body:SafeArea(child:IndexedStack(index:tab,children:[dashboard(),earnings(),account()])),
     bottomNavigationBar:NavigationBar(selectedIndex:tab,onDestinationSelected:(v)=>setState(()=>tab=v),destinations:const[
-      NavigationDestination(icon:Icon(Icons.dashboard_outlined),label:'الرئيسية'),
+      NavigationDestination(icon:Icon(Icons.dashboard_outlined),label:'الطلبات'),
       NavigationDestination(icon:Icon(Icons.account_balance_wallet_outlined),label:'الأرباح'),
       NavigationDestination(icon:Icon(Icons.person_outline),label:'حسابي'),
     ]),
   );
-  Widget dashboard()=>ListView(padding:const EdgeInsets.all(18),children:[
-    Container(padding:const EdgeInsets.all(18),decoration:BoxDecoration(color:ink,borderRadius:BorderRadius.circular(24)),child:Row(children:[
-      const Icon(Icons.two_wheeler,color:orange,size:38),const SizedBox(width:12),
-      const Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text('حالة المندوب',style:TextStyle(color:Colors.white70)),Text('متاح لاستقبال الطلبات',style:TextStyle(color:Colors.white,fontWeight:FontWeight.w900,fontSize:17))])),
-      Switch(value:online,onChanged:(v)=>setState(()=>online=v)),
-    ])),
-    const SizedBox(height:20),const Text('طلبات قريبة منك',style:TextStyle(fontSize:23,fontWeight:FontWeight.w900)),const SizedBox(height:10),
-    job('NV-2850','ماكدونالدز','جامعة المنصورة → حي الجامعة','52 ج.م'),
-    job('NV-2851','بازوكا','شارع الجيش → توريل','68 ج.م'),
+
+  Widget dashboard()=>RefreshIndicator(
+    onRefresh:refreshOrders,
+    child:ListView(
+      physics:const AlwaysScrollableScrollPhysics(),
+      padding:const EdgeInsets.all(18),
+      children:[
+        Container(
+          padding:const EdgeInsets.all(18),
+          decoration:BoxDecoration(color:ink,borderRadius:BorderRadius.circular(24)),
+          child:Row(children:[
+            const Icon(Icons.two_wheeler,color:orange,size:38),const SizedBox(width:12),
+            const Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
+              Text('حالة المندوب',style:TextStyle(color:Colors.white70)),
+              Text('متاح لاستقبال الطلبات',style:TextStyle(color:Colors.white,fontWeight:FontWeight.w900,fontSize:17)),
+            ])),
+            Switch(value:online,onChanged:(v)=>setState(()=>online=v)),
+          ]),
+        ),
+        const SizedBox(height:20),
+        Row(children:[
+          const Expanded(child:Text('طلبات جديدة',style:TextStyle(fontSize:23,fontWeight:FontWeight.w900))),
+          if(orders.isNotEmpty) Chip(label:Text(orders.length.toString()+' متاح')),
+        ]),
+        const SizedBox(height:10),
+        if(loadingOrders && orders.isEmpty)
+          const Padding(padding:EdgeInsets.all(30),child:Center(child:CircularProgressIndicator(color:orange)))
+        else if(!online)
+          const EmptyCourierState(icon:Icons.pause_circle_outline,title:'أنت غير متاح الآن',sub:'فعّل حالة التوفر لاستقبال طلبات جديدة')
+        else if(orders.isEmpty)
+          const EmptyCourierState(icon:Icons.delivery_dining,title:'لا توجد طلبات جديدة',sub:'أي طلب جديد سيظهر هنا فورًا')
+        else
+          ...orders.map(orderCard),
+      ],
+    ),
+  );
+
+  Widget orderCard(Map<String,dynamic> o){
+    final items=List<Map<String,dynamic>>.from((o['order_items'] as List?)??const[]);
+    final total=_money(o['total']);
+    final fee=_money(o['delivery_fee']);
+    final customer=(o['customer_name']??'عميل نوفا').toString();
+    final shop=(o['restaurant_name']??'مطعم نوفا').toString();
+    return Container(
+      margin:const EdgeInsets.only(bottom:13),
+      padding:const EdgeInsets.all(16),
+      decoration:BoxDecoration(
+        color:Theme.of(context).colorScheme.surface,
+        borderRadius:BorderRadius.circular(22),
+        border:Border.all(color:orange.withValues(alpha:.16)),
+      ),
+      child:Column(children:[
+        Row(children:[
+          Container(width:48,height:48,decoration:BoxDecoration(color:orange.withValues(alpha:.11),borderRadius:BorderRadius.circular(15)),child:const Icon(Icons.delivery_dining,color:orange,size:27)),
+          const SizedBox(width:11),
+          Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
+            Text(shop,style:const TextStyle(fontWeight:FontWeight.w900,fontSize:16)),
+            Text('العميل: '+customer,style:const TextStyle(color:muted,fontSize:11)),
+            Text('#'+_shortId(o['id']),style:const TextStyle(color:muted,fontSize:10)),
+          ])),
+          Text(total.toStringAsFixed(0)+' ج.م',style:const TextStyle(color:orange,fontWeight:FontWeight.w900,fontSize:17)),
+        ]),
+        const SizedBox(height:12),
+        Container(
+          padding:const EdgeInsets.all(12),
+          decoration:BoxDecoration(color:Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha:.55),borderRadius:BorderRadius.circular(16)),
+          child:Column(children:[
+            Row(children:[const Icon(Icons.storefront_outlined,color:orange,size:18),const SizedBox(width:7),Expanded(child:Text((o['pickup_address']??'عنوان المطعم').toString(),style:const TextStyle(fontSize:11,fontWeight:FontWeight.w700)))]),
+            const Padding(padding:EdgeInsets.symmetric(vertical:7),child:Divider(height:1)),
+            Row(children:[const Icon(Icons.person_pin_circle_outlined,color:orange,size:18),const SizedBox(width:7),Expanded(child:Text((o['delivery_address']??'عنوان العميل').toString(),style:const TextStyle(fontSize:11,fontWeight:FontWeight.w700)))]),
+          ]),
+        ),
+        const SizedBox(height:10),
+        Row(children:[
+          const Icon(Icons.receipt_long_outlined,size:16,color:muted),const SizedBox(width:5),
+          Expanded(child:Text(items.length.toString()+' أصناف • أجرة التوصيل '+fee.toStringAsFixed(0)+' ج.م',style:const TextStyle(color:muted,fontSize:11))),
+          Text((o['notes']??'').toString(),style:const TextStyle(color:muted,fontSize:10)),
+        ]),
+        const SizedBox(height:12),
+        Row(children:[
+          Expanded(child:OutlinedButton.icon(onPressed:()=>showCourierOrderDetails(context,o),icon:const Icon(Icons.receipt_long_outlined,size:18),label:const Text('التفاصيل'))),
+          const SizedBox(width:8),
+          Expanded(child:OutlinedButton.icon(onPressed:()=>rejectOrder(o),icon:const Icon(Icons.close_rounded,size:18),label:const Text('رفض'))),
+          const SizedBox(width:8),
+          Expanded(child:FilledButton.icon(onPressed:actionBusy?null:()=>acceptOrder(o),style:FilledButton.styleFrom(backgroundColor:orange),icon:const Icon(Icons.check_rounded,size:18),label:const Text('قبول'))),
+        ]),
+      ]),
+    );
+  }
+
+  Widget earnings()=>ListView(padding:const EdgeInsets.all(18),children:[
+    const Text('الأرباح',style:TextStyle(fontSize:29,fontWeight:FontWeight.w900)),const SizedBox(height:14),
+    metric('دخل اليوم','486 ج.م',Icons.trending_up),
+    metric('طلبات اليوم','9 طلبات',Icons.local_shipping),
+    metric('الرصيد','1,840 ج.م',Icons.account_balance_wallet),
   ]);
-  Widget job(String id,String shop,String route,String pay)=>Container(margin:const EdgeInsets.only(bottom:12),padding:const EdgeInsets.all(15),decoration:BoxDecoration(color:Theme.of(context).colorScheme.surface,borderRadius:BorderRadius.circular(20)),child:Column(children:[
-    Row(children:[const CircleAvatar(backgroundColor:Color(0x20FF5A36),child:Icon(Icons.delivery_dining,color:orange)),const SizedBox(width:10),Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text(shop,style:const TextStyle(fontWeight:FontWeight.w900)),Text('#$id',style:const TextStyle(color:muted,fontSize:10))])),Text(pay,style:const TextStyle(color:orange,fontWeight:FontWeight.w900))]),
-    const SizedBox(height:8),Align(alignment:Alignment.centerRight,child:Text(route,style:const TextStyle(color:muted,fontSize:11))),
-    const SizedBox(height:9),Row(children:[const Icon(Icons.access_time,size:16,color:muted),const SizedBox(width:4),const Text('18 دقيقة',style:TextStyle(color:muted,fontSize:11)),const Spacer(),FilledButton(onPressed:()=>snack(context,'تم قبول الطلب $id'),style:FilledButton.styleFrom(backgroundColor:orange),child:const Text('قبول الطلب'))]),
-  ]));
-  Widget earnings()=>ListView(padding:const EdgeInsets.all(18),children:[const Text('الأرباح',style:TextStyle(fontSize:29,fontWeight:FontWeight.w900)),const SizedBox(height:14),metric('دخل اليوم','486 ج.م',Icons.trending_up),metric('طلبات اليوم','9 طلبات',Icons.local_shipping),metric('الرصيد','1,840 ج.م',Icons.account_balance_wallet)]);
-  Widget metric(String a,String b,IconData i)=>Container(margin:const EdgeInsets.only(bottom:11),padding:const EdgeInsets.all(17),decoration:BoxDecoration(color:Theme.of(context).colorScheme.surface,borderRadius:BorderRadius.circular(20)),child:Row(children:[CircleAvatar(backgroundColor:orange.withValues(alpha:.1),child:Icon(i,color:orange)),const SizedBox(width:12),Text(a,style:const TextStyle(color:muted)),const Spacer(),Text(b,style:const TextStyle(fontSize:18,fontWeight:FontWeight.w900))]));
-  Widget account()=>ListView(padding:const EdgeInsets.all(18),children:[const CircleAvatar(radius:40,backgroundColor:orange,child:Icon(Icons.person,color:Colors.white,size:40)),const SizedBox(height:12),const Center(child:Text('مندوب نوفا',style:TextStyle(fontSize:23,fontWeight:FontWeight.w900))),const SizedBox(height:15),ListTile(onTap:()=>snack(context,'البيانات الشخصية'),leading:const Icon(Icons.person_outline,color:orange),title:const Text('البيانات الشخصية'),trailing:const Icon(Icons.chevron_left)),ListTile(onTap:()=>snack(context,'المركبة والمستندات'),leading:const Icon(Icons.two_wheeler,color:orange),title:const Text('المركبة والمستندات'),trailing:const Icon(Icons.chevron_left)),ListTile(onTap:()=>snack(context,'الدعم'),leading:const Icon(Icons.support_agent,color:orange),title:const Text('الدعم'),trailing:const Icon(Icons.chevron_left)),OutlinedButton.icon(onPressed:widget.onLogout,icon:const Icon(Icons.logout),label:const Text('تسجيل الخروج'))]);
+  Widget metric(String a,String b,IconData i)=>Container(
+    margin:const EdgeInsets.only(bottom:11),padding:const EdgeInsets.all(17),
+    decoration:BoxDecoration(color:Theme.of(context).colorScheme.surface,borderRadius:BorderRadius.circular(20)),
+    child:Row(children:[CircleAvatar(backgroundColor:orange.withValues(alpha:.1),child:Icon(i,color:orange)),const SizedBox(width:12),Text(a,style:const TextStyle(color:muted)),const Spacer(),Text(b,style:const TextStyle(fontSize:18,fontWeight:FontWeight.w900))]),
+  );
+  Widget account()=>ListView(padding:const EdgeInsets.all(18),children:[
+    const CircleAvatar(radius:40,backgroundColor:orange,child:Icon(Icons.person,color:Colors.white,size:40)),
+    const SizedBox(height:12),const Center(child:Text('مندوب نوفا',style:TextStyle(fontSize:23,fontWeight:FontWeight.w900))),
+    const SizedBox(height:15),
+    ListTile(onTap:()=>snack(context,'البيانات الشخصية'),leading:const Icon(Icons.person_outline,color:orange),title:const Text('البيانات الشخصية'),trailing:const Icon(Icons.chevron_left)),
+    ListTile(onTap:()=>snack(context,'المركبة والمستندات'),leading:const Icon(Icons.two_wheeler,color:orange),title:const Text('المركبة والمستندات'),trailing:const Icon(Icons.chevron_left)),
+    ListTile(onTap:()=>snack(context,'الدعم'),leading:const Icon(Icons.support_agent,color:orange),title:const Text('الدعم'),trailing:const Icon(Icons.chevron_left)),
+    OutlinedButton.icon(onPressed:widget.onLogout,icon:const Icon(Icons.logout),label:const Text('تسجيل الخروج')),
+  ]);
+}
+
+class EmptyCourierState extends StatelessWidget{
+  final IconData icon; final String title,sub;
+  const EmptyCourierState({super.key,required this.icon,required this.title,required this.sub});
+  @override Widget build(BuildContext c)=>Container(
+    margin:const EdgeInsets.only(top:30),padding:const EdgeInsets.symmetric(vertical:35,horizontal:20),
+    decoration:BoxDecoration(color:Theme.of(c).colorScheme.surface,borderRadius:BorderRadius.circular(24)),
+    child:Column(children:[Icon(icon,size:60,color:orange),const SizedBox(height:12),Text(title,style:const TextStyle(fontSize:19,fontWeight:FontWeight.w900)),const SizedBox(height:5),Text(sub,textAlign:TextAlign.center,style:const TextStyle(color:muted))]),
+  );
+}
+
+String _shortId(dynamic id){
+  final s=id?.toString()??'';
+  return s.length>8?s.substring(0,8):s;
+}
+double _money(dynamic value)=>double.tryParse(value?.toString()??'0')??0;
+
+void showCourierOrderDetails(BuildContext c, Map<String,dynamic> order){
+  final items=List<Map<String,dynamic>>.from((order['order_items'] as List?)??const[]);
+  showModalBottomSheet(
+    context:c,isScrollControlled:true,showDragHandle:true,
+    builder:(_)=>Directionality(
+      textDirection:TextDirection.rtl,
+      child:Padding(
+        padding:const EdgeInsets.fromLTRB(18,8,18,25),
+        child:Column(mainAxisSize:MainAxisSize.min,crossAxisAlignment:CrossAxisAlignment.start,children:[
+          Text((order['restaurant_name']??'مطعم نوفا').toString(),style:const TextStyle(fontSize:23,fontWeight:FontWeight.w900)),
+          Text('العميل: '+(order['customer_name']??'عميل نوفا').toString(),style:const TextStyle(color:muted)),
+          const SizedBox(height:13),
+          ...items.map((x)=>ListTile(
+            dense:true,contentPadding:EdgeInsets.zero,
+            leading:CircleAvatar(backgroundColor:orange.withValues(alpha:.1),child:Text((x['quantity']??1).toString(),style:const TextStyle(color:orange,fontWeight:FontWeight.w900))),
+            title:Text((x['item_name']??'صنف').toString(),style:const TextStyle(fontWeight:FontWeight.w800)),
+            trailing:Text(_money(x['unit_price']).toStringAsFixed(0)+' ج.م'),
+          )),
+          const Divider(),
+          Row(children:[
+            const Expanded(child:Text('إجمالي الطلب',style:TextStyle(fontWeight:FontWeight.w900))),
+            Text(_money(order['total']).toStringAsFixed(0)+' ج.م',style:const TextStyle(color:orange,fontWeight:FontWeight.w900,fontSize:18)),
+          ]),
+          const SizedBox(height:7),
+          Text('عنوان الاستلام: '+(order['pickup_address']??'غير محدد').toString(),style:const TextStyle(color:muted,fontSize:11)),
+          Text('عنوان العميل: '+(order['delivery_address']??'غير محدد').toString(),style:const TextStyle(color:muted,fontSize:11)),
+          if((order['notes']??'').toString().isNotEmpty) Text('ملاحظات: '+order['notes'].toString(),style:const TextStyle(color:muted,fontSize:11)),
+        ]),
+      ),
+    ),
+  );
+}
+
+class CourierRoutePage extends StatefulWidget{
+  final Map<String,dynamic> order;
+  const CourierRoutePage({super.key,required this.order});
+  @override State<CourierRoutePage> createState()=>_CourierRoutePageState();
+}
+
+class _CourierRoutePageState extends State<CourierRoutePage>{
+  int step=0;
+  bool pickedUp=false;
+  bool delivered=false;
+
+  LatLng get pickup=>LatLng(
+    double.tryParse(widget.order['pickup_lat']?.toString()??'')??31.0440,
+    double.tryParse(widget.order['pickup_lng']?.toString()??'')??31.3550,
+  );
+  LatLng get customer=>LatLng(
+    double.tryParse(widget.order['customer_lat']?.toString()??'')??31.0474,
+    double.tryParse(widget.order['customer_lng']?.toString()??'')??31.3499,
+  );
+
+  @override Widget build(BuildContext c){
+    final target=step==0?pickup:customer;
+    final shop=(widget.order['restaurant_name']??'المطعم').toString();
+    final customerName=(widget.order['customer_name']??'العميل').toString();
+    return Scaffold(
+      appBar:AppBar(title:const Text('رحلة الطلب'),actions:[IconButton(onPressed:()=>showCourierOrderDetails(c,widget.order),icon:const Icon(Icons.receipt_long_outlined))]),
+      body:Column(children:[
+        Expanded(child:FlutterMap(
+          options:MapOptions(initialCenter:target,initialZoom:15.2),
+          children:[
+            TileLayer(urlTemplate:'https://tile.openstreetmap.org/{z}/{x}/{y}.png',userAgentPackageName:'nova.delivery'),
+            PolylineLayer(polylines:[Polyline(points:[pickup,customer],strokeWidth:5,color:orange)]),
+            MarkerLayer(markers:[
+              Marker(point:pickup,width:58,height:58,child:Container(
+                decoration:BoxDecoration(color:step==0?orange:ink,shape:BoxShape.circle,border:Border.all(color:Colors.white,width:3)),
+                child:const Icon(Icons.restaurant,color:Colors.white),
+              )),
+              Marker(point:customer,width:58,height:58,child:Container(
+                decoration:BoxDecoration(color:step==1?orange:ink,shape:BoxShape.circle,border:Border.all(color:Colors.white,width:3)),
+                child:const Icon(Icons.person_pin_circle,color:Colors.white),
+              )),
+            ]),
+          ],
+        )),
+        Container(
+          padding:const EdgeInsets.fromLTRB(18,14,18,18),
+          decoration:BoxDecoration(color:Theme.of(c).colorScheme.surface,borderRadius:const BorderRadius.vertical(top:Radius.circular(28)),boxShadow:const[BoxShadow(color:Color(0x22000000),blurRadius:18,offset:Offset(0,-6))]),
+          child:Column(children:[
+            Row(children:[
+              Expanded(child:routeStep(c,0,Icons.storefront_outlined,'المطعم',shop)),
+              const Padding(padding:EdgeInsets.symmetric(horizontal:7),child:Icon(Icons.arrow_back_rounded,color:muted)),
+              Expanded(child:routeStep(c,1,Icons.person_pin_circle_outlined,'العميل',customerName)),
+            ]),
+            const SizedBox(height:12),
+            Text(step==0?'اتجه للمطعم أولًا واستلم الطلب':'اتجه للعميل وسلّم الطلب',style:const TextStyle(fontWeight:FontWeight.w900)),
+            const SizedBox(height:10),
+            SizedBox(width:double.infinity,child:FilledButton.icon(
+              onPressed:(){
+                if(step==0){
+                  setState(()=>pickedUp=true);
+                  setState(()=>step=1);
+                  snack(c,'تم تحديد الاستلام من المطعم. الآن وجهتك العميل 📍');
+                }else{
+                  setState(()=>delivered=true);
+                  snack(c,'تم تسليم الطلب بنجاح ✅');
+                }
+              },
+              style:FilledButton.styleFrom(backgroundColor:orange,minimumSize:const Size.fromHeight(52)),
+              icon:Icon(step==0?Icons.storefront:Icons.done_all),
+              label:Text(step==0?'وصلت للمطعم واستلمت الطلب':'تم التسليم للعميل'),
+            )),
+            const SizedBox(height:8),
+            Row(children:[
+              Expanded(child:OutlinedButton.icon(onPressed:()=>setState(()=>step=0),icon:const Icon(Icons.restaurant_outlined),label:const Text('المطعم'))),
+              const SizedBox(width:8),
+              Expanded(child:OutlinedButton.icon(onPressed:()=>setState(()=>step=1),icon:const Icon(Icons.person_pin_circle_outlined),label:const Text('العميل'))),
+            ]),
+          ]),
+        ),
+      ]),
+    );
+  }
+
+  Widget routeStep(BuildContext c,int index,IconData icon,String titleText,String sub){
+    final active=step==index;
+    final done=index==0?pickedUp:delivered;
+    return InkWell(
+      onTap:()=>setState(()=>step=index),
+      borderRadius:BorderRadius.circular(16),
+      child:Container(
+        padding:const EdgeInsets.all(10),
+        decoration:BoxDecoration(color:active?orange.withValues(alpha:.10):Colors.transparent,borderRadius:BorderRadius.circular(16),border:Border.all(color:active?orange.withValues(alpha:.35):Colors.transparent)),
+        child:Row(children:[
+          CircleAvatar(radius:19,backgroundColor:done?Colors.green:active?orange:ink,child:Icon(done?Icons.check:icon,color:Colors.white,size:18)),
+          const SizedBox(width:8),
+          Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
+            Text(titleText,style:TextStyle(color:active?orange:null,fontWeight:FontWeight.w900,fontSize:12)),
+            Text(sub,maxLines:1,overflow:TextOverflow.ellipsis,style:const TextStyle(color:muted,fontSize:9)),
+          ])),
+        ]),
+      ),
+    );
+  }
 }
 
 class Shell extends StatefulWidget {
