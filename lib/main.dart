@@ -1125,22 +1125,6 @@ class Home extends StatelessWidget {
       IconButton.filledTonal(onPressed:()=>showNotifications(context),icon:const Icon(Icons.notifications_none_rounded,color:ink)),
     ]),
     const SizedBox(height:16),
-    Container(
-      padding:const EdgeInsets.symmetric(horizontal:15,vertical:4),
-      decoration:BoxDecoration(color:Theme.of(context).colorScheme.surface,borderRadius:BorderRadius.circular(18),boxShadow:const[BoxShadow(color:Color(0x0B000000),blurRadius:18,offset:Offset(0,6))]),
-      child:TextField(
-        readOnly:true,
-        onTap:()=>onSearch(''),
-        decoration:const InputDecoration(
-          hintText:'إيه نفسك فيه النهارده؟',
-          prefixIcon:Icon(Icons.search_rounded,color:orange),
-          suffixIcon:Icon(Icons.tune_rounded,color:muted),
-          border:InputBorder.none,
-          filled:false,
-        ),
-      ),
-    ),
-    const SizedBox(height:12),
     InkWell(onTap:onMap,borderRadius:BorderRadius.circular(18),child:Container(padding:const EdgeInsets.all(14),decoration:BoxDecoration(color:Theme.of(context).colorScheme.surface,borderRadius:BorderRadius.circular(18)),child:const Row(children:[Icon(Icons.location_on_rounded,color:orange),SizedBox(width:9),Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text('عنوان التوصيل',style:TextStyle(color:muted,fontSize:10)),Text('المنصورة • اختر موقعك على الخريطة',style:TextStyle(fontWeight:FontWeight.bold))])),Icon(Icons.chevron_left_rounded)]))),
     const SizedBox(height:18),
     Container(
@@ -1938,7 +1922,16 @@ class _OwnerStudioPageState extends State<OwnerStudioPage> with SingleTickerProv
         const Divider(),Expanded(child:snap.connectionState==ConnectionState.waiting?const Center(child:CircularProgressIndicator(color:orange)):ListView.separated(padding:const EdgeInsets.all(12),itemCount:items.length,separatorBuilder:(_,__)=>const SizedBox(height:8),itemBuilder:(c,i){final m=items[i];final image=m['image_url']?.toString();return Container(padding:const EdgeInsets.all(9),decoration:BoxDecoration(color:Colors.white,borderRadius:BorderRadius.circular(19),border:Border.all(color:Colors.black12)),child:Row(children:[
           ClipRRect(borderRadius:BorderRadius.circular(13),child:Image.network(image?.isNotEmpty==true?image!:burger,width:70,height:70,fit:BoxFit.cover,errorBuilder:(_,__,___)=>const Icon(Icons.fastfood_rounded,color:orange,size:38))),
           const SizedBox(width:10),Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text((m['name']??'وجبة').toString(),style:const TextStyle(fontWeight:FontWeight.w900)),Text((m['description']??'').toString(),maxLines:1,overflow:TextOverflow.ellipsis,style:const TextStyle(color:muted,fontSize:10)),Text((m['price']??0).toString()+' ج.م',style:const TextStyle(color:orange,fontSize:16,fontWeight:FontWeight.w900))])),
-          Switch(value:m['is_available']==true,onChanged:(v)async{await NovaSupabase.setMenuItemAvailability(m['id'].toString(),v);}),IconButton(onPressed:(){Navigator.pop(sheet);editMenuItem(m);},icon:const Icon(Icons.edit_rounded,color:orange))
+          Switch(value:m['is_available']==true,onChanged:(v)async{await NovaSupabase.setMenuItemAvailability(m['id'].toString(),v);}),
+          IconButton(onPressed:(){Navigator.pop(sheet);editMenuItem(m);},icon:const Icon(Icons.edit_rounded,color:orange)),
+          IconButton(onPressed:()async{
+            final ok=await showDialog<bool>(context:context,builder:(d)=>AlertDialog(
+              title:const Text('حذف الوجبة؟'),
+              content:Text('سيتم إخفاء الوجبة من قائمة الطلبات.'),
+              actions:[TextButton(onPressed:()=>Navigator.pop(d,false),child:const Text('إلغاء')),FilledButton(onPressed:()=>Navigator.pop(d,true),style:FilledButton.styleFrom(backgroundColor:Colors.red),child:const Text('حذف'))],
+            ));
+            if(ok==true){try{await NovaSupabase.deleteMenuItem(m['id'].toString());if(sheet.mounted)Navigator.pop(sheet);await load();snack(context,'تم حذف الوجبة');}catch(e){if(mounted)snack(context,'تعذر حذف الوجبة: '+e.toString());}}
+          },icon:const Icon(Icons.delete_outline_rounded,color:Colors.red))
         ]);}) )
       ]));
     }));
@@ -1970,15 +1963,49 @@ class _OwnerStudioPageState extends State<OwnerStudioPage> with SingleTickerProv
     final image=(r['cover_url']??r['logo_url']??'').toString();
     return Container(margin:const EdgeInsets.only(bottom:12),clipBehavior:Clip.antiAlias,decoration:BoxDecoration(color:Colors.white,borderRadius:BorderRadius.circular(24),border:Border.all(color:Colors.black12)),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
       if(image.isNotEmpty)Image.network(image,height:135,width:double.infinity,fit:BoxFit.cover,errorBuilder:(_,__,___)=>const SizedBox(height:135,child:Center(child:Icon(Icons.restaurant_rounded,color:orange,size:40)))),
-      Padding(padding:const EdgeInsets.all(14),child:Row(children:[Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text((r['name']??'مطعم').toString(),style:const TextStyle(fontSize:18,fontWeight:FontWeight.w900)),Text((r['description']??'').toString(),maxLines:2,overflow:TextOverflow.ellipsis,style:const TextStyle(color:muted,fontSize:11)),Text('التوصيل '+(r['delivery_fee']??0).toString()+' ج.م • الحد الأدنى '+(r['min_order']??0).toString()+' ج.م',style:const TextStyle(color:orange,fontSize:10,fontWeight:FontWeight.w800))])),IconButton(onPressed:()=>editRestaurant(r),icon:const Icon(Icons.edit_rounded,color:orange)),IconButton(onPressed:()=>menuManager(r),icon:const Icon(Icons.restaurant_menu_rounded,color:orange)),PopupMenuButton<String>(onSelected:(v)async{if(v=='hide'){await NovaSupabase.deleteRestaurant(r['id'].toString());await load();}},itemBuilder:(_)=>const[PopupMenuItem(value:'hide',child:Text('إخفاء المطعم'))])]))
+      Padding(padding:const EdgeInsets.all(14),child:Row(children:[Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text((r['name']??'مطعم').toString(),style:const TextStyle(fontSize:18,fontWeight:FontWeight.w900)),Text((r['description']??'').toString(),maxLines:2,overflow:TextOverflow.ellipsis,style:const TextStyle(color:muted,fontSize:11)),Text('التوصيل '+(r['delivery_fee']??0).toString()+' ج.م • الحد الأدنى '+(r['min_order']??0).toString()+' ج.م',style:const TextStyle(color:orange,fontSize:10,fontWeight:FontWeight.w800))])),IconButton(onPressed:()=>editRestaurant(r),icon:const Icon(Icons.edit_rounded,color:orange)),IconButton(onPressed:()=>menuManager(r),icon:const Icon(Icons.restaurant_menu_rounded,color:orange)),PopupMenuButton<String>(
+  onSelected:(v)async{
+    if(v!='delete')return;
+    final ok=await showDialog<bool>(context:context,builder:(d)=>AlertDialog(
+      title:const Text('حذف المطعم؟'),
+      content:Text('سيتم إخفاء المطعم من التطبيق مع الاحتفاظ ببياناته في لوحة المالك.'),
+      actions:[TextButton(onPressed:()=>Navigator.pop(d,false),child:const Text('إلغاء')),FilledButton(onPressed:()=>Navigator.pop(d,true),style:FilledButton.styleFrom(backgroundColor:Colors.red),child:const Text('حذف'))],
+    ));
+    if(ok==true){
+      try{await NovaSupabase.deleteRestaurant(r['id'].toString());await load();snack(context,'تم حذف المطعم من التطبيق');}
+      catch(e){if(mounted)snack(context,'تعذر حذف المطعم: '+e.toString());}
+    }
+  },
+  itemBuilder:(_)=>const[PopupMenuItem(value:'delete',child:Row(children:[Icon(Icons.delete_outline_rounded,color:Colors.red),SizedBox(width:8),Text('حذف المطعم')]))]
+)]))
     ]));
   }
   Widget promotions(){
     return Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
       Row(children:[const Expanded(child:Text('الكوبونات',style:TextStyle(fontSize:22,fontWeight:FontWeight.w900))),FilledButton.icon(onPressed:addCoupon,icon:const Icon(Icons.add),label:const Text('كوبون'))]),const SizedBox(height:10),
-      ...coupons.map((c)=>Container(margin:const EdgeInsets.only(bottom:8),padding:const EdgeInsets.all(13),decoration:BoxDecoration(color:Colors.white,borderRadius:BorderRadius.circular(19),border:Border.all(color:Colors.black12)),child:Row(children:[const CircleAvatar(backgroundColor:Color(0x12FF5A36),child:Icon(Icons.confirmation_number_rounded,color:orange)),const SizedBox(width:9),Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text((c['code']??'').toString()+' • '+(c['title']??'').toString(),style:const TextStyle(fontWeight:FontWeight.w900)),Text((c['discount_type']??'').toString()+' • '+(c['discount_value']??0).toString()+' • استخدام '+(c['usage_count']??0).toString(),style:const TextStyle(color:muted,fontSize:10))])),Switch(value:c['is_active']==true,onChanged:(v)async{await NovaSupabase.updateCoupon(c['id'].toString(),{'is_active':v});await load();})])),
+      ...coupons.map((c)=>Container(margin:const EdgeInsets.only(bottom:8),padding:const EdgeInsets.all(13),decoration:BoxDecoration(color:Colors.white,borderRadius:BorderRadius.circular(19),border:Border.all(color:Colors.black12)),child:Row(children:[const CircleAvatar(backgroundColor:Color(0x12FF5A36),child:Icon(Icons.confirmation_number_rounded,color:orange)),const SizedBox(width:9),Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text((c['code']??'').toString()+' • '+(c['title']??'').toString(),style:const TextStyle(fontWeight:FontWeight.w900)),Text((c['discount_type']??'').toString()+' • '+(c['discount_value']??0).toString()+' • استخدام '+(c['usage_count']??0).toString(),style:const TextStyle(color:muted,fontSize:10))])),Row(mainAxisSize:MainAxisSize.min,children:[
+  Switch(value:c['is_active']==true,onChanged:(v)async{await NovaSupabase.updateCoupon(c['id'].toString(),{'is_active':v});await load();}),
+  IconButton(onPressed:()async{
+    final ok=await showDialog<bool>(context:context,builder:(d)=>AlertDialog(
+      title:const Text('حذف الكوبون؟'),
+      content:const Text('سيتم إيقاف الكوبون عن الاستخدام.'),
+      actions:[TextButton(onPressed:()=>Navigator.pop(d,false),child:const Text('إلغاء')),FilledButton(onPressed:()=>Navigator.pop(d,true),style:FilledButton.styleFrom(backgroundColor:Colors.red),child:const Text('حذف'))],
+    ));
+    if(ok==true){try{await NovaSupabase.deleteCoupon(c['id'].toString());await load();}catch(e){if(mounted)snack(context,'تعذر حذف الكوبون: '+e.toString());}}
+  },icon:const Icon(Icons.delete_outline_rounded,color:Colors.red)),
+])])),
       const SizedBox(height:18),Row(children:[const Expanded(child:Text('عروض معمولة ليك',style:TextStyle(fontSize:22,fontWeight:FontWeight.w900))),FilledButton.icon(onPressed:addOffer,icon:const Icon(Icons.add),label:const Text('عرض'))]),const SizedBox(height:10),
-      ...offers.map((o)=>Container(margin:const EdgeInsets.only(bottom:10),clipBehavior:Clip.antiAlias,decoration:BoxDecoration(color:Colors.white,borderRadius:BorderRadius.circular(22),border:Border.all(color:Colors.black12)),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[if((o['image_url']??'').toString().isNotEmpty)Image.network(o['image_url'].toString(),height:130,width:double.infinity,fit:BoxFit.cover),Padding(padding:const EdgeInsets.all(13),child:Row(children:[Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text((o['title']??'').toString(),style:const TextStyle(fontWeight:FontWeight.w900,fontSize:16)),Text((o['subtitle']??'').toString(),style:const TextStyle(color:muted,fontSize:11)),if(o['coupons'] is Map)Text('كوبون: '+(o['coupons']['code']??'').toString(),style:const TextStyle(color:orange,fontSize:10,fontWeight:FontWeight.w800))])),Switch(value:o['is_active']==true,onChanged:(v)async{await NovaSupabase.updateOffer(o['id'].toString(),{'is_active':v});await load();})]))]))),
+      ...offers.map((o)=>Container(margin:const EdgeInsets.only(bottom:10),clipBehavior:Clip.antiAlias,decoration:BoxDecoration(color:Colors.white,borderRadius:BorderRadius.circular(22),border:Border.all(color:Colors.black12)),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[if((o['image_url']??'').toString().isNotEmpty)Image.network(o['image_url'].toString(),height:130,width:double.infinity,fit:BoxFit.cover),Padding(padding:const EdgeInsets.all(13),child:Row(children:[Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text((o['title']??'').toString(),style:const TextStyle(fontWeight:FontWeight.w900,fontSize:16)),Text((o['subtitle']??'').toString(),style:const TextStyle(color:muted,fontSize:11)),if(o['coupons'] is Map)Text('كوبون: '+(o['coupons']['code']??'').toString(),style:const TextStyle(color:orange,fontSize:10,fontWeight:FontWeight.w800))])),Row(mainAxisSize:MainAxisSize.min,children:[
+  Switch(value:o['is_active']==true,onChanged:(v)async{await NovaSupabase.updateOffer(o['id'].toString(),{'is_active':v});await load();}),
+  IconButton(onPressed:()async{
+    final ok=await showDialog<bool>(context:context,builder:(d)=>AlertDialog(
+      title:const Text('حذف العرض؟'),
+      content:const Text('سيتم إيقاف العرض عن الظهور للعملاء.'),
+      actions:[TextButton(onPressed:()=>Navigator.pop(d,false),child:const Text('إلغاء')),FilledButton(onPressed:()=>Navigator.pop(d,true),style:FilledButton.styleFrom(backgroundColor:Colors.red),child:const Text('حذف'))],
+    ));
+    if(ok==true){try{await NovaSupabase.deleteOffer(o['id'].toString());await load();}catch(e){if(mounted)snack(context,'تعذر حذف العرض: '+e.toString());}}
+  },icon:const Icon(Icons.delete_outline_rounded,color:Colors.red)),
+])]))]))),
     ]);
   }
   @override Widget build(BuildContext c){
