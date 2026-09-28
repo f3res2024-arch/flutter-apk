@@ -912,18 +912,89 @@ class _ShellState extends State<Shell> {
   void sub(Line x)=>setState((){if(x.qty>1){x.qty--;}else{cart.remove(x);}});
   void open(R r)=>Navigator.push(context,MaterialPageRoute(builder:(_)=>RestaurantPage(r:r,fav:fav.contains(r.name),onFav:()=>setState((){if(!fav.add(r.name))fav.remove(r.name);}),onAdd:add)));
   @override Widget build(BuildContext context){
-    final pages=[Home(onOpen:open,onMap:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>const MapPage()))),SearchPage(onAdd:add),const OrdersPage(),CartPage(cart:cart,total:total,onAdd:(x)=>add(x.r,x.m),onSub:sub),ProfilePage(dark:widget.dark,onDark:widget.onDark,onMap:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>const MapPage())))];
-    return Directionality(textDirection:TextDirection.rtl,child:Scaffold(
-      body:SafeArea(child:IndexedStack(index:tab,children:pages)),
-      bottomNavigationBar:NavigationBar(selectedIndex:tab,onDestinationSelected:(v)=>setState(()=>tab=v),destinations:const[
-        NavigationDestination(icon:Icon(Icons.home_outlined),selectedIcon:Icon(Icons.home_rounded),label:'الرئيسية'),
-        NavigationDestination(icon:Icon(Icons.search_rounded),label:'اكتشف'),
-        NavigationDestination(icon:Icon(Icons.receipt_long_outlined),label:'طلباتي'),
-        NavigationDestination(icon:Icon(Icons.shopping_bag_outlined),label:'السلة'),
-        NavigationDestination(icon:Icon(Icons.person_outline),label:'حسابي'),
-      ]),
-      floatingActionButton:count==0?null:FloatingActionButton.extended(backgroundColor:orange,foregroundColor:Colors.white,onPressed:()=>setState(()=>tab=3),icon:const Icon(Icons.shopping_bag_outlined),label:Text(count.toString()+' • '+total.toStringAsFixed(0)+' ج.م')),
-    ));
+    final pages=[
+      Home(onOpen:open,onMap:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>const MapPage()))),
+      SearchPage(onAdd:add),
+      const OrdersPage(),
+      CartPage(cart:cart,total:total,onAdd:(x)=>add(x.r,x.m),onSub:sub),
+      ProfilePage(dark:widget.dark,onDark:widget.onDark,onMap:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>const MapPage()))),
+    ];
+    return Directionality(
+      textDirection:TextDirection.rtl,
+      child:LayoutBuilder(
+        builder:(context,box){
+          final wide=box.maxWidth>=900;
+          final content=Center(
+            child:ConstrainedBox(
+              constraints:const BoxConstraints(maxWidth:1240),
+              child:IndexedStack(index:tab,children:pages),
+            ),
+          );
+          if(!wide){
+            return Scaffold(
+              body:SafeArea(child:content),
+              bottomNavigationBar:NavigationBar(
+                selectedIndex:tab,
+                onDestinationSelected:(v)=>setState(()=>tab=v),
+                destinations:const[
+                  NavigationDestination(icon:Icon(Icons.home_outlined),selectedIcon:Icon(Icons.home_rounded),label:'الرئيسية'),
+                  NavigationDestination(icon:Icon(Icons.search_rounded),label:'اكتشف'),
+                  NavigationDestination(icon:Icon(Icons.receipt_long_outlined),label:'طلباتي'),
+                  NavigationDestination(icon:Icon(Icons.shopping_bag_outlined),label:'السلة'),
+                  NavigationDestination(icon:Icon(Icons.person_outline),label:'حسابي'),
+                ],
+              ),
+              floatingActionButton:count==0?null:FloatingActionButton.extended(
+                backgroundColor:orange,foregroundColor:Colors.white,
+                onPressed:()=>setState(()=>tab=3),
+                icon:const Icon(Icons.shopping_bag_outlined),
+                label:Text(count.toString()+' • '+total.toStringAsFixed(0)+' ج.م'),
+              ),
+            );
+          }
+          return Scaffold(
+            body:SafeArea(
+              child:Row(children:[
+                Container(
+                  width:92,
+                  decoration:BoxDecoration(
+                    color:Theme.of(context).colorScheme.surface,
+                    border:Border(left:BorderSide(color:Theme.of(context).dividerColor.withValues(alpha:.35))),
+                  ),
+                  child:NavigationRail(
+                    selectedIndex:tab,
+                    onDestinationSelected:(v)=>setState(()=>tab=v),
+                    labelType:NavigationRailLabelType.all,
+                    leading:Padding(
+                      padding:const EdgeInsets.only(top:10,bottom:18),
+                      child:Container(
+                        width:48,height:48,
+                        decoration:BoxDecoration(color:orange,borderRadius:BorderRadius.circular(15)),
+                        child:const Icon(Icons.delivery_dining_rounded,color:Colors.white,size:29),
+                      ),
+                    ),
+                    destinations:const[
+                      NavigationRailDestination(icon:Icon(Icons.home_outlined),selectedIcon:Icon(Icons.home_rounded),label:Text('الرئيسية')),
+                      NavigationRailDestination(icon:Icon(Icons.search_rounded),label:Text('اكتشف')),
+                      NavigationRailDestination(icon:Icon(Icons.receipt_long_outlined),label:Text('طلباتي')),
+                      NavigationRailDestination(icon:Icon(Icons.shopping_bag_outlined),label:Text('السلة')),
+                      NavigationRailDestination(icon:Icon(Icons.person_outline),label:Text('حسابي')),
+                    ],
+                  ),
+                ),
+                Expanded(child:content),
+              ]),
+            ),
+            floatingActionButton:count==0?null:FloatingActionButton.extended(
+              backgroundColor:orange,foregroundColor:Colors.white,
+              onPressed:()=>setState(()=>tab=3),
+              icon:const Icon(Icons.shopping_bag_outlined),
+              label:Text(count.toString()+' • '+total.toStringAsFixed(0)+' ج.م'),
+            ),
+          );
+        },
+      ),
+    );
   }
 }
 
