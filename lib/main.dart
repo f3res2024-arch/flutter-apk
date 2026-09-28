@@ -101,56 +101,108 @@ enum UserRole { customer, courier }
 class RoleChooser extends StatelessWidget {
   final ValueChanged<UserRole> onRole;
   const RoleChooser({super.key,required this.onRole});
-  @override Widget build(BuildContext c)=>Scaffold(
-    body:Stack(children:[
-      Positioned.fill(child:Image.network(
-        'https://images.unsplash.com/photo-1558981806-ec527fa84c39?auto=format&fit=crop&w=1200&q=85',
-        fit:BoxFit.cover,
-        errorBuilder:(_,__,___)=>Container(color:ink),
-      )),
-      Positioned.fill(child:Container(decoration:const BoxDecoration(
-        gradient:LinearGradient(begin:Alignment.topCenter,end:Alignment.bottomCenter,colors:[Color(0x22000000),Color(0xF2111318)]),
-      ))),
-      SafeArea(child:Padding(padding:const EdgeInsets.fromLTRB(22,24,22,30),child:Column(children:[
-        const BrandHero(),
-        const Spacer(),
-        const Text('توصيل أسرع.. تجربة أفضل',textAlign:TextAlign.center,style:TextStyle(color:Colors.white,fontSize:30,fontWeight:FontWeight.w900)),
-        const SizedBox(height:8),
-        const Text('اختار نوع حسابك علشان نجهزلك تجربة نوفا المناسبة',textAlign:TextAlign.center,style:TextStyle(color:Colors.white70)),
-        const SizedBox(height:28),
-        roleButton(c,Icons.person_rounded,'أنا عميل','اطلب من المطاعم وتابع طلبك لحظة بلحظة',()=>onRole(UserRole.customer),true),
-        const SizedBox(height:12),
-        roleButton(c,Icons.two_wheeler_rounded,'أنا مندوب','استقبل الطلبات واتابع أرباحي',()=>onRole(UserRole.courier),false),
-        const SizedBox(height:14),
-        const Text('نوفا ديليفري',style:TextStyle(color:Colors.white54,fontSize:11)),
-      ]))),
-    ],
+
+  @override
+  Widget build(BuildContext c)=>Scaffold(
+    backgroundColor:const Color(0xFF050608),
+    body:SafeArea(
+      child:SingleChildScrollView(
+        padding:const EdgeInsets.fromLTRB(18,22,18,26),
+        child:Column(
+          children:[
+            const SizedBox(height:4),
+            Row(mainAxisAlignment:MainAxisAlignment.center,children:[
+              Container(
+                width:46,height:46,
+                decoration:BoxDecoration(
+                  color:orange,
+                  borderRadius:BorderRadius.circular(14),
+                  boxShadow:const[BoxShadow(color:Color(0x55FF5A36),blurRadius:22,spreadRadius:2)]
+                ),
+                child:const Icon(Icons.delivery_dining_rounded,color:Colors.white,size:30),
+              ),
+              const SizedBox(width:10),
+              const Text('نوفا ديليفري',style:TextStyle(color:Colors.white,fontSize:25,fontWeight:FontWeight.w900)),
+            ]),
+            const SizedBox(height:8),
+            const Text('توصيل أسرع • تجربة أفضل',style:TextStyle(color:orange,fontSize:13,fontWeight:FontWeight.w800)),
+            const SizedBox(height:20),
+            ClipRRect(
+              borderRadius:BorderRadius.circular(30),
+              child:Image.asset('assets/nova_rider.webp',width:double.infinity,height:360,fit:BoxFit.cover),
+            ),
+            const SizedBox(height:18),
+            const Text('نوفا ديليفري',style:TextStyle(color:Colors.white,fontSize:29,fontWeight:FontWeight.w900)),
+            const SizedBox(height:3),
+            const Text('توصيل أسرع • تجربة أفضل',style:TextStyle(color:orange,fontSize:14,fontWeight:FontWeight.w800)),
+            const SizedBox(height:20),
+            roleButton(c,Icons.person_rounded,'أنا عميل','اطلب من المطاعم وتابع طلبك لحظة بلحظة',()=>onRole(UserRole.customer),true),
+            const SizedBox(height:11),
+            roleButton(c,Icons.two_wheeler_rounded,'أنا مندوب','استقبل الطلبات واتابع أرباحك بسهولة',()=>onRole(UserRole.courier),false),
+            const SizedBox(height:18),
+            Row(mainAxisAlignment:MainAxisAlignment.spaceEvenly,children:[
+              miniFeature(Icons.delivery_dining_rounded,'تتبع الطلب'),
+              miniFeature(Icons.shopping_bag_outlined,'مطاعم متنوعة'),
+              miniFeature(Icons.local_offer_outlined,'عروض حصرية'),
+              miniFeature(Icons.support_agent,'دعم 24/7'),
+            ]),
+          ],
+        ),
+      ),
     ),
   );
+
   Widget roleButton(BuildContext c,IconData icon,String title,String sub,VoidCallback tap,bool filled)=>Material(
-    color:filled?orange:const Color(0xE91A1D24),
-    borderRadius:BorderRadius.circular(20),
-    child:InkWell(onTap:tap,borderRadius:BorderRadius.circular(20),child:Padding(
-      padding:const EdgeInsets.all(15),
-      child:Row(children:[
-        CircleAvatar(backgroundColor:filled?Colors.white24:orange.withValues(alpha:.15),child:Icon(icon,color:filled?Colors.white:orange)),
-        const SizedBox(width:13),
-        Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
-          Text(title,style:TextStyle(color:filled?Colors.white:null,fontSize:17,fontWeight:FontWeight.w900)),
-          Text(sub,style:TextStyle(color:filled?Colors.white70:muted,fontSize:11)),
-        ])),
-        Icon(Icons.arrow_back_ios_new_rounded,size:15,color:filled?Colors.white:muted),
-      ]),
-    )),
+    color:filled?orange:const Color(0xFF111318),
+    borderRadius:BorderRadius.circular(18),
+    child:InkWell(
+      onTap:tap,
+      borderRadius:BorderRadius.circular(18),
+      child:Container(
+        padding:const EdgeInsets.symmetric(horizontal:16,vertical:13),
+        decoration:BoxDecoration(
+          borderRadius:BorderRadius.circular(18),
+          border:Border.all(color:filled?orange:const Color(0xFF343840),width:1.1),
+        ),
+        child:Row(children:[
+          CircleAvatar(
+            radius:21,
+            backgroundColor:filled?Colors.white24:orange.withValues(alpha:.12),
+            child:Icon(icon,color:filled?Colors.white:orange,size:22)
+          ),
+          const SizedBox(width:12),
+          Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
+            Text(title,style:TextStyle(color:filled?Colors.white:Colors.white,fontSize:17,fontWeight:FontWeight.w900)),
+            Text(sub,style:TextStyle(color:filled?Colors.white70:Colors.white54,fontSize:10.5)),
+          ])),
+          Icon(Icons.arrow_back_ios_new_rounded,size:14,color:filled?Colors.white:Colors.white54),
+        ]),
+      ),
+    ),
   );
+
+  Widget miniFeature(IconData icon,String text)=>Column(children:[
+    Container(
+      width:43,height:43,
+      decoration:BoxDecoration(color:const Color(0xFF111318),shape:BoxShape.circle,border:Border.all(color:const Color(0xFF2D3037))),
+      child:Icon(icon,color:Colors.white70,size:20),
+    ),
+    const SizedBox(height:5),
+    Text(text,style:const TextStyle(color:Colors.white60,fontSize:9,fontWeight:FontWeight.w700)),
+  ]);
 }
 
 class BrandHero extends StatelessWidget {
   const BrandHero({super.key});
-  @override Widget build(BuildContext c)=>Row(mainAxisSize:MainAxisSize.min,children:[
-    Container(width:45,height:45,decoration:BoxDecoration(gradient:const LinearGradient(colors:[orange,Color(0xFFFF9A3D)]),borderRadius:BorderRadius.circular(14)),child:const Icon(Icons.delivery_dining_rounded,color:Colors.white,size:29)),
-    const SizedBox(width:10),
-    const Text('نوفا ديليفري',style:TextStyle(color:Colors.white,fontSize:23,fontWeight:FontWeight.w900)),
+  @override
+  Widget build(BuildContext c)=>Row(mainAxisSize:MainAxisSize.min,children:[
+    Container(
+      width:38,height:38,
+      decoration:BoxDecoration(color:orange,borderRadius:BorderRadius.circular(12)),
+      child:const Icon(Icons.delivery_dining_rounded,color:Colors.white,size:24)
+    ),
+    const SizedBox(width:8),
+    const Text('نوفا ديليفري',style:TextStyle(color:Colors.white,fontSize:20,fontWeight:FontWeight.w900)),
   ]);
 }
 
@@ -279,11 +331,23 @@ class Home extends StatelessWidget {
     const SizedBox(height:16),
     InkWell(onTap:onMap,borderRadius:BorderRadius.circular(18),child:Container(padding:const EdgeInsets.all(14),decoration:BoxDecoration(color:Theme.of(context).colorScheme.surface,borderRadius:BorderRadius.circular(18)),child:const Row(children:[Icon(Icons.location_on_rounded,color:orange),SizedBox(width:9),Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text('عنوان التوصيل',style:TextStyle(color:muted,fontSize:10)),Text('المنصورة • اختر موقعك على الخريطة',style:TextStyle(fontWeight:FontWeight.bold))])),Icon(Icons.chevron_left_rounded)]))),
     const SizedBox(height:18),
-    Container(height:185,padding:const EdgeInsets.all(22),decoration:BoxDecoration(gradient:const LinearGradient(colors:[Color(0xFFFF4D2E),Color(0xFFFF8B55)]),borderRadius:BorderRadius.circular(28),boxShadow:[BoxShadow(color:Color(0x40FF5A36),blurRadius:25,offset:Offset(0,12))]),child:Stack(children:[
-      const Positioned(right:-35,top:-45,child:Icon(Icons.local_shipping_rounded,color:Colors.white24,size:180)),
-      const Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text('كل اللي نفسك فيه…',style:TextStyle(color:Colors.white70)),SizedBox(height:5),Text('يوصل لبابك بسرعة 🚀',style:TextStyle(color:Colors.white,fontSize:25,fontWeight:FontWeight.w900)),SizedBox(height:8),Text('مطاعم حقيقية • فروع حقيقية • بيانات موثقة',style:TextStyle(color:Colors.white,fontSize:11))]),
-      Positioned(bottom:0,left:0,child:FilledButton.tonal(onPressed:onMap,child:const Text('افتح الخريطة'))),
-    ])),
+    Container(
+      height:210,
+      decoration:BoxDecoration(color:ink,borderRadius:BorderRadius.circular(28),boxShadow:const[BoxShadow(color:Color(0x33000000),blurRadius:22,offset:Offset(0,10))]),
+      child:ClipRRect(
+        borderRadius:BorderRadius.circular(28),
+        child:Stack(fit:StackFit.expand,children:[
+          Image.asset('assets/nova_rider.webp',fit:BoxFit.cover),
+          const DecoratedBox(decoration:BoxDecoration(gradient:LinearGradient(begin:Alignment.topCenter,end:Alignment.bottomCenter,colors:[Color(0x22000000),Color(0xD9000000)]))),
+          const Positioned(right:18,top:18,child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
+            Text('كل اللي نفسك فيه…',style:TextStyle(color:Colors.white70)),
+            SizedBox(height:4),
+            Text('يوصل لبابك بسرعة 🚀',style:TextStyle(color:Colors.white,fontSize:23,fontWeight:FontWeight.w900)),
+          ])),
+          Positioned(bottom:14,left:14,child:FilledButton(onPressed:onMap,style:FilledButton.styleFrom(backgroundColor:orange,foregroundColor:Colors.white),child:const Text('افتح الخريطة'))),
+        ]),
+      ),
+    ),
     const SizedBox(height:23),title('اختار مزاجك','عرض الكل'),const SizedBox(height:11),
     SizedBox(height:92,child:ListView(scrollDirection:Axis.horizontal,children:const[Cat('🍔','برجر'),Cat('🍗','فراخ'),Cat('🍕','بيتزا'),Cat('🍰','حلويات'),Cat('🥤','مشروبات'),Cat('🥗','صحي')])),
     const SizedBox(height:22),title('مطاعم حقيقية حولك','الخريطة'),const SizedBox(height:12),
