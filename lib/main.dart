@@ -1331,7 +1331,7 @@ class _ProfilePageState extends State<ProfilePage>{
         const SizedBox(height:12),
         FilledButton.icon(onPressed:()=>Navigator.push(c,MaterialPageRoute(builder:(_)=>const OwnerStudioPage())),icon:const Icon(Icons.tune_rounded),label:const Text('فتح استوديو المالك')),
       ]),
-    ),
+    ) : const SizedBox.shrink(),
   ]);
 }
 class CustomerOrderTrackingPage extends StatefulWidget{
