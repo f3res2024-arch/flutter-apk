@@ -886,7 +886,7 @@ class _ShellState extends State<Shell> {
       actions:[TextButton(onPressed:()=>Navigator.pop(d,false),child:const Text('إلغاء')),FilledButton.icon(onPressed:()=>Navigator.pop(d,true),icon:const Icon(Icons.add_shopping_cart_rounded),label:const Text('أضف للسلة'))],
     ));
     if(ok!=true||!mounted)return;
-    setState(()=>cart.add(Line(r,m)));
+    setState((){final i=cart.indexWhere((x)=>x.r.name==r.name&&x.m.name==m.name);if(i>=0){cart[i].qty++;}else{cart.add(Line(r,m));}});
     if(mounted)ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('تمت إضافة المنتج للسلة ✓'),duration:Duration(milliseconds:900)));
   }
   void sub(Line x)=>setState((){if(x.qty>1){x.qty--;}else{cart.remove(x);}});
