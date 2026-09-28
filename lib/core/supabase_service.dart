@@ -367,10 +367,10 @@ class NovaSupabase {
     final rows=await client.from('orders').select('id,status,total,restaurant_name,customer_name,created_at').order('created_at',ascending:false).limit(100);
     return List<Map<String,dynamic>>.from(rows);
   }
-  static Future<String> createRestaurant({required String name, String description='', String phone='', double deliveryFee=0, double minOrder=0}) async {
+  static Future<String> createRestaurant({required String name, String description='', String phone='', double deliveryFee=0, double minOrder=0, String? logoUrl, String? coverUrl}) async {
     _requireReady();
     if(await currentUserRole()!='admin') throw const AuthException('هذه الصلاحية للمالك فقط.');
-    final row=await client.from('restaurants').insert({'name':name.trim(),'description':description.trim(),'phone':phone.trim(),'delivery_fee':deliveryFee,'min_order':minOrder,'is_active':true}).select('id').single();
+    final row=await client.from('restaurants').insert({'name':name.trim(),'description':description.trim(),'phone':phone.trim(),'delivery_fee':deliveryFee,'min_order':minOrder,'logo_url':logoUrl,'cover_url':coverUrl,'is_active':true}).select('id').single();
     return row['id'].toString();
   }
   static Future<void> deleteRestaurant(String id) async {
@@ -442,10 +442,10 @@ class NovaSupabase {
     final rows=await client.from('offers').select('*, coupons(code,title)').order('sort_order').order('created_at',ascending:false);
     return List<Map<String,dynamic>>.from(rows);
   }
-  static Future<String> createOffer({required String title,String subtitle='',String? imageUrl,String? couponId,int sortOrder=0}) async {
+  static Future<String> createOffer({required String title,String subtitle='',String? imageUrl,String? couponId,int sortOrder=0,String targetType='coupon',String? targetValue,String? targetLabel}) async {
     _requireReady();
     if(await currentUserRole()!='admin') throw const AuthException('هذه الصلاحية للمالك فقط.');
-    final row=await client.from('offers').insert({'title':title.trim(),'subtitle':subtitle.trim(),'image_url':imageUrl,'coupon_id':couponId,'sort_order':sortOrder,'is_active':true}).select('id').single();
+    final row=await client.from('offers').insert({'title':title.trim(),'subtitle':subtitle.trim(),'image_url':imageUrl,'coupon_id':couponId,'sort_order':sortOrder,'target_type':targetType,'target_value':targetValue,'target_label':targetLabel,'is_active':true}).select('id').single();
     return row['id'].toString();
   }
   static Future<void> updateOffer(String id,Map<String,dynamic> values) async {
