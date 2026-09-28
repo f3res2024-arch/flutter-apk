@@ -1043,6 +1043,17 @@ class Home extends StatelessWidget {
     ),
     const SizedBox(height:23),title('اختار مزاجك','عرض الكل'),const SizedBox(height:11),
     SizedBox(height:92,child:ListView(scrollDirection:Axis.horizontal,children:const[Cat('🍔','برجر'),Cat('🍗','فراخ'),Cat('🍕','بيتزا'),Cat('🍰','حلويات'),Cat('🥤','مشروبات'),Cat('🥗','صحي')])),
+    const SizedBox(height:20),
+    const Text('عروض معمولة ليك',style:TextStyle(fontSize:20,fontWeight:FontWeight.w900)),
+    const SizedBox(height:11),
+    SizedBox(height:122,child:ListView(
+      scrollDirection:Axis.horizontal,
+      children:[
+        _PromoCard(icon:Icons.local_offer_rounded,title:'خصم 20%',sub:'على أول طلب اليوم',code:'NOVA20'),
+        _PromoCard(icon:Icons.delivery_dining_rounded,title:'توصيل مجاني',sub:'على مطاعم مختارة',code:'FREEDEL'),
+        _PromoCard(icon:Icons.workspace_premium_rounded,title:'نوفا بلس',sub:'مزايا أكثر كل يوم',code:'NOVA+'),
+      ],
+    )),
     const SizedBox(height:22),title('مطاعم حقيقية حولك','الخريطة'),const SizedBox(height:12),
     ...data.map((r)=>Padding(padding:const EdgeInsets.only(bottom:14),child:CardR(r:r,onTap:()=>onOpen(r)))),
     const SizedBox(height:4),const Text('المصادر: المنيوز و EGMenus • تحقق من البيانات: سبتمبر 2026',style:TextStyle(color:muted,fontSize:10)),
@@ -1056,6 +1067,27 @@ class Cat extends StatelessWidget {
   @override Widget build(BuildContext c)=>Container(width:82,margin:const EdgeInsets.only(left:10),decoration:BoxDecoration(color:Theme.of(c).colorScheme.surface,borderRadius:BorderRadius.circular(20)),child:Column(mainAxisAlignment:MainAxisAlignment.center,children:[Text(e,style:const TextStyle(fontSize:30)),const SizedBox(height:5),Text(n,style:const TextStyle(fontWeight:FontWeight.w700,fontSize:12))]));
 }
 
+class _PromoCard extends StatelessWidget{
+  final IconData icon; final String title,sub,code;
+  const _PromoCard({required this.icon,required this.title,required this.sub,required this.code});
+  @override Widget build(BuildContext c)=>Container(
+    width:235,margin:const EdgeInsets.only(left:10),padding:const EdgeInsets.all(16),
+    decoration:BoxDecoration(
+      gradient:const LinearGradient(colors:[ink,Color(0xFF292E39)]),
+      borderRadius:BorderRadius.circular(22),
+      boxShadow:const[BoxShadow(color:Color(0x18000000),blurRadius:18,offset:Offset(0,7))],
+    ),
+    child:Row(children:[
+      Container(width:46,height:46,decoration:BoxDecoration(color:orange.withValues(alpha:.16),shape:BoxShape.circle),child:Icon(icon,color:orange)),
+      const SizedBox(width:11),
+      Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,mainAxisAlignment:MainAxisAlignment.center,children:[
+        Text(title,style:const TextStyle(color:Colors.white,fontWeight:FontWeight.w900,fontSize:16)),
+        const SizedBox(height:3),Text(sub,style:const TextStyle(color:Colors.white60,fontSize:10)),
+        const SizedBox(height:7),Text(code,style:const TextStyle(color:orange,fontSize:9,fontWeight:FontWeight.w900,letterSpacing:1)),
+      ])),
+    ]),
+  );
+}
 class CardR extends StatelessWidget {
   final R r; final VoidCallback onTap; const CardR({super.key,required this.r,required this.onTap});
   @override Widget build(BuildContext c)=>InkWell(onTap:onTap,borderRadius:BorderRadius.circular(24),child:Container(decoration:BoxDecoration(color:Theme.of(c).colorScheme.surface,borderRadius:BorderRadius.circular(24),boxShadow:const[BoxShadow(color:Color(0x0C000000),blurRadius:18,offset:Offset(0,7))]),child:Column(children:[
@@ -1170,7 +1202,44 @@ class OTile extends StatelessWidget {
     );
   }
 }
-class OrdersPage extends StatelessWidget{const OrdersPage({super.key});@override Widget build(BuildContext c)=>ListView(padding:const EdgeInsets.all(18),children:[const Text('طلباتي',style:TextStyle(fontSize:28,fontWeight:FontWeight.w900)),const SizedBox(height:18),const OTile('NV-2841','دجاج كنتاكي','السائق في الطريق إليك',true),const OTile('NV-2819','بازوكا','تم التسليم • أمس',false),const OTile('NV-2772','تيكتس','تم التسليم • 18 سبتمبر',false)]);}
+class OrdersPage extends StatelessWidget{
+  const OrdersPage({super.key});
+  @override Widget build(BuildContext c)=>ListView(
+    padding:const EdgeInsets.fromLTRB(18,18,18,110),
+    children:[
+      const Text('طلباتي',style:TextStyle(fontSize:30,fontWeight:FontWeight.w900)),
+      const SizedBox(height:5),
+      const Text('كل طلباتك في مكان واحد',style:TextStyle(color:muted)),
+      const SizedBox(height:18),
+      Container(
+        padding:const EdgeInsets.all(5),
+        decoration:BoxDecoration(color:Theme.of(c).colorScheme.surface,borderRadius:BorderRadius.circular(17)),
+        child:const Row(children:[
+          Expanded(child:Center(child:Padding(padding:EdgeInsets.all(10),child:Text('الحالية',style:TextStyle(color:orange,fontWeight:FontWeight.w900))))),
+          Expanded(child:Center(child:Padding(padding:EdgeInsets.all(10),child:Text('السابقة',style:TextStyle(color:muted,fontWeight:FontWeight.w700))))),
+        ]),
+      ),
+      const SizedBox(height:15),
+      Container(
+        padding:const EdgeInsets.all(16),
+        decoration:BoxDecoration(color:ink,borderRadius:BorderRadius.circular(24)),
+        child:const Row(children:[
+          CircleAvatar(radius:26,backgroundColor:Color(0x22FF5A36),child:Icon(Icons.delivery_dining_rounded,color:orange)),
+          SizedBox(width:12),
+          Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
+            Text('دجاج كنتاكي',style:TextStyle(color:Colors.white,fontWeight:FontWeight.w900,fontSize:16)),
+            SizedBox(height:4),Text('NV-2841 • السائق في الطريق',style:TextStyle(color:Colors.white60,fontSize:10)),
+          ])),
+          Text('312 ج.م',style:TextStyle(color:Colors.white,fontWeight:FontWeight.w900)),
+        ]),
+      ),
+      const SizedBox(height:12),
+      const OTile('NV-2841','دجاج كنتاكي','السائق في الطريق إليك',true),
+      const OTile('NV-2819','بازوكا','تم التسليم • أمس',false),
+      const OTile('NV-2772','تيكتس','تم التسليم • 18 سبتمبر',false),
+    ],
+  );
+}
 class CartPage extends StatelessWidget {
   final List<Line> cart;
   final double total;
@@ -1333,30 +1402,43 @@ void showNotifications(BuildContext c) {
 
 void checkout(BuildContext c, double total) {
   showModalBottomSheet(
-    context: c,
-    showDragHandle: true,
-    builder: (_) => Directionality(
-      textDirection: TextDirection.rtl,
-      child: Padding(
-        padding: const EdgeInsets.all(18),
-        child: Column(mainAxisSize: MainAxisSize.min, children: [
-          const Text('تأكيد الطلب', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900)),
-          const SizedBox(height: 14),
-          st(c, Icons.location_on, 'عنوان التوصيل', 'المنصورة • اختر عنواناً', () {}),
-          st(c, Icons.payments, 'طريقة الدفع', 'الدفع عند الاستلام', () {}),
-          line('الإجمالي النهائي', total, bold: true),
-          const SizedBox(height: 14),
-          FilledButton(
-            onPressed: () {
+    context:c,isScrollControlled:true,showDragHandle:true,
+    backgroundColor:Theme.of(c).scaffoldBackgroundColor,
+    builder:(_)=>Directionality(
+      textDirection:TextDirection.rtl,
+      child:SafeArea(child:Padding(
+        padding:const EdgeInsets.fromLTRB(18,8,18,18),
+        child:Column(mainAxisSize:MainAxisSize.min,crossAxisAlignment:CrossAxisAlignment.start,children:[
+          const Text('إتمام الطلب',style:TextStyle(fontSize:28,fontWeight:FontWeight.w900)),
+          const SizedBox(height:5),const Text('راجع التفاصيل قبل التأكيد',style:TextStyle(color:muted)),
+          const SizedBox(height:18),
+          st(c,Icons.location_on_rounded,'عنوان التوصيل','المنصورة • اختر عنواناً محفوظاً',(){}),
+          st(c,Icons.payments_rounded,'طريقة الدفع','الدفع عند الاستلام',(){}),
+          st(c,Icons.local_offer_rounded,'كود الخصم','أضف كوبوناً للحصول على خصم',(){}),
+          const SizedBox(height:8),
+          Container(
+            padding:const EdgeInsets.all(16),
+            decoration:BoxDecoration(color:Theme.of(c).colorScheme.surface,borderRadius:BorderRadius.circular(20)),
+            child:Column(children:[
+              line('قيمة الطلب',total-33),
+              line('التوصيل',25),
+              line('الخدمة',8),
+              const Divider(height:20),
+              line('الإجمالي النهائي',total,bold:true),
+            ]),
+          ),
+          const SizedBox(height:14),
+          FilledButton.icon(
+            onPressed:(){
               Navigator.pop(c);
-              ScaffoldMessenger.of(c).showSnackBar(const SnackBar(content: Text('تم إرسال الطلب بنجاح 🎉')));
+              snack(c,'تم استلام طلبك وتجهيزه للتنفيذ 🎉');
             },
-            style: FilledButton.styleFrom(backgroundColor: orange, minimumSize: const Size.fromHeight(54)),
-            child: const Text('تأكيد وإرسال الطلب'),
+            icon:const Icon(Icons.arrow_back_rounded),
+            style:FilledButton.styleFrom(minimumSize:const Size.fromHeight(56),backgroundColor:orange),
+            label:Text('تأكيد الطلب • '+total.toStringAsFixed(0)+' ج.م'),
           ),
         ]),
-      ),
+      )),
     ),
   );
 }
-
