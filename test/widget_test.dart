@@ -2,9 +2,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:nova_delivery/main.dart';
 
 void main() {
-  testWidgets('Nova Delivery starts on the customer home screen', (tester) async {
+  testWidgets('Nova Delivery opens the Arabic premium home', (tester) async {
     await tester.pumpWidget(const Nova());
-    expect(find.text('Nova Delivery'), findsOneWidget);
-    expect(find.text('جوعان؟ 😋'), findsOneWidget);
+    expect(find.text('نوفا ديليفري'), findsOneWidget);
+    expect(find.text('مطاعم حقيقية حولك'), findsOneWidget);
   });
 }
