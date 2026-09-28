@@ -92,16 +92,16 @@ class _NovaState extends State<Nova>{
   UserRole? role;
   bool logged=false;
   bool passwordRecovery=false;
-  StreamSubscription<AuthState>? _authSubscription;
+  StreamSubscription<dynamic>? _authSubscription;
   @override void initState(){
     super.initState();
     if(NovaSupabase.configured){
       if(NovaSupabase.client.auth.currentSession!=null) _restoreAuthenticatedUser();
       _authSubscription=NovaSupabase.client.auth.onAuthStateChange.listen((event){
         if(!mounted)return;
-        if(event.event==AuthChangeEvent.passwordRecovery){setState(()=>passwordRecovery=true);}
-        else if(event.event==AuthChangeEvent.signedIn || event.event==AuthChangeEvent.tokenRefreshed){_restoreAuthenticatedUser();}
-        else if(event.event==AuthChangeEvent.signedOut){setState(()=>logged=false);}
+        if(event.event.toString().contains('passwordRecovery') || event.event.toString().contains('PASSWORD_RECOVERY')){setState(()=>passwordRecovery=true);}
+        else if(event.event.toString().contains('signedIn') || event.event.toString().contains('SIGNED_IN') || event.event.toString().contains('tokenRefreshed') || event.event.toString().contains('TOKEN_REFRESHED')){_restoreAuthenticatedUser();}
+        else if(event.event.toString().contains('signedOut') || event.event.toString().contains('SIGNED_OUT')){setState(()=>logged=false);}
       });
     }
   }
@@ -295,7 +295,7 @@ class _LoginScreenState extends State<LoginScreen>{
     if(p.length<6){snack(context,'كلمة المرور يجب أن تكون 6 أحرف على الأقل');return;}
     setState(()=>busy=true);
     try{await NovaSupabase.signIn(email:e,password:p);if(mounted)widget.onSuccess();}
-    on AuthException catch(e){if(mounted)snack(context,_authMessage(e.message));}
+    on Object catch(e){if(mounted)snack(context,_authMessage(e.toString()));}
     catch(_){if(mounted)snack(context,'تعذر تسجيل الدخول. حاول مرة أخرى.');}
     finally{if(mounted)setState(()=>busy=false);}
   }
@@ -314,7 +314,7 @@ class _LoginScreenState extends State<LoginScreen>{
       AuthField(controller:email,label:'البريد الإلكتروني',hint:'name@example.com',icon:Icons.mail_outline_rounded,keyboardType:TextInputType.emailAddress),
       const SizedBox(height:13),
       AuthField(controller:pass,label:'كلمة المرور',hint:'••••••••',icon:Icons.lock_outline_rounded,obscureText:hide,suffix:IconButton(onPressed:()=>setState(()=>hide=!hide),icon:Icon(hide?Icons.visibility_outlined:Icons.visibility_off_outlined))),
-      Align(alignment:Alignment.centerLeft,child:TextButton(onPressed:()=>Navigator.push(c,MaterialPageRoute(builder:(_)=>ForgotPasswordScreen(role:widget.role.name))),child:const Text('نسيت كلمة المرور؟',style:TextStyle(color:orange,fontWeight:FontWeight.w800)))),
+      Align(alignment:Alignment.centerLeft,child:TextButton(onPressed:()=>Navigator.push(c,MaterialPageRoute(builder:(_)=>ForgotPasswordScreen(role:widget.role))),child:const Text('نسيت كلمة المرور؟',style:TextStyle(color:orange,fontWeight:FontWeight.w800)))),
       const SizedBox(height:3),
       FilledButton(onPressed:busy?null:submit,child:busy?const SizedBox(width:22,height:22,child:CircularProgressIndicator(strokeWidth:2,color:Colors.white)):const Text('تسجيل الدخول')),
       const SizedBox(height:18),
@@ -343,7 +343,7 @@ class _SignupScreenState extends State<SignupScreen>{
     if(p!=confirm.text){snack(context,'كلمتا المرور غير متطابقتين');return;}
     setState(()=>busy=true);
     try{
-      final res=await NovaSupabase.signUp(email:e,password:p,role:widget.role);
+      final res=await NovaSupabase.signUp(email:e,password:p,role:widget.role.name);
       if(!mounted)return;
       if(res.session!=null){Navigator.pop(context);snack(context,'تم إنشاء حسابك بنجاح 🎉');}
       else{
@@ -431,13 +431,52 @@ class AuthScaffold extends StatelessWidget{
   const AuthScaffold({super.key,required this.onBack,required this.eyebrow,required this.title,required this.subtitle,required this.child});
   @override Widget build(BuildContext c){
     final bottom=MediaQuery.viewInsetsOf(c).bottom;
-    return Scaffold(resizeToAvoidBottomInset:true,appBar:AppBar(leading:IconButton(onPressed:onBack,icon:const Icon(Icons.arrow_forward_rounded)),title:const BrandHero()),body:SafeArea(child:LayoutBuilder(builder:(c,box)=>SingleChildScrollView(
-      padding:EdgeInsets.fromLTRB(20,10,20,24+bottom),
-      child:ConstrainedBox(constraints:BoxConstraints(minHeight:box.maxHeight-34,maxWidth:560),child:Center(child:Container(width:double.infinity,padding:const EdgeInsets.all(22),decoration:BoxDecoration(color:Theme.of(c).colorScheme.surface,borderRadius:BorderRadius.circular(30),border:Border.all(color:Theme.of(c).dividerColor.withValues(alpha:.35)),boxShadow:[BoxShadow(color:Colors.black.withValues(alpha:.16),blurRadius:30,offset:const Offset(0,18))]),child:Column(crossAxisAlignment:CrossAxisAlignment.start,mainAxisAlignment:MainAxisAlignment.center,children:[
-        Container(padding:const EdgeInsets.symmetric(horizontal:11,vertical:7),decoration:BoxDecoration(color:orange.withValues(alpha:.10),borderRadius:BorderRadius.circular(30)),child:Text(eyebrow,style:const TextStyle(color:orange,fontSize:11,fontWeight:FontWeight.w900))),
-        const SizedBox(height:14),Text(title,style:const TextStyle(fontSize:30,fontWeight:FontWeight.w900,height:1.1)),const SizedBox(height:7),Text(subtitle,style:const TextStyle(color:muted,fontSize:13,height:1.5)),const SizedBox(height:23),child,
-      ]))),
-    )));
+    return Scaffold(
+      resizeToAvoidBottomInset:true,
+      appBar:AppBar(
+        leading:IconButton(onPressed:onBack,icon:const Icon(Icons.arrow_forward_rounded)),
+        title:const BrandHero(),
+      ),
+      body:SafeArea(
+        child:LayoutBuilder(
+          builder:(context,box)=>SingleChildScrollView(
+            padding:EdgeInsets.fromLTRB(20,10,20,24+bottom),
+            child:ConstrainedBox(
+              constraints:BoxConstraints(minHeight:box.maxHeight-34,maxWidth:560),
+              child:Center(
+                child:Container(
+                  width:double.infinity,
+                  padding:const EdgeInsets.all(22),
+                  decoration:BoxDecoration(
+                    color:Theme.of(context).colorScheme.surface,
+                    borderRadius:BorderRadius.circular(30),
+                    border:Border.all(color:Theme.of(context).dividerColor.withValues(alpha:.35)),
+                    boxShadow:[BoxShadow(color:Colors.black.withValues(alpha:.16),blurRadius:30,offset:const Offset(0,18))],
+                  ),
+                  child:Column(
+                    crossAxisAlignment:CrossAxisAlignment.start,
+                    mainAxisAlignment:MainAxisAlignment.center,
+                    children:[
+                      Container(
+                        padding:const EdgeInsets.symmetric(horizontal:11,vertical:7),
+                        decoration:BoxDecoration(color:orange.withValues(alpha:.10),borderRadius:BorderRadius.circular(30)),
+                        child:Text(eyebrow,style:const TextStyle(color:orange,fontSize:11,fontWeight:FontWeight.w900)),
+                      ),
+                      const SizedBox(height:14),
+                      Text(title,style:const TextStyle(fontSize:30,fontWeight:FontWeight.w900,height:1.1)),
+                      const SizedBox(height:7),
+                      Text(subtitle,style:const TextStyle(color:muted,fontSize:13,height:1.5)),
+                      const SizedBox(height:23),
+                      child,
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }
 
