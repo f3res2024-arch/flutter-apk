@@ -1,4 +1,5 @@
 name: Build Nova APK
+# Trigger a fresh release build after manifest generation fix
 
 on:
   push:
