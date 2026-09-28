@@ -1340,6 +1340,70 @@ void snack(BuildContext c,String message){
 Widget line(String s,double v,{bool bold=false})=>Padding(padding:const EdgeInsets.symmetric(vertical:5),child:Row(children:[Expanded(child:Text(s,style:TextStyle(fontWeight:bold?FontWeight.w900:FontWeight.w500))),Text(v.toStringAsFixed(0)+' ج.م',style:TextStyle(fontWeight:FontWeight.w900,color:bold?orange:null))]));
 
 class ProfilePage extends StatelessWidget{final bool dark;final ValueChanged<bool> onDark;final VoidCallback onMap;const ProfilePage({super.key,required this.dark,required this.onDark,required this.onMap});@override Widget build(BuildContext c)=>ListView(padding:const EdgeInsets.fromLTRB(18,18,18,100),children:[Container(padding:const EdgeInsets.all(18),decoration:BoxDecoration(color:ink,borderRadius:BorderRadius.circular(26)),child:const Row(children:[CircleAvatar(radius:32,backgroundColor:orange,child:Icon(Icons.person,color:Colors.white,size:32)),SizedBox(width:14),Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text('نوفا ديليفري',style:TextStyle(color:Colors.white,fontSize:20,fontWeight:FontWeight.w900)),Text('حساب العميل',style:TextStyle(color:Colors.white70,fontSize:12))])])),const SizedBox(height:18),const Text('الإعدادات والخدمات',style:TextStyle(fontSize:21,fontWeight:FontWeight.w900)),const SizedBox(height:8),st(c,Icons.location_on_outlined,'العناوين والخريطة','حدد موقعك وفروع المطاعم',onMap),st(c,Icons.credit_card,'طرق الدفع','كاش • بطاقة • محفظة',()=>showFeature(c,'طرق الدفع','اختر طريقة الدفع أثناء إتمام الطلب: كاش، بطاقة، أو محفظة.')),st(c,Icons.favorite_border,'المفضلة','مطاعم وأطباق محفوظة',()=>showFeature(c,'المفضلة','اضغط قلب أي مطعم لحفظه في مفضلة حسابك.')),st(c,Icons.local_offer_outlined,'العروض والكوبونات','خصومات وعروض يومية',()=>showFeature(c,'العروض','NOVA20 و FREEDEL متاحان من شاشة إتمام الطلب.')),st(c,Icons.notifications_none,'الإشعارات','الطلب والعروض',()=>showNotifications(c)),st(c,Icons.dark_mode_outlined,'الوضع الليلي','تخصيص المظهر',()=>onDark(!dark),trailing:Switch(value:dark,onChanged:onDark)),st(c,Icons.security,'الأمان والخصوصية','حماية الحساب',()=>showFeature(c,'الأمان والخصوصية','حسابك يستخدم جلسة Supabase آمنة. استخدم استعادة كلمة المرور من شاشة الدخول عند الحاجة.')),st(c,Icons.help_outline,'مركز المساعدة','دعم وشكاوى ومحادثة',()=>showFeature(c,'مركز المساعدة','للدعم: افتح طلبك من «طلباتي» واضغط عليه للتتبع، أو تواصل معنا عبر القناة التي ستُربط لاحقاً.')),const SizedBox(height:12),OutlinedButton.icon(onPressed:()=>Navigator.push(c,MaterialPageRoute(builder:(_)=>const Roles())),icon:const Icon(Icons.dashboard_customize_outlined),label:const Text('لوحات المطعم والسائق والإدارة'))]);}
+class CustomerOrderTrackingPage extends StatefulWidget{
+  final Map<String,dynamic> order;
+  const CustomerOrderTrackingPage({super.key,required this.order});
+  @override State<CustomerOrderTrackingPage> createState()=>_CustomerOrderTrackingPageState();
+}
+class _CustomerOrderTrackingPageState extends State<CustomerOrderTrackingPage>{
+  dynamic channel;
+  Map<String,dynamic> current;
+  _CustomerOrderTrackingPageState():current={};
+  @override void initState(){super.initState();current=Map<String,dynamic>.from(widget.order);_watch();}
+  void _watch(){
+    if(!NovaSupabase.initialized||NovaSupabase.currentUser==null)return;
+    channel=NovaSupabase.watchCustomerOrders(() async {
+      try{
+        final rows=await NovaSupabase.customerOrders();
+        final id=widget.order['id'].toString();
+        final hit=rows.where((x)=>x['id'].toString()==id).toList();
+        if(hit.isNotEmpty&&mounted)setState(()=>current=hit.first);
+      }catch(_){}
+    });
+  }
+  @override void dispose(){channel?.unsubscribe();super.dispose();}
+  @override Widget build(BuildContext c){
+    final lat=double.tryParse(current['customer_lat']?.toString()??'')??31.0445;
+    final lng=double.tryParse(current['customer_lng']?.toString()??'')??31.3540;
+    final clat=double.tryParse(current['courier_lat']?.toString()??'')??lat;
+    final clng=double.tryParse(current['courier_lng']?.toString()??'')??lng;
+    final hasCourier=current['courier_lat']!=null&&current['courier_lng']!=null;
+    final status=(current['status']??'pending').toString();
+    final steps=['pending','accepted','preparing','ready','picked_up','on_the_way','delivered'];
+    final idx=steps.indexOf(status);
+    return Scaffold(
+      appBar:AppBar(title:const Text('تتبع الطلب'),actions:[IconButton(onPressed:() async {try{final rows=await NovaSupabase.customerOrders();final id=widget.order['id'].toString();final hit=rows.where((x)=>x['id'].toString()==id).toList();if(hit.isNotEmpty&&mounted)setState(()=>current=hit.first);}catch(e){if(mounted)snack(c,'تعذر التحديث: $e');}},icon:const Icon(Icons.refresh_rounded))]),
+      body:Column(children:[
+        Expanded(child:FlutterMap(
+          options:MapOptions(initialCenter:LatLng(hasCourier?clat:lat,hasCourier?clng:lng),initialZoom:14.8),
+          children:[
+            TileLayer(urlTemplate:'https://tile.openstreetmap.org/{z}/{x}/{y}.png',userAgentPackageName:'com.nova.delivery'),
+            if(hasCourier)PolylineLayer(polylines:[Polyline(points:[LatLng(clat,clng),LatLng(lat,lng)],strokeWidth:5,color:orange)]),
+            MarkerLayer(markers:[
+              Marker(point:LatLng(lat,lng),width:55,height:55,child:Container(decoration:BoxDecoration(color:orange,shape:BoxShape.circle,border:Border.all(color:Colors.white,width:3)),child:const Icon(Icons.home_rounded,color:Colors.white))),
+              if(hasCourier)Marker(point:LatLng(clat,clng),width:55,height:55,child:Container(decoration:BoxDecoration(color:ink,shape:BoxShape.circle,border:Border.all(color:Colors.white,width:3)),child:const Icon(Icons.delivery_dining_rounded,color:Colors.white))),
+            ]),
+          ],
+        )),
+        Container(
+          padding:const EdgeInsets.fromLTRB(18,15,18,20),
+          decoration:BoxDecoration(color:Theme.of(c).colorScheme.surface,borderRadius:const BorderRadius.vertical(top:Radius.circular(28))),
+          child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
+            Text((current['restaurant_name']??'مطعم نوفا').toString(),style:const TextStyle(fontSize:20,fontWeight:FontWeight.w900)),
+            Text('#'+_shortId(current['id']),style:const TextStyle(color:muted,fontSize:10)),
+            const SizedBox(height:12),
+            Text(status=='delivered'?'تم التسليم بنجاح 🎉':status=='on_the_way'?'السائق في الطريق إليك 🚴':status=='pending'?'في انتظار قبول الطلب':'جاري تجهيز طلبك',style:const TextStyle(fontWeight:FontWeight.w900)),
+            const SizedBox(height:10),
+            Row(children:List.generate(steps.length,(i)=>Expanded(child:Container(height:7,margin:const EdgeInsets.symmetric(horizontal:2),decoration:BoxDecoration(color:i<=idx?orange:Colors.black12,borderRadius:BorderRadius.circular(8)))))),
+            const SizedBox(height:12),
+            Text((current['delivery_address']??'عنوان التوصيل').toString(),style:const TextStyle(color:muted,fontSize:11)),
+          ]),
+        ),
+      ]),
+    );
+  }
+}
+
 class MapPage extends StatelessWidget {
   final R? restaurant;
   const MapPage({super.key, this.restaurant});
