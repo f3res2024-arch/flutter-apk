@@ -356,6 +356,17 @@ class NovaSupabase {
     await client.from('notifications').update({'is_read': true}).eq('id', id).eq('user_id', currentUser!.id);
   }
 
+  static Future<void> createBranch(String restaurantId,{required String name,required String address,double? lat,double? lng,String phone=''}) async {
+    _requireReady();
+    if(await currentUserRole()!='admin') throw const AuthException('هذه الصلاحية للمالك فقط.');
+    await client.from('branches').insert({'restaurant_id':restaurantId,'name':name.trim(),'address':address.trim(),'lat':lat,'lng':lng,'phone':phone.trim(),'is_open':true});
+  }
+  static Future<List<Map<String,dynamic>>> ownerOrders() async {
+    _requireReady();
+    if(await currentUserRole()!='admin') throw const AuthException('هذه الصلاحية للمالك فقط.');
+    final rows=await client.from('orders').select('id,status,total,restaurant_name,customer_name,created_at').order('created_at',ascending:false).limit(100);
+    return List<Map<String,dynamic>>.from(rows);
+  }
   static Future<String> createRestaurant({required String name, String description='', String phone='', double deliveryFee=0, double minOrder=0}) async {
     _requireReady();
     if(await currentUserRole()!='admin') throw const AuthException('هذه الصلاحية للمالك فقط.');
