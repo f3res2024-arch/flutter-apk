@@ -132,7 +132,12 @@ class NovaSupabase {
   static Future<Map<String,dynamic>?> profile() async { _requireReady(); if(currentUser==null)return null; final row=await client.from('profiles').select().eq('id',currentUser!.id).maybeSingle(); return row==null?null:Map<String,dynamic>.from(row); }
   static Future<void> updateProfile({String? fullName,String? avatarUrl}) async { _requireReady(); if(currentUser==null)throw const AuthException('يجب تسجيل الدخول أولاً.'); final v=<String,dynamic>{'updated_at':DateTime.now().toUtc().toIso8601String()}; if(fullName!=null&&fullName.trim().isNotEmpty)v['full_name']=fullName.trim(); if(avatarUrl!=null)v['avatar_url']=avatarUrl; await client.from('profiles').update(v).eq('id',currentUser!.id); }
   static Future<List<Map<String,dynamic>>> appContent() async { _requireReady(); final rows=await client.from('app_content').select().order('key'); return List<Map<String,dynamic>>.from(rows); }
-  static Future<void> updateAppContent(String key,String value) async { _requireReady(); if(await currentUserRole()!='admin')throw const AuthException('هذه الصلاحية للمالك فقط.'); await client.from('app_content').upsert({'key':key,'text_value':value,'updated_at':DateTime.now().toUtc().toIso8601String()},onConflict:'key'); }
+  static Future<void> updateAppContent(String key,String value) async {  static Future<void> updateAppContentImage(String key,String? imageUrl) async {
+    _requireReady();
+    if(await currentUserRole()!='admin') throw const AuthException('هذه الصلاحية للمالك فقط.');
+    await client.from('app_content').upsert({'key':key,'image_url':imageUrl,'updated_at':DateTime.now().toUtc().toIso8601String()},onConflict:'key');
+  }
+ _requireReady(); if(await currentUserRole()!='admin')throw const AuthException('هذه الصلاحية للمالك فقط.'); await client.from('app_content').upsert({'key':key,'text_value':value,'updated_at':DateTime.now().toUtc().toIso8601String()},onConflict:'key'); }
   static Future<void> updateRestaurant(String id,{String? name,String? description,String? phone,String? logoUrl,String? coverUrl,double? deliveryFee,double? minOrder}) async { _requireReady(); if(await currentUserRole()!='admin')throw const AuthException('هذه الصلاحية للمالك فقط.'); final v=<String,dynamic>{'updated_at':DateTime.now().toUtc().toIso8601String()}; if(name!=null)v['name']=name;if(description!=null)v['description']=description;if(phone!=null)v['phone']=phone;if(logoUrl!=null)v['logo_url']=logoUrl;if(coverUrl!=null)v['cover_url']=coverUrl;if(deliveryFee!=null)v['delivery_fee']=deliveryFee;if(minOrder!=null)v['min_order']=minOrder; await client.from('restaurants').update(v).eq('id',id); }
   static Future<void> updateMenuItem(String id,{String? name,double? price,String? description,String? imageUrl}) async { _requireReady(); if(await currentUserRole()!='admin')throw const AuthException('هذه الصلاحية للمالك فقط.'); final v=<String,dynamic>{'updated_at':DateTime.now().toUtc().toIso8601String()}; if(name!=null)v['name']=name;if(price!=null)v['price']=price;if(description!=null)v['description']=description;if(imageUrl!=null)v['image_url']=imageUrl; await client.from('menu_items').update(v).eq('id',id); }
   static Future<void> addMenuItem(String restaurantId,{required String name,required double price,String description=''}) async { _requireReady(); if(await currentUserRole()!='admin')throw const AuthException('هذه الصلاحية للمالك فقط.'); await client.from('menu_items').insert({'restaurant_id':restaurantId,'name':name,'description':description,'price':price,'is_available':true}); }
@@ -438,6 +443,12 @@ class NovaSupabase {
     _requireReady();
     if(await currentUserRole()!='admin') throw const AuthException('هذه الصلاحية للمالك فقط.');
     await client.from('support_conversations').update({'status':'closed','updated_at':DateTime.now().toUtc().toIso8601String()}).eq('id',conversationId);
+  }
+
+  static Future<void> ownerUpdateOrderStatus(String id,String status) async {
+    _requireReady();
+    if(await currentUserRole()!='admin') throw const AuthException('هذه الصلاحية للمالك فقط.');
+    await client.from('orders').update({'status':status,'updated_at':DateTime.now().toUtc().toIso8601String()}).eq('id',id);
   }
 
   static Future<List<Map<String,dynamic>>> ownerOrders() async {
