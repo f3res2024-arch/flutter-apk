@@ -1974,7 +1974,7 @@ class _OwnerStudioPageState extends State<OwnerStudioPage> with SingleTickerProv
       Text('منيو '+(r['name']??'').toString(),style:const TextStyle(fontSize:23,fontWeight:FontWeight.w900)),const SizedBox(height:10),
       SizedBox(height:420,child:ListView(children:menu.map((m)=>ListTile(title:Text((m['name']??'صنف').toString(),style:const TextStyle(fontWeight:FontWeight.w900)),subtitle:Text(_money(m['price']).toStringAsFixed(0)+' ج.م • '+(m['description']??'').toString()),trailing:Switch(value:m['is_available']==true,onChanged:(v)async{await NovaSupabase.setMenuItemAvailability(m['id'].toString(),v);if(s.mounted)Navigator.pop(s);await manageMenu(r);}),onTap:()=>editMenu(m))).toList())),
       SizedBox(width:double.infinity,child:FilledButton.icon(onPressed:()=>addMenu(r),icon:const Icon(Icons.add_rounded),label:const Text('إضافة وجبة'))),
-    ]))));
+    ])))));
   }
   Future<void> editMenu(Map<String,dynamic> m) async {
     final n=TextEditingController(text:(m['name']??'').toString());
