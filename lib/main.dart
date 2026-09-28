@@ -1907,7 +1907,77 @@ class _SupportCenterPageState extends State<SupportCenterPage>{
   Future<void> _send()async{final text=input.text.trim();if(text.isEmpty||sending||conversation==null)return;input.clear();setState(()=>sending=true);try{await NovaSupabase.sendSupportMessage(conversation!['id'].toString(),text);await _refresh();}catch(e){if(mounted)snack(context,'تعذر إرسال الرسالة: $e');}if(mounted)setState(()=>sending=false);}
   Future<void> _image()async{if(!imageEnabled||conversation==null)return;final file=await ImagePicker().pickImage(source:ImageSource.gallery,imageQuality:88,maxWidth:1600);if(file==null)return;try{final url=await NovaSupabase.uploadSupportImage(conversation!['id'].toString(),await file.readAsBytes());await NovaSupabase.sendSupportImage(conversation!['id'].toString(),url);await _refresh();}catch(e){if(mounted)snack(context,'تعذر رفع الصورة: $e');}}
   Widget bubble(Map<String,dynamic> m){final type=(m['sender_type']??'ai').toString(),mine=type=='customer';final image=(m['image_url']??'').toString();return Align(alignment:mine?Alignment.centerLeft:Alignment.centerRight,child:Container(constraints:const BoxConstraints(maxWidth:330),margin:const EdgeInsets.only(bottom:9),padding:const EdgeInsets.all(13),decoration:BoxDecoration(color:mine?orange:Colors.white,borderRadius:BorderRadius.circular(20),border:Border.all(color:mine?Colors.transparent:const Color(0xFFE8E8EA))),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[if(type!='customer')Padding(padding:const EdgeInsets.only(bottom:4),child:Text(type=='admin'?'مسؤول الدعم':'Nova AI',style:TextStyle(fontSize:10,fontWeight:FontWeight.w900,color:mine?Colors.white70:orange))),if(m['body']!=null&&m['body'].toString().isNotEmpty)Text(m['body'].toString(),style:TextStyle(color:mine?Colors.white:ink,fontWeight:FontWeight.w600,height:1.45)),if(image.isNotEmpty)Padding(padding:const EdgeInsets.only(top:8),child:ClipRRect(borderRadius:BorderRadius.circular(14),child:Image.network(image,width:240,height:180,fit:BoxFit.cover)))])));}
-  @override Widget build(BuildContext c){if(loading)return const Center(child:CircularProgressIndicator(color:orange));final waiting=conversation?['status']=='waiting_admin';return Scaffold(backgroundColor:const Color(0xFFF7F7F8),appBar:AppBar(title:const Text('مركز المساعدة',style:TextStyle(fontWeight:FontWeight.w900)),actions:[if(waiting)const Padding(padding:EdgeInsets.all(12),child:Icon(Icons.support_agent_rounded,color:orange))]),body:Column(children:[Container(margin:const EdgeInsets.fromLTRB(14,14,14,8),padding:const EdgeInsets.all(16),decoration:BoxDecoration(color:ink,borderRadius:BorderRadius.circular(24)),child:Row(children:[Container(width:48,height:48,decoration:BoxDecoration(color:orange,borderRadius:BorderRadius.circular(16)),child:const Icon(Icons.auto_awesome,color:Colors.white)),const SizedBox(width:12),Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[const Text('Nova AI',style:TextStyle(color:Colors.white,fontWeight:FontWeight.w900,fontSize:17)),Text(waiting?'تم تحويلك لمسؤول — انتظر الرد هنا':'اسألني عن طلبك أو أي مشكلة في نوفا',style:const TextStyle(color:Colors.white70,fontSize:11))]))])),Expanded(child:ListView.builder(controller:scroll,padding:const EdgeInsets.fromLTRB(14,8,14,10),itemCount:messages.length,itemBuilder:(_,i)=>bubble(messages[i]))),SafeArea(top:false,child:Container(padding:const EdgeInsets.fromLTRB(10,8,10,10),decoration:const BoxDecoration(color:Colors.white,border:Border(top:BorderSide(color:Color(0xFFEAEAEA)))),child:Row(crossAxisAlignment:CrossAxisAlignment.end,children:[IconButton(onPressed:imageEnabled?_image: null,icon:Icon(Icons.image_outlined,color:imageEnabled?orange:Colors.black26)),Expanded(child:TextField(controller:input,minLines:1,maxLines:5,decoration:InputDecoration(hintText:waiting?'انتظر رد المسؤول...':'اكتب رسالتك...',filled:true,fillColor:const Color(0xFFF4F4F5),border:OutlineInputBorder(borderRadius:BorderRadius.circular(22),borderSide:BorderSide.none),contentPadding:const EdgeInsets.symmetric(horizontal:16,vertical:11)))),const SizedBox(width:6),IconButton(onPressed:sending?null:_send,style:IconButton.styleFrom(backgroundColor:orange,foregroundColor:Colors.white),icon:sending?const SizedBox(width:20,height:20,child:CircularProgressIndicator(strokeWidth:2,color:Colors.white)):const Icon(Icons.arrow_upward_rounded))]))]) );}
+  @override Widget build(BuildContext c){
+    if(loading)return const Center(child:CircularProgressIndicator(color:orange));
+    final waiting=conversation?['status']=='waiting_admin';
+    return Scaffold(
+      backgroundColor:const Color(0xFFF7F7F8),
+      appBar:AppBar(
+        title:const Text('مركز المساعدة',style:TextStyle(fontWeight:FontWeight.w900)),
+        actions:[if(waiting)const Padding(padding:EdgeInsets.all(12),child:Icon(Icons.support_agent_rounded,color:orange))],
+      ),
+      body:Column(
+        children:[
+          Container(
+            margin:const EdgeInsets.fromLTRB(14,14,14,8),
+            padding:const EdgeInsets.all(16),
+            decoration:BoxDecoration(color:ink,borderRadius:BorderRadius.circular(24)),
+            child:Row(
+              children:[
+                Container(width:48,height:48,decoration:BoxDecoration(color:orange,borderRadius:BorderRadius.circular(16)),child:const Icon(Icons.auto_awesome,color:Colors.white)),
+                const SizedBox(width:12),
+                Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
+                  const Text('Nova AI',style:TextStyle(color:Colors.white,fontWeight:FontWeight.w900,fontSize:17)),
+                  Text(waiting?'تم تحويلك لمسؤول — انتظر الرد هنا':'اسألني عن طلبك أو أي مشكلة في نوفا',style:const TextStyle(color:Colors.white70,fontSize:11)),
+                ])),
+              ],
+            ),
+          ),
+          Expanded(
+            child:ListView.builder(
+              controller:scroll,
+              padding:const EdgeInsets.fromLTRB(14,8,14,10),
+              itemCount:messages.length,
+              itemBuilder:(_,i)=>bubble(messages[i]),
+            ),
+          ),
+          SafeArea(
+            top:false,
+            child:Container(
+              padding:const EdgeInsets.fromLTRB(10,8,10,10),
+              decoration:const BoxDecoration(color:Colors.white,border:Border(top:BorderSide(color:Color(0xFFEAEAEA)))),
+              child:Row(
+                crossAxisAlignment:CrossAxisAlignment.end,
+                children:[
+                  IconButton(onPressed:imageEnabled?_image:null,icon:Icon(Icons.image_outlined,color:imageEnabled?orange:Colors.black26)),
+                  Expanded(child:TextField(
+                    controller:input,
+                    minLines:1,
+                    maxLines:5,
+                    decoration:InputDecoration(
+                      hintText:waiting?'انتظر رد المسؤول...':'اكتب رسالتك...',
+                      filled:true,
+                      fillColor:const Color(0xFFF4F4F5),
+                      border:OutlineInputBorder(borderRadius:BorderRadius.circular(22),borderSide:BorderSide.none),
+                      contentPadding:const EdgeInsets.symmetric(horizontal:16,vertical:11),
+                    ),
+                  )),
+                  const SizedBox(width:6),
+                  IconButton(
+                    onPressed:sending?null:_send,
+                    style:IconButton.styleFrom(backgroundColor:orange,foregroundColor:Colors.white),
+                    icon:sending
+                      ?const SizedBox(width:20,height:20,child:CircularProgressIndicator(strokeWidth:2,color:Colors.white))
+                      :const Icon(Icons.arrow_upward_rounded),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class OwnerSupportChatPage extends StatefulWidget{
