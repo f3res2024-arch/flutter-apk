@@ -378,10 +378,11 @@ class NovaSupabase {
     if(await currentUserRole()!='admin') throw const AuthException('هذه الصلاحية للمالك فقط.');
     await client.from('menu_items').update({'is_available':available,'updated_at':DateTime.now().toUtc().toIso8601String()}).eq('id',id);
   }
-  static Future<void> addMenuItemFull(String restaurantId,{required String name,required double price,String description='',String? imageUrl,String? categoryId}) async {
+  static Future<String> addMenuItemFull(String restaurantId,{required String name,required double price,String description='',String? imageUrl,String? categoryId}) async {
     _requireReady();
     if(await currentUserRole()!='admin') throw const AuthException('هذه الصلاحية للمالك فقط.');
-    await client.from('menu_items').insert({'restaurant_id':restaurantId,'name':name.trim(),'description':description.trim(),'price':price,'image_url':imageUrl,'category_id':categoryId,'is_available':true});
+    final row=await client.from('menu_items').insert({'restaurant_id':restaurantId,'name':name.trim(),'description':description.trim(),'price':price,'image_url':imageUrl,'category_id':categoryId,'is_available':true}).select('id').single();
+    return row['id'].toString();
   }
   static Future<List<Map<String,dynamic>>> ownerCoupons() async {
     _requireReady();
