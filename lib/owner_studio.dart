@@ -190,7 +190,7 @@ class _OwnerStudioPageState extends State<OwnerStudioPage> with SingleTickerProv
       content:SingleChildScrollView(child:Column(mainAxisSize:MainAxisSize.min,children:[
         TextField(controller:code,decoration:const InputDecoration(labelText:'الكود مثل NOVA20')),
         TextField(controller:title,decoration:const InputDecoration(labelText:'عنوان العرض')),
-        DropdownButtonFormField<String>(value:type,items:const[DropdownMenuItem(value:'percentage',child:Text('نسبة مئوية %')),DropdownButtonMenuItem(value:'fixed',child:Text('خصم ثابت ج.م'))],onChanged:(v){if(v!=null)setD(()=>type=v);}),
+        DropdownButtonFormField<String>(value:type,items:const[DropdownMenuItem(value:'percentage',child:Text('نسبة مئوية %')),DropdownMenuItem(value:'fixed',child:Text('خصم ثابت ج.م'))],onChanged:(v){if(v!=null)setD(()=>type=v);}),
         TextField(controller:value,keyboardType:TextInputType.number,decoration:const InputDecoration(labelText:'قيمة الخصم')),
         TextField(controller:min,keyboardType:TextInputType.number,decoration:const InputDecoration(labelText:'الحد الأدنى للطلب')),
       ])),
