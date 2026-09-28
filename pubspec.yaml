@@ -1,13 +1,15 @@
 name: nova_delivery
-description: Arabic multi-role delivery platform.
+description: نوفا ديليفري - منصة توصيل عربية احترافية.
 publish_to: "none"
-version: 1.0.0+1
+version: 2.0.0+2
 environment:
   sdk: ">=3.4.0 <4.0.0"
 dependencies:
   flutter:
     sdk: flutter
   shared_preferences: ^2.5.3
+  flutter_map: ^8.3.2
+  latlong2: ^0.10.1
 dev_dependencies:
   flutter_test:
     sdk: flutter
