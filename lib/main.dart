@@ -1516,7 +1516,7 @@ class _ProfilePageState extends State<ProfilePage>{
       st(c,Icons.location_on_outlined,'العناوين والخريطة','موقعك الحالي والأماكن القريبة',widget.onMap),
       st(c,Icons.favorite_border_rounded,'المفضلة',favoriteRestaurants.isEmpty?'لم تحفظ أي مطعم بعد':'${favoriteRestaurants.length} مطعم محفوظ',()=>Navigator.push(c,MaterialPageRoute(builder:(_)=>const FavoritesPage()))),
       st(c,Icons.support_agent_rounded,'مركز المساعدة','تحدث مع Nova AI أو اطلب مسؤولاً',()=>Navigator.push(c,MaterialPageRoute(builder:(_)=>const SupportCenterPage()))),
-      if(owner) st(c,Icons.dashboard_customize_rounded,'لوحة نوفا','الطلبات والمطاعم والمنيو والعروض والدعم والمحتوى',()=>Navigator.push(c,MaterialPageRoute(builder:(_)=>const OwnerDashboardPage()))),
+      if(owner) st(c,Icons.dashboard_customize_rounded,'لوحة نوفا','الطلبات والمطاعم والمنيو والعروض والدعم والمحتوى',()=>Navigator.push(c,MaterialPageRoute(builder:(_)=>const OwnerStudioPage()))),
       st(c,Icons.logout_rounded,'تسجيل الخروج','الخروج من الحساب على هذا الجهاز',logout),
     ]);
   }
