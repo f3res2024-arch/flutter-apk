@@ -921,7 +921,7 @@ class CourierRoutePage extends StatefulWidget{
 }
 
 class _CourierRoutePageState extends State<CourierRoutePage>{
-  int step=0;
+  int step=0; List<LatLng> route=[];
   bool pickedUp=false;
   bool delivered=false;
 
@@ -929,10 +929,9 @@ class _CourierRoutePageState extends State<CourierRoutePage>{
     double.tryParse(widget.order['pickup_lat']?.toString()??'')??31.0440,
     double.tryParse(widget.order['pickup_lng']?.toString()??'')??31.3550,
   );
-  LatLng get customer=>LatLng(
-    double.tryParse(widget.order['customer_lat']?.toString()??'')??31.0474,
-    double.tryParse(widget.order['customer_lng']?.toString()??'')??31.3499,
-  );
+  LatLng get customer=>LatLng(double.tryParse(widget.order['customer_lat']?.toString()??'')??31.0474,double.tryParse(widget.order['customer_lng']?.toString()??'')??31.3499);
+  @override void initState(){super.initState();_loadRoute();}
+  Future<void> _loadRoute() async { final r=await _roadRoute(pickup,customer);if(mounted)setState(()=>route=r); }
 
   @override Widget build(BuildContext c){
     final target=step==0?pickup:customer;
@@ -945,7 +944,7 @@ class _CourierRoutePageState extends State<CourierRoutePage>{
           options:MapOptions(initialCenter:target,initialZoom:15.2),
           children:[
             TileLayer(urlTemplate:'https://tile.openstreetmap.org/{z}/{x}/{y}.png',userAgentPackageName:'nova.delivery'),
-            PolylineLayer(polylines:[Polyline(points:[pickup,customer],strokeWidth:5,color:orange)]),
+            PolylineLayer(polylines:[Polyline(points:route.isEmpty?[pickup,customer]:route,strokeWidth:5,color:orange)]),
             MarkerLayer(markers:[
               Marker(point:pickup,width:58,height:58,child:Container(
                 decoration:BoxDecoration(color:step==0?orange:ink,shape:BoxShape.circle,border:Border.all(color:Colors.white,width:3)),
@@ -1605,6 +1604,20 @@ class _ProfilePageState extends State<ProfilePage>{
     ]);
   }
 }
+Future<List<LatLng>> _roadRoute(LatLng from,LatLng to) async {
+  try{
+    final uri=Uri.parse('https://router.project-osrm.org/route/v1/driving/'+from.longitude.toString()+','+from.latitude.toString()+';'+to.longitude.toString()+','+to.latitude.toString()+'?overview=full&geometries=geojson');
+    final response=await http.get(uri,headers:{'User-Agent':'NovaDelivery/2.1'});
+    if(response.statusCode!=200)return [from,to];
+    final body=Map<String,dynamic>.from(jsonDecode(response.body) as Map);
+    final routes=body['routes'] as List?;
+    if(routes==null||routes.isEmpty)return [from,to];
+    final geometry=Map<String,dynamic>.from(routes.first['geometry'] as Map);
+    final coords=geometry['coordinates'] as List;
+    return coords.map((p)=>LatLng((p[1] as num).toDouble(),(p[0] as num).toDouble())).toList();
+  }catch(_){return [from,to];}
+}
+
 class CustomerOrderTrackingPage extends StatefulWidget{
   final Map<String,dynamic> order;
   const CustomerOrderTrackingPage({super.key,required this.order});
@@ -1612,9 +1625,11 @@ class CustomerOrderTrackingPage extends StatefulWidget{
 }
 class _CustomerOrderTrackingPageState extends State<CustomerOrderTrackingPage>{
   dynamic channel;
+  List<LatLng> route=[];
   Map<String,dynamic> current;
   _CustomerOrderTrackingPageState():current={};
-  @override void initState(){super.initState();current=Map<String,dynamic>.from(widget.order);_watch();}
+  @override void initState(){super.initState();current=Map<String,dynamic>.from(widget.order);_watch();_loadRoute();}
+  Future<void> _loadRoute() async { final lat=double.tryParse(current['customer_lat']?.toString()??''); final lng=double.tryParse(current['customer_lng']?.toString()??''); final clat=double.tryParse(current['courier_lat']?.toString()??''); final clng=double.tryParse(current['courier_lng']?.toString()??''); if(lat==null||lng==null||clat==null||clng==null)return; final r=await _roadRoute(LatLng(clat,clng),LatLng(lat,lng)); if(mounted)setState(()=>route=r); }
   void _watch(){
     if(!NovaSupabase.initialized||NovaSupabase.currentUser==null)return;
     channel=NovaSupabase.watchCustomerOrders(() async {
@@ -1622,7 +1637,7 @@ class _CustomerOrderTrackingPageState extends State<CustomerOrderTrackingPage>{
         final rows=await NovaSupabase.customerOrders();
         final id=widget.order['id'].toString();
         final hit=rows.where((x)=>x['id'].toString()==id).toList();
-        if(hit.isNotEmpty&&mounted)setState(()=>current=hit.first);
+        if(hit.isNotEmpty&&mounted){setState(()=>current=hit.first);await _loadRoute();}
       }catch(_){}
     });
   }
@@ -1643,7 +1658,7 @@ class _CustomerOrderTrackingPageState extends State<CustomerOrderTrackingPage>{
           options:MapOptions(initialCenter:LatLng(hasCourier?clat:lat,hasCourier?clng:lng),initialZoom:14.8),
           children:[
             TileLayer(urlTemplate:'https://tile.openstreetmap.org/{z}/{x}/{y}.png',userAgentPackageName:'com.nova.delivery'),
-            if(hasCourier)PolylineLayer(polylines:[Polyline(points:[LatLng(clat,clng),LatLng(lat,lng)],strokeWidth:5,color:orange)]),
+            if(hasCourier)PolylineLayer(polylines:[Polyline(points:route.isEmpty?[LatLng(clat,clng),LatLng(lat,lng)]:route,strokeWidth:5,color:orange)]),
             MarkerLayer(markers:[
               Marker(point:LatLng(lat,lng),width:55,height:55,child:Container(decoration:BoxDecoration(color:orange,shape:BoxShape.circle,border:Border.all(color:Colors.white,width:3)),child:const Icon(Icons.home_rounded,color:Colors.white))),
               if(hasCourier)Marker(point:LatLng(clat,clng),width:55,height:55,child:Container(decoration:BoxDecoration(color:ink,shape:BoxShape.circle,border:Border.all(color:Colors.white,width:3)),child:const Icon(Icons.delivery_dining_rounded,color:Colors.white))),
