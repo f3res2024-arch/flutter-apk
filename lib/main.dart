@@ -1551,28 +1551,24 @@ class _ProfilePageState extends State<ProfilePage>{
     if(ok==true){try{await NovaSupabase.signOut();widget.onLogout();}catch(e){if(mounted)snack(context,'تعذر تسجيل الخروج: '+e.toString());}}
   }
   @override Widget build(BuildContext c){
-    final name=((profile?['full_name']??NovaSupabase.currentUser?.email?.split('@').first??'مستخدم')).toString();
-    final avatar=(profile?['avatar_url']??'').toString();
     final owner=role=='admin';
     return ListView(padding:const EdgeInsets.fromLTRB(18,18,18,110),children:[
-      Container(padding:const EdgeInsets.all(18),decoration:BoxDecoration(gradient:const LinearGradient(colors:[ink,Color(0xFF2A303B)]),borderRadius:BorderRadius.circular(28)),child:Row(children:[
-        GestureDetector(onTap:changeAvatar,child:CircleAvatar(radius:36,backgroundColor:orange,backgroundImage:avatar.isEmpty?null:NetworkImage(avatar),child:avatar.isEmpty?const Icon(Icons.person_rounded,color:Colors.white,size:36):null)),
-        const SizedBox(width:14),
-        Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
-          Text(name,style:const TextStyle(color:Colors.white,fontSize:21,fontWeight:FontWeight.w900)),
-          const SizedBox(height:4),Text(owner?'حساب المالك':'حساب العميل',style:const TextStyle(color:Colors.white70,fontSize:12)),
-          const SizedBox(height:4),Text(NovaSupabase.currentUser?.email??'',maxLines:1,overflow:TextOverflow.ellipsis,style:const TextStyle(color:Colors.white54,fontSize:10)),
+      const Text('حسابي',style:TextStyle(fontSize:30,fontWeight:FontWeight.w900)),
+      const SizedBox(height:5),
+      const Text('إدارة حسابك وطلباتك ومساعدتك في مكان واحد',style:TextStyle(color:muted)),
+      const SizedBox(height:18),
+      Container(padding:const EdgeInsets.all(18),decoration:BoxDecoration(color:ink,borderRadius:BorderRadius.circular(26)),child:Row(children:[
+        Container(width:48,height:48,decoration:BoxDecoration(color:orange,borderRadius:BorderRadius.circular(16)),child:const Icon(Icons.person_outline_rounded,color:Colors.white)),
+        const SizedBox(width:12),Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
+          Text(owner?'وضع المالك':'وضع العميل',style:const TextStyle(color:Colors.white,fontSize:17,fontWeight:FontWeight.w900)),
+          const SizedBox(height:3),Text(owner?'لديك وصول كامل لمركز التحكم':'كل خدمات نوفا متاحة من هنا',style:const TextStyle(color:Colors.white70,fontSize:11)),
         ])),
-        IconButton(onPressed:editProfile,icon:const Icon(Icons.edit_rounded,color:Colors.white)),
       ])),
       const SizedBox(height:18),
-      const Text('حسابي',style:TextStyle(fontSize:22,fontWeight:FontWeight.w900)),
-      const SizedBox(height:9),
-      st(c,Icons.person_outline_rounded,'الاسم والصورة','غيّر الاسم أو صورة البروفايل',editProfile),
       st(c,Icons.location_on_outlined,'العناوين والخريطة','موقعك الحالي والأماكن القريبة',widget.onMap),
       st(c,Icons.favorite_border_rounded,'المفضلة',favoriteRestaurants.isEmpty?'لم تحفظ أي مطعم بعد':'${favoriteRestaurants.length} مطعم محفوظ',()=>Navigator.push(c,MaterialPageRoute(builder:(_)=>const FavoritesPage()))),
-      if(owner) st(c,Icons.tune_rounded,'استوديو المالك','تعديل المطاعم والمنتجات ومحتوى التطبيق',()=>Navigator.push(c,MaterialPageRoute(builder:(_)=>const OwnerStudioPage()))),
-      st(c,Icons.help_outline_rounded,'مركز المساعدة','الدعم والطلبات',()=>showFeature(c,'مركز المساعدة','افتح طلبك من «طلباتي» للوصول للتتبع والدعم.')),
+      st(c,Icons.support_agent_rounded,'مركز المساعدة','تحدث مع Nova AI أو اطلب مسؤولاً',()=>Navigator.push(c,MaterialPageRoute(builder:(_)=>const SupportCenterPage()))),
+      if(owner) st(c,Icons.dashboard_customize_rounded,'لوحة نوفا','الطلبات والمطاعم والمنيو والعروض والدعم والمحتوى',()=>Navigator.push(c,MaterialPageRoute(builder:(_)=>const OwnerDashboardPage()))),
       st(c,Icons.logout_rounded,'تسجيل الخروج','الخروج من الحساب على هذا الجهاز',logout),
     ]);
   }
