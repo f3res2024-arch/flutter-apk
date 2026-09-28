@@ -1126,8 +1126,8 @@ class _ShellState extends State<Shell> {
 }
 
 class Home extends StatefulWidget {
-  final ValueChanged<R> onOpen; final VoidCallback onMap; final ValueChanged<String> onSearch; final void Function(R,M) onAdd;
-  const Home({super.key,required this.onOpen,required this.onMap,required this.onSearch,required this.onAdd});
+  final ValueChanged<R> widget.onOpen; final VoidCallback widget.onMap; final ValueChanged<String> onSearch; final void Function(R,M) widget.onAdd;
+  const Home({super.key,required this.widget.onOpen,required this.widget.onMap,required this.onSearch,required this.widget.onAdd});
   @override State<Home> createState()=>_HomeState();
 }
 class _HomeState extends State<Home>{
@@ -1149,7 +1149,7 @@ class _HomeState extends State<Home>{
       IconButton.filledTonal(onPressed:()=>showNotifications(context),icon:const Icon(Icons.notifications_none_rounded,color:ink)),
     ]),
     const SizedBox(height:16),
-    InkWell(onTap:onMap,borderRadius:BorderRadius.circular(18),child:Container(padding:const EdgeInsets.all(14),decoration:BoxDecoration(color:Theme.of(context).colorScheme.surface,borderRadius:BorderRadius.circular(18)),child:Row(children:[const Icon(Icons.location_on_rounded,color:orange),const SizedBox(width:9),Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[const Text('عنوان التوصيل',style:TextStyle(color:muted,fontSize:10)),FutureBuilder<String>(future:resolveCurrentAddress(),builder:(c,s){return Text(s.data??'جاري تحديد عنوانك الحالي…',maxLines:2,overflow:TextOverflow.ellipsis,style:const TextStyle(fontWeight:FontWeight.bold));})])),const Icon(Icons.chevron_left_rounded)]))),
+    InkWell(onTap:widget.onMap,borderRadius:BorderRadius.circular(18),child:Container(padding:const EdgeInsets.all(14),decoration:BoxDecoration(color:Theme.of(context).colorScheme.surface,borderRadius:BorderRadius.circular(18)),child:Row(children:[const Icon(Icons.location_on_rounded,color:orange),const SizedBox(width:9),Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[const Text('عنوان التوصيل',style:TextStyle(color:muted,fontSize:10)),FutureBuilder<String>(future:resolveCurrentAddress(),builder:(c,s){return Text(s.data??'جاري تحديد عنوانك الحالي…',maxLines:2,overflow:TextOverflow.ellipsis,style:const TextStyle(fontWeight:FontWeight.bold));})])),const Icon(Icons.chevron_left_rounded)]))),
     const SizedBox(height:18),
     Container(
       height:210,
@@ -1164,12 +1164,12 @@ class _HomeState extends State<Home>{
             SizedBox(height:4),
             Text('يوصل لبابك بسرعة 🚀',style:TextStyle(color:Colors.white,fontSize:23,fontWeight:FontWeight.w900)),
           ])),
-          Positioned(bottom:14,left:14,child:FilledButton(onPressed:onMap,style:FilledButton.styleFrom(backgroundColor:orange,foregroundColor:Colors.white),child:const Text('افتح الخريطة'))),
+          Positioned(bottom:14,left:14,child:FilledButton(onPressed:widget.onMap,style:FilledButton.styleFrom(backgroundColor:orange,foregroundColor:Colors.white),child:const Text('افتح الخريطة'))),
         ]),
       ),
     ),
     const SizedBox(height:23),title(appCopy['mood_title']??'اختار إللي على مزاجك','عرض الكل'),const SizedBox(height:11),
-    SizedBox(height:112,child:ListView(scrollDirection:Axis.horizontal,children:[Cat(Icons.lunch_dining_rounded,'برجر',onAdd:onAdd),Cat(Icons.restaurant_rounded,'فراخ',onAdd:onAdd),Cat(Icons.local_pizza_rounded,'بيتزا',onAdd:onAdd),Cat(Icons.cake_rounded,'حلويات',onAdd:onAdd),Cat(Icons.local_drink_rounded,'مشروبات',onAdd:onAdd),Cat(Icons.spa_rounded,'صحي',onAdd:onAdd),Cat(Icons.coffee_rounded,'قهوة',onAdd:onAdd),Cat(Icons.breakfast_dining_rounded,'فطار',onAdd:onAdd)])),
+    SizedBox(height:112,child:ListView(scrollDirection:Axis.horizontal,children:[Cat(Icons.lunch_dining_rounded,'برجر',widget.onAdd:widget.onAdd),Cat(Icons.restaurant_rounded,'فراخ',widget.onAdd:widget.onAdd),Cat(Icons.local_pizza_rounded,'بيتزا',widget.onAdd:widget.onAdd),Cat(Icons.cake_rounded,'حلويات',widget.onAdd:widget.onAdd),Cat(Icons.local_drink_rounded,'مشروبات',widget.onAdd:widget.onAdd),Cat(Icons.spa_rounded,'صحي',widget.onAdd:widget.onAdd),Cat(Icons.coffee_rounded,'قهوة',widget.onAdd:widget.onAdd),Cat(Icons.breakfast_dining_rounded,'فطار',widget.onAdd:widget.onAdd)])),
     const SizedBox(height:20),
     const Text('عروض معمولة ليك',style:TextStyle(fontSize:20,fontWeight:FontWeight.w900)),
     const SizedBox(height:11),
@@ -1185,7 +1185,7 @@ class _HomeState extends State<Home>{
       },
     ),
     const SizedBox(height:22),title('مطاعم حقيقية حولك','الخريطة'),const SizedBox(height:12),
-    ...data.map((r)=>Padding(padding:const EdgeInsets.only(bottom:14),child:CardR(r:r,onTap:()=>onOpen(r)))),
+    ...data.map((r)=>Padding(padding:const EdgeInsets.only(bottom:14),child:CardR(r:r,onTap:()=>widget.onOpen(r)))),
     const SizedBox(height:4),const Text('المصادر: المنيوز و EGMenus • تحقق من البيانات: سبتمبر 2026',style:TextStyle(color:muted,fontSize:10)),
   ]);
 }
