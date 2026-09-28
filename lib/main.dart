@@ -1165,14 +1165,17 @@ class Home extends StatelessWidget {
     const SizedBox(height:20),
     const Text('عروض معمولة ليك',style:TextStyle(fontSize:20,fontWeight:FontWeight.w900)),
     const SizedBox(height:11),
-    SizedBox(height:122,child:ListView(
-      scrollDirection:Axis.horizontal,
-      children:[
-        _PromoCard(icon:Icons.local_offer_rounded,title:'خصم 20%',sub:'على أول طلب اليوم',code:'NOVA20'),
-        _PromoCard(icon:Icons.delivery_dining_rounded,title:'توصيل مجاني',sub:'على مطاعم مختارة',code:'FREEDEL'),
-        _PromoCard(icon:Icons.workspace_premium_rounded,title:'نوفا بلس',sub:'مزايا أكثر كل يوم',code:'NOVA+'),
-      ],
-    )),
+    FutureBuilder<List<Map<String,dynamic>>>(
+      future:NovaSupabase.activeOffers(),
+      builder:(c,snap){
+        final offers=snap.data??const <Map<String,dynamic>>[];
+        if(offers.isEmpty)return const SizedBox(height:122,child:Center(child:Text('لا توجد عروض منشورة حالياً',style:TextStyle(color:muted))));
+        return SizedBox(height:150,child:ListView(
+          scrollDirection:Axis.horizontal,
+          children:offers.map((o)=>_LivePromoCard(offer:o)).toList(),
+        ));
+      },
+    ),
     const SizedBox(height:22),title('مطاعم حقيقية حولك','الخريطة'),const SizedBox(height:12),
     ...data.map((r)=>Padding(padding:const EdgeInsets.only(bottom:14),child:CardR(r:r,onTap:()=>onOpen(r)))),
     const SizedBox(height:4),const Text('المصادر: المنيوز و EGMenus • تحقق من البيانات: سبتمبر 2026',style:TextStyle(color:muted,fontSize:10)),
