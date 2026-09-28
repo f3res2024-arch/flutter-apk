@@ -244,7 +244,7 @@ class _OwnerStudioPageState extends State<OwnerStudioPage> with SingleTickerProv
         ]),
       ),
       Row(children:[Expanded(child:OutlinedButton.icon(onPressed:()=>editRestaurant(r),icon:const Icon(Icons.edit_rounded),label:const Text('تعديل'))),const SizedBox(width:8),Expanded(child:FilledButton.icon(onPressed:()=>manageMenu(r),icon:const Icon(Icons.restaurant_menu_rounded),label:const Text('المنيو')))])
-    ]));
+    ])));
   
   Widget promotions()=>Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
     Row(children:[const Expanded(child:Text('الكوبونات',style:TextStyle(fontSize:22,fontWeight:FontWeight.w900))),FilledButton.icon(onPressed:addCoupon,icon:const Icon(Icons.add),label:const Text('كوبون'))]),
