@@ -14,8 +14,7 @@ Future<void> main() async {
   try {
     await NovaSupabase.initialize();
   } catch (_) {
-    // The UI can still start; authenticated/backend features will retry
-    // when they are used after the configuration is corrected.
+    // NovaSupabase stores the initialization error for the auth UI.
   }
 
   runApp(const Nova());
@@ -95,7 +94,7 @@ class _NovaState extends State<Nova>{
   StreamSubscription<dynamic>? _authSubscription;
   @override void initState(){
     super.initState();
-    if(NovaSupabase.configured){
+    if(NovaSupabase.initialized){
       if(NovaSupabase.client.auth.currentSession!=null) _restoreAuthenticatedUser();
       _authSubscription=NovaSupabase.client.auth.onAuthStateChange.listen((event){
         if(!mounted)return;
@@ -294,8 +293,20 @@ class _LoginScreenState extends State<LoginScreen>{
     if(e.isEmpty||!e.contains('@')){snack(context,'اكتب بريد إلكتروني صحيح');return;}
     if(p.length<6){snack(context,'كلمة المرور يجب أن تكون 6 أحرف على الأقل');return;}
     setState(()=>busy=true);
-    try{await NovaSupabase.signIn(email:e,password:p);if(mounted)widget.onSuccess();}
-    catch(e){if(mounted)snack(context,_authMessage(e.toString()));}
+    try{
+      if(!NovaSupabase.initialized){
+        throw (NovaSupabase.initializationError ?? const AuthException('خدمة الحساب غير مهيأة.'));
+      }
+      final res=await NovaSupabase.signIn(email:e,password:p);
+      if(res.user==null || res.session==null){
+        throw const AuthException('تعذر إنشاء جلسة تسجيل الدخول.');
+      }
+      if(mounted)widget.onSuccess();
+    }on AuthException catch(e){
+      if(mounted)snack(context,_authMessage(e.message));
+    }catch(e){
+      if(mounted)snack(context,'خطأ الاتصال: ${e.toString().replaceFirst('Exception: ', '')}');
+    }
     finally{if(mounted)setState(()=>busy=false);}
   }
   Future<void> google() async {
@@ -491,11 +502,14 @@ class _GoogleMark extends StatelessWidget{
 }
 String _authMessage(String message){
   final m=message.toLowerCase();
+  if(m.contains('إعدادات الخادم غير موجودة'))return 'نسخة التطبيق الحالية لا تحتوي إعدادات الخادم. ثبّت أحدث APK.';
+  if(m.contains('خدمة الحساب غير مهيأة'))return 'خدمة الحساب لم تبدأ بشكل صحيح. ثبّت أحدث APK وأعد فتح التطبيق.';
   if(m.contains('invalid login credentials'))return 'البريد الإلكتروني أو كلمة المرور غير صحيحة.';
   if(m.contains('email not confirmed'))return 'أكد بريدك الإلكتروني أولاً من الرسالة التي وصلتك.';
   if(m.contains('user already registered'))return 'هذا البريد مسجل بالفعل. جرّب تسجيل الدخول.';
   if(m.contains('password'))return 'كلمة المرور غير صالحة أو لا تستوفي الشروط.';
   if(m.contains('rate limit'))return 'طلبات كثيرة حالياً. انتظر قليلاً ثم حاول مرة أخرى.';
+  if(m.contains('network') || m.contains('socket') || m.contains('connection'))return 'تعذر الاتصال بخادم الحساب. تحقق من الإنترنت وحاول مرة أخرى.';
   return 'تعذر تنفيذ العملية حالياً. حاول مرة أخرى.';
 }
 
