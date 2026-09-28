@@ -185,6 +185,94 @@ class NovaSupabase {
     }).eq('id', orderId).eq('courier_id', currentUser!.id);
   }
 
+  static Future<List<Map<String, dynamic>>> addresses() async {
+    _requireReady();
+    if (currentUser == null) return [];
+    final rows = await client.from('addresses').select().eq('user_id', currentUser!.id).order('is_default', ascending: false).order('created_at', ascending: false);
+    return List<Map<String, dynamic>>.from(rows);
+  }
+
+  static Future<Map<String, dynamic>> createAddress({
+    required String label,
+    required String address,
+    double? lat,
+    double? lng,
+    bool isDefault = true,
+  }) async {
+    _requireReady();
+    if (currentUser == null) throw const AuthException('يجب تسجيل الدخول أولاً.');
+    if (isDefault) {
+      await client.from('addresses').update({'is_default': false}).eq('user_id', currentUser!.id);
+    }
+    final row = await client.from('addresses').insert({
+      'user_id': currentUser!.id,
+      'label': label,
+      'address': address,
+      'lat': lat,
+      'lng': lng,
+      'is_default': isDefault,
+    }).select().single();
+    return Map<String, dynamic>.from(row);
+  }
+
+  static Future<String> createCustomerOrder({
+    required String restaurantName,
+    required List<Map<String, dynamic>> items,
+    required String addressId,
+    String paymentMethod = 'cash',
+    String notes = '',
+  }) async {
+    _requireReady();
+    if (currentUser == null) throw const AuthException('يجب تسجيل الدخول أولاً.');
+    final restaurant = await client.from('restaurants').select('id').eq('name', restaurantName).eq('is_active', true).maybeSingle();
+    if (restaurant == null) throw const AuthException('المطعم غير متاح حالياً.');
+    final normalized = items.map((x) => {
+      'menu_item_id': x['menu_item_id'],
+      'quantity': x['quantity'],
+    }).toList();
+    final key = '${currentUser!.id}-${DateTime.now().microsecondsSinceEpoch}';
+    final result = await client.rpc('create_customer_order', params: {
+      'p_restaurant_id': restaurant['id'],
+      'p_items': normalized,
+      'p_address_id': addressId,
+      'p_payment_method': paymentMethod,
+      'p_notes': notes,
+      'p_idempotency_key': key,
+    });
+    return result.toString();
+  }
+
+  static Future<List<Map<String, dynamic>>> customerOrders() async {
+    _requireReady();
+    if (currentUser == null) return [];
+    final rows = await client.from('orders').select('*, order_items(*)').eq('customer_id', currentUser!.id).order('created_at', ascending: false);
+    return List<Map<String, dynamic>>.from(rows);
+  }
+
+  static RealtimeChannel watchCustomerOrders(Future<void> Function() onChanged) {
+    final channel = client.channel('nova-customer-orders');
+    channel.onPostgresChanges(
+      event: PostgresChangeEvent.all,
+      schema: 'public',
+      table: 'orders',
+      callback: (_) => onChanged(),
+    ).subscribe();
+    return channel;
+  }
+
+  static Future<List<Map<String, dynamic>>> notifications() async {
+    _requireReady();
+    if (currentUser == null) return [];
+    final rows = await client.from('notifications').select().eq('user_id', currentUser!.id).order('created_at', ascending: false);
+    return List<Map<String, dynamic>>.from(rows);
+  }
+
+  static Future<void> markNotificationRead(String id) async {
+    _requireReady();
+    if (currentUser == null) return;
+    await client.from('notifications').update({'is_read': true}).eq('id', id).eq('user_id', currentUser!.id);
+  }
+
   static void _requireReady() {
     if (!_initialized) {
       final error = _initializationError;
