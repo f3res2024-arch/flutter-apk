@@ -30,10 +30,6 @@ class NovaSupabase {
       await Supabase.initialize(
         url: url,
         publishableKey: key,
-        authOptions: const FlutterAuthClientOptions(
-          autoRefreshToken: true,
-          detectSessionInUri: true,
-        ),
       );
       _initialized = true;
       _initializationError = null;
