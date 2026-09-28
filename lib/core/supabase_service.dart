@@ -48,4 +48,68 @@ class NovaSupabase {
     if (!configured) return;
     await client.from('profiles').upsert({'id': userId, 'role': role});
   }
+
+  static Future<List<Map<String, dynamic>>> courierOrders() async {
+    if (!configured || client.auth.currentUser == null) return [];
+    final rows = await client
+        .from('orders')
+        .select('*, order_items(*)')
+        .eq('status', 'pending')
+        .filter('courier_id', 'is', 'null')
+        .order('created_at', ascending: false);
+    return List<Map<String, dynamic>>.from(rows);
+  }
+
+  static RealtimeChannel watchCourierOrders(
+    Future<void> Function() onChanged,
+  ) {
+    final channel = client.channel('nova-courier-orders');
+    channel
+        .onPostgresChanges(
+          event: PostgresChangeEvent.all,
+          schema: 'public',
+          table: 'orders',
+          callback: (_) => onChanged(),
+        )
+        .subscribe();
+    return channel;
+  }
+
+  static Future<Map<String, dynamic>?> claimOrder(String orderId) async {
+    if (!configured || client.auth.currentUser == null) return null;
+    final result = await client.rpc(
+      'claim_order',
+      params: {'p_order_id': orderId},
+    );
+    if (result is Map<String, dynamic>) return result;
+    if (result is List && result.isNotEmpty && result.first is Map) {
+      return Map<String, dynamic>.from(result.first as Map);
+    }
+    return null;
+  }
+
+  static Future<void> rejectOrder(String orderId) async {
+    if (!configured || client.auth.currentUser == null) return;
+    await client.rpc(
+      'reject_order',
+      params: {'p_order_id': orderId},
+    );
+  }
+
+  static Future<void> updateCourierLocation(
+    String orderId,
+    double lat,
+    double lng,
+  ) async {
+    if (!configured || client.auth.currentUser == null) return;
+    await client
+        .from('orders')
+        .update({
+          'courier_lat': lat,
+          'courier_lng': lng,
+          'updated_at': DateTime.now().toUtc().toIso8601String(),
+        })
+        .eq('id', orderId)
+        .eq('courier_id', client.auth.currentUser!.id);
+  }
 }
