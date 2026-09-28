@@ -342,10 +342,13 @@ class _SignupScreenState extends State<SignupScreen>{
     try{
       final res=await NovaSupabase.signUp(email:e,password:p,role:widget.role.name,fullName:n,phone:ph);
       if(!mounted)return;
-      if(res.session!=null){Navigator.pop(context);snack(context,'تم إنشاء حسابك بنجاح 🎉');}
-      else{
-        await showDialog(context:context,builder:(_)=>AlertDialog(title:const Text('راجع بريدك الإلكتروني'),content:Text('أرسلنا رسالة تأكيد إلى $e. افتحها لتفعيل الحساب ثم سجّل الدخول.'),actions:[TextButton(onPressed:()=>Navigator.pop(context),child:const Text('حسناً'))]));
+      if(res.session!=null){
         if(mounted)Navigator.pop(context);
+        if(mounted)snack(context,'تم إنشاء حسابك بنجاح 🎉');
+      }else{
+        if(!mounted)return;
+        await Navigator.push(context,MaterialPageRoute(builder:(_)=>EmailOtpScreen(email:e,role:widget.role)));
+        if(mounted && NovaSupabase.session!=null)Navigator.pop(context);
       }
     }on AuthException catch(e){if(mounted)snack(context,_authMessage(e.message));}
     catch(_){if(mounted)snack(context,'تعذر إنشاء الحساب. حاول مرة أخرى.');}
@@ -366,6 +369,100 @@ class _SignupScreenState extends State<SignupScreen>{
       const SizedBox(height:18),
       FilledButton(onPressed:busy?null:createAccount,child:busy?const SizedBox(width:22,height:22,child:CircularProgressIndicator(strokeWidth:2,color:Colors.white)):const Text('إنشاء الحساب')),
       const SizedBox(height:12),const Text('بإنشاء الحساب أنت توافق على شروط الاستخدام وسياسة الخصوصية.',textAlign:TextAlign.center,style:TextStyle(color:muted,fontSize:11,height:1.5)),
+    ]),
+  );
+}
+
+class EmailOtpScreen extends StatefulWidget{
+  final String email;
+  final UserRole role;
+  const EmailOtpScreen({super.key,required this.email,required this.role});
+  @override State<EmailOtpScreen> createState()=>_EmailOtpScreenState();
+}
+
+class _EmailOtpScreenState extends State<EmailOtpScreen>{
+  final code=TextEditingController();
+  bool busy=false,resending=false;
+  @override void dispose(){code.dispose();super.dispose();}
+
+  Future<void> verify() async {
+    final token=code.text.trim();
+    if(token.length!=6){snack(context,'اكتب رمز التحقق المكوّن من 6 أرقام');return;}
+    setState(()=>busy=true);
+    try{
+      final res=await NovaSupabase.verifyEmailOtp(email:widget.email,token:token);
+      if(res.session!=null){
+        if(mounted){
+          snack(context,'تم تأكيد بريدك وإنشاء حسابك بنجاح 🎉');
+          Navigator.pop(context);
+        }
+      }else if(mounted){
+        snack(context,'تم التحقق لكن لم يتم إنشاء جلسة. حاول تسجيل الدخول.');
+        Navigator.pop(context);
+      }
+    }on AuthException catch(e){if(mounted)snack(context,_authMessage(e.message));}
+    catch(_){if(mounted)snack(context,'رمز التحقق غير صحيح أو انتهت صلاحيته.');}
+    finally{if(mounted)setState(()=>busy=false);}
+  }
+
+  Future<void> resend() async {
+    if(resending)return;
+    setState(()=>resending=true);
+    try{
+      await NovaSupabase.resendSignupOtp(widget.email);
+      if(mounted)snack(context,'تم إرسال رمز جديد إلى بريدك الإلكتروني.');
+    }on AuthException catch(e){if(mounted)snack(context,_authMessage(e.message));}
+    catch(_){if(mounted)snack(context,'تعذر إرسال رمز جديد حالياً.');}
+    finally{if(mounted)setState(()=>resending=false);}
+  }
+
+  @override Widget build(BuildContext c)=>AuthScaffold(
+    onBack:()=>Navigator.pop(c),
+    eyebrow:'تأكيد الحساب',
+    title:'أدخل رمز التحقق',
+    subtitle:'تم إرسال رمز مكوّن من 6 أرقام إلى بريدك الإلكتروني.',
+    child:Column(children:[
+      Container(
+        width:double.infinity,
+        padding:const EdgeInsets.all(16),
+        decoration:BoxDecoration(color:orange.withValues(alpha:.07),borderRadius:BorderRadius.circular(18)),
+        child:Row(children:[
+          const Icon(Icons.mark_email_read_rounded,color:orange),
+          const SizedBox(width:10),
+          Expanded(child:Text(widget.email,textDirection:TextDirection.ltr,textAlign:TextAlign.left,style:const TextStyle(fontWeight:FontWeight.w800))),
+        ]),
+      ),
+      const SizedBox(height:18),
+      TextField(
+        controller:code,
+        autofocus:true,
+        keyboardType:TextInputType.number,
+        textDirection:TextDirection.ltr,
+        textAlign:TextAlign.center,
+        maxLength:6,
+        inputFormatters:[FilteringTextInputFormatter.digitsOnly],
+        style:const TextStyle(fontSize:28,fontWeight:FontWeight.w900,letterSpacing:8),
+        decoration:const InputDecoration(
+          labelText:'رمز التحقق',
+          hintText:'000000',
+          counterText:'',
+          prefixIcon:Icon(Icons.password_rounded),
+        ),
+        onSubmitted:(_)=>verify(),
+      ),
+      const SizedBox(height:18),
+      FilledButton(
+        onPressed:busy?null:verify,
+        child:busy?const SizedBox(width:22,height:22,child:CircularProgressIndicator(strokeWidth:2,color:Colors.white)):const Text('متابعة'),
+      ),
+      const SizedBox(height:10),
+      TextButton.icon(
+        onPressed:resending?null:resend,
+        icon:resending?const SizedBox(width:16,height:16,child:CircularProgressIndicator(strokeWidth:2,color:orange)):const Icon(Icons.refresh_rounded),
+        label:const Text('إرسال رمز جديد'),
+      ),
+      const SizedBox(height:4),
+      const Text('لو لم يصل الرمز، راجع البريد غير المرغوب فيه وتأكد من صحة البريد.',textAlign:TextAlign.center,style:TextStyle(color:muted,fontSize:11,height:1.5)),
     ]),
   );
 }
@@ -484,7 +581,28 @@ class AuthScaffold extends StatelessWidget{
 class AuthField extends StatelessWidget{
   final TextEditingController controller; final String label,hint; final IconData icon; final TextInputType? keyboardType; final bool obscureText; final Widget? suffix;
   const AuthField({super.key,required this.controller,required this.label,required this.hint,required this.icon,this.keyboardType,this.obscureText=false,this.suffix});
-  @override Widget build(BuildContext c)=>TextField(controller:controller,keyboardType:keyboardType,textDirection:keyboardType==TextInputType.emailAddress?TextDirection.ltr:null,textCapitalization:TextCapitalization.none,autocorrect:false,enableSuggestions:keyboardType!=TextInputType.emailAddress,inputFormatters:keyboardType==TextInputType.emailAddress?[FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z0-9@._+\\-]'))]:null,obscureText:obscureText,textInputAction:TextInputAction.next,decoration:InputDecoration(labelText:label,hintText:hint,prefixIcon:Icon(icon),suffixIcon:suffix));
+  @override Widget build(BuildContext c){
+    final isEmail=keyboardType==TextInputType.emailAddress;
+    return TextField(
+      controller:controller,
+      keyboardType:keyboardType,
+      textDirection:isEmail?TextDirection.ltr:TextDirection.rtl,
+      textAlign:isEmail?TextAlign.left:TextAlign.right,
+      textCapitalization:TextCapitalization.none,
+      autocorrect:false,
+      enableSuggestions:!isEmail,
+      inputFormatters:isEmail?[FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z0-9@._+\\-]'))]:null,
+      obscureText:obscureText,
+      textInputAction:TextInputAction.next,
+      decoration:InputDecoration(
+        labelText:label,
+        hintText:hint,
+        prefixIcon:Icon(icon),
+        suffixIcon:suffix,
+        alignLabelWithHint:true,
+      ),
+    );
+  }
 }
 
 class _GoogleMark extends StatelessWidget{
