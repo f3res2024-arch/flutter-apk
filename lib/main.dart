@@ -108,9 +108,9 @@ class _NovaState extends State<Nova>{
   Future<void> _restoreAuthenticatedUser() async {
     final r=await NovaSupabase.currentUserRole();
     if(!mounted)return;
-    final restored=r=='courier'?UserRole.courier:r=='customer'?UserRole.customer:role;
+    final restored=r=='courier'?UserRole.courier:(r==null?null:UserRole.customer);
     if(restored!=null)setState(()=>role=restored);
-    setState(()=>logged=restored!=null);
+    setState(()=>logged=r!=null);
   }
   @override void dispose(){_authSubscription?.cancel();super.dispose();}
   @override Widget build(BuildContext context)=>MaterialApp(
