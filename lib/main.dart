@@ -1515,7 +1515,7 @@ class _ProfilePageState extends State<ProfilePage>{
       const SizedBox(height:18),
       st(c,Icons.location_on_outlined,'العناوين والخريطة','موقعك الحالي والأماكن القريبة',widget.onMap),
       st(c,Icons.favorite_border_rounded,'المفضلة',favoriteRestaurants.isEmpty?'لم تحفظ أي مطعم بعد':'${favoriteRestaurants.length} مطعم محفوظ',()=>Navigator.push(c,MaterialPageRoute(builder:(_)=>const FavoritesPage()))),
-      st(c,Icons.support_agent_rounded,'مركز المساعدة','تحدث مع Nova AI أو اطلب مسؤولاً',()=>Navigator.push(c,MaterialPageRoute(builder:(_)=>const SupportCenterPage()))),
+      st(c,Icons.support_agent_rounded,'الدعم الفني','تحدث مع Nova AI أو اطلب مسؤولاً',()=>Navigator.push(c,MaterialPageRoute(builder:(_)=>const SupportCenterPage()))),
       if(owner) st(c,Icons.dashboard_customize_rounded,'لوحة نوفا','الطلبات والمطاعم والمنيو والعروض والدعم والمحتوى',()=>Navigator.push(c,MaterialPageRoute(builder:(_)=>const OwnerStudioPage()))),
       st(c,Icons.logout_rounded,'تسجيل الخروج','الخروج من الحساب على هذا الجهاز',logout),
     ]);
@@ -1884,7 +1884,7 @@ class _SupportCenterPageState extends State<SupportCenterPage>{
   bool get imageEnabled=>conversation?['status']=='admin_active' && messages.any((m)=>m['sender_type']=='admin');
   @override void initState(){super.initState();_load();}
   @override void dispose(){channel?.unsubscribe();input.dispose();scroll.dispose();super.dispose();}
-  Future<void> _load()async{try{conversation=await NovaSupabase.supportConversation();await _refresh();channel=NovaSupabase.watchSupportMessages(conversation!['id'].toString(),_refresh);}catch(e){if(mounted)snack(context,'تعذر فتح مركز المساعدة: $e');}if(mounted)setState(()=>loading=false);}
+  Future<void> _load()async{try{conversation=await NovaSupabase.supportConversation();await _refresh();channel=NovaSupabase.watchSupportMessages(conversation!['id'].toString(),_refresh);}catch(e){if(mounted)snack(context,'تعذر فتح الدعم الفني: $e');}if(mounted)setState(()=>loading=false);}
   Future<void> _refresh()async{final id=conversation?['id']?.toString();if(id==null)return;try{final rows=await NovaSupabase.supportMessages(id);if(mounted)setState(()=>messages=rows);await Future.delayed(const Duration(milliseconds:80));if(scroll.hasClients)scroll.jumpTo(scroll.position.maxScrollExtent);}catch(_){}}
   Future<void> _send()async{final text=input.text.trim();if(text.isEmpty||sending||conversation==null)return;input.clear();setState(()=>sending=true);try{await NovaSupabase.sendSupportMessage(conversation!['id'].toString(),text);await _refresh();}catch(e){if(mounted)snack(context,'تعذر إرسال الرسالة: $e');}if(mounted)setState(()=>sending=false);}
   Future<void> _image()async{if(!imageEnabled||conversation==null)return;final file=await ImagePicker().pickImage(source:ImageSource.gallery,imageQuality:88,maxWidth:1600);if(file==null)return;try{final url=await NovaSupabase.uploadSupportImage(conversation!['id'].toString(),await file.readAsBytes());await NovaSupabase.sendSupportImage(conversation!['id'].toString(),url);await _refresh();}catch(e){if(mounted)snack(context,'تعذر رفع الصورة: $e');}}
@@ -1895,7 +1895,7 @@ class _SupportCenterPageState extends State<SupportCenterPage>{
     return Scaffold(
       backgroundColor:const Color(0xFFF7F7F8),
       appBar:AppBar(
-        title:const Text('مركز المساعدة',style:TextStyle(fontWeight:FontWeight.w900)),
+        title:const Text('الدعم الفني',style:TextStyle(fontWeight:FontWeight.w900)),
         actions:[if(waiting)const Padding(padding:EdgeInsets.all(12),child:Icon(Icons.support_agent_rounded,color:orange))],
       ),
       body:Column(
@@ -1910,7 +1910,7 @@ class _SupportCenterPageState extends State<SupportCenterPage>{
                 const SizedBox(width:12),
                 Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
                   const Text('Nova AI',style:TextStyle(color:Colors.white,fontWeight:FontWeight.w900,fontSize:17)),
-                  Text(waiting?'تم تحويلك لمسؤول — انتظر الرد هنا':'اسألني عن طلبك أو أي مشكلة في نوفا',style:const TextStyle(color:Colors.white70,fontSize:11)),
+                  Text(waiting?'تم تحويلك لمسؤول — انتظر القبول هنا':'اسألني عن طلبك أو أي مشكلة في نوفا',style:const TextStyle(color:Colors.white70,fontSize:11)),
                 ])),
               ],
             ),
@@ -1937,7 +1937,7 @@ class _SupportCenterPageState extends State<SupportCenterPage>{
                     minLines:1,
                     maxLines:5,
                     decoration:InputDecoration(
-                      hintText:waiting?'انتظر رد المسؤول...':'اكتب رسالتك...',
+                      hintText:waiting?'انتظر قبول مسؤول الدعم...':'اكتب رسالتك...',
                       filled:true,
                       fillColor:const Color(0xFFF4F4F5),
                       border:OutlineInputBorder(borderRadius:BorderRadius.circular(22),borderSide:BorderSide.none),
