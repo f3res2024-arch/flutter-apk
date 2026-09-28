@@ -1,4 +1,7 @@
+import 'dart:async';
+import 'package:app_links/app_links.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'core/supabase_service.dart';
@@ -88,6 +91,28 @@ class _NovaState extends State<Nova>{
   bool dark=true;
   UserRole? role;
   bool logged=false;
+  bool passwordRecovery=false;
+  StreamSubscription<AuthState>? _authSubscription;
+  @override void initState(){
+    super.initState();
+    if(NovaSupabase.configured){
+      if(NovaSupabase.client.auth.currentSession!=null) _restoreAuthenticatedUser();
+      _authSubscription=NovaSupabase.client.auth.onAuthStateChange.listen((event){
+        if(!mounted)return;
+        if(event.event==AuthChangeEvent.passwordRecovery){setState(()=>passwordRecovery=true);}
+        else if(event.event==AuthChangeEvent.signedIn || event.event==AuthChangeEvent.tokenRefreshed){_restoreAuthenticatedUser();}
+        else if(event.event==AuthChangeEvent.signedOut){setState(()=>logged=false);}
+      });
+    }
+  }
+  Future<void> _restoreAuthenticatedUser() async {
+    final r=await NovaSupabase.currentUserRole();
+    if(!mounted)return;
+    final restored=r=='courier'?UserRole.courier:r=='customer'?UserRole.customer:role;
+    if(restored!=null)setState(()=>role=restored);
+    setState(()=>logged=restored!=null);
+  }
+  @override void dispose(){_authSubscription?.cancel();super.dispose();}
   @override Widget build(BuildContext context)=>MaterialApp(
     debugShowCheckedModeBanner:false,
     title:'نوفا ديليفري',
@@ -144,7 +169,9 @@ class _NovaState extends State<Nova>{
       textDirection:TextDirection.rtl,
       child:logged
         ? (role==UserRole.courier?CourierDashboard(onLogout:()=>setState(()=>logged=false)):Shell(dark:dark,onDark:(v)=>setState(()=>dark=v)))
-        : (role==null?RoleChooser(onRole:(r)=>setState(()=>role=r)):LoginScreen(role:role!,onBack:()=>setState(()=>role=null),onSuccess:()=>setState(()=>logged=true))),
+        : (passwordRecovery
+          ? UpdatePasswordScreen(onDone:()=>setState(()=>passwordRecovery=false))
+          : (role==null ? RoleChooser(onRole:(r)=>setState(()=>role=r)) : LoginScreen(role:role!,onBack:()=>setState(()=>role=null),onSuccess:()=>setState(()=>logged=true)))),
     ),
   );
 }
@@ -258,50 +285,181 @@ class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key,required this.role,required this.onBack,required this.onSuccess});
   @override State<LoginScreen> createState()=>_LoginScreenState();
 }
-class _LoginScreenState extends State<LoginScreen> {
-  bool phoneMode=true,hide=true,busy=false;
-  final id=TextEditingController(),pass=TextEditingController();
-  @override void dispose(){id.dispose();pass.dispose();super.dispose();}
-  void submit(){
-    if(id.text.trim().isEmpty||pass.text.trim().isEmpty){snack(context,'اكتب بيانات الدخول أولاً');return;}
+class _LoginScreenState extends State<LoginScreen>{
+  bool hide=true,busy=false,googleBusy=false;
+  final email=TextEditingController(),pass=TextEditingController();
+  @override void dispose(){email.dispose();pass.dispose();super.dispose();}
+  Future<void> submit() async {
+    final e=email.text.trim(),p=pass.text;
+    if(e.isEmpty||!e.contains('@')){snack(context,'اكتب بريد إلكتروني صحيح');return;}
+    if(p.length<6){snack(context,'كلمة المرور يجب أن تكون 6 أحرف على الأقل');return;}
     setState(()=>busy=true);
-    Future.delayed(const Duration(milliseconds:700),widget.onSuccess);
+    try{await NovaSupabase.signIn(email:e,password:p);if(mounted)widget.onSuccess();}
+    on AuthException catch(e){if(mounted)snack(context,_authMessage(e.message));}
+    catch(_){if(mounted)snack(context,'تعذر تسجيل الدخول. حاول مرة أخرى.');}
+    finally{if(mounted)setState(()=>busy=false);}
   }
-  @override Widget build(BuildContext c)=>Scaffold(
-    appBar:AppBar(leading:IconButton(onPressed:widget.onBack,icon:const Icon(Icons.arrow_forward_rounded)),title:const BrandHero()),
-    body:ListView(padding:const EdgeInsets.fromLTRB(20,25,20,35),children:[
-      Text(widget.role==UserRole.customer?'أهلاً بيك 👋':'أهلاً يا كابتن 🛵',style:const TextStyle(fontSize:29,fontWeight:FontWeight.w900)),
-      const SizedBox(height:6),
-      Text(widget.role==UserRole.customer?'سجّل دخولك وابدأ طلبك':'سجّل دخولك واستقبل طلباتك',style:const TextStyle(color:muted)),
-      const SizedBox(height:25),
-      SegmentedButton<bool>(
-        segments:const[ButtonSegment(value:true,label:Text('رقم الهاتف'),icon:Icon(Icons.phone)),ButtonSegment(value:false,label:Text('البريد الإلكتروني'),icon:Icon(Icons.email_outlined))],
-        selected:{phoneMode},
-        onSelectionChanged:(v)=>setState(()=>phoneMode=v.first),
-      ),
-      const SizedBox(height:17),
-      TextField(controller:id,keyboardType:phoneMode?TextInputType.phone:TextInputType.emailAddress,decoration:InputDecoration(labelText:phoneMode?'رقم الهاتف':'البريد الإلكتروني',prefixIcon:Icon(phoneMode?Icons.phone:Icons.email_outlined))),
-      const SizedBox(height:12),
-      TextField(controller:pass,obscureText:hide,decoration:InputDecoration(labelText:'كلمة المرور',prefixIcon:const Icon(Icons.lock_outline),suffixIcon:IconButton(onPressed:()=>setState(()=>hide=!hide),icon:Icon(hide?Icons.visibility_outlined:Icons.visibility_off_outlined)))),
-      Align(alignment:Alignment.centerRight,child:TextButton(onPressed:()=>snack(c,'سيتم إرسال رابط الاستعادة'),child:const Text('نسيت كلمة المرور؟',style:TextStyle(color:orange)))),
-      const SizedBox(height:5),
-      FilledButton(onPressed:busy?null:submit,style:FilledButton.styleFrom(backgroundColor:orange,minimumSize:const Size.fromHeight(55)),child:busy?const SizedBox(width:22,height:22,child:CircularProgressIndicator(strokeWidth:2,color:Colors.white)):const Text('تسجيل الدخول',style:TextStyle(fontWeight:FontWeight.w900))),
-      const SizedBox(height:16),
-      Row(children:[const Expanded(child:Divider()),Padding(padding:const EdgeInsets.symmetric(horizontal:10),child:Text('أو',style:const TextStyle(color:muted))),const Expanded(child:Divider())]),
+  Future<void> google() async {
+    setState(()=>googleBusy=true);
+    try{await NovaSupabase.signInWithGoogle();}
+    on AuthException catch(e){if(mounted)snack(context,_authMessage(e.message));}
+    catch(_){if(mounted)snack(context,'تعذر فتح تسجيل Google. تأكد من إعداد OAuth في Supabase.');}
+    finally{if(mounted)setState(()=>googleBusy=false);}
+  }
+  @override Widget build(BuildContext c)=>AuthScaffold(
+    onBack:widget.onBack,eyebrow:'تسجيل الدخول',
+    title:widget.role==UserRole.customer?'مرحباً بك في نوفا':'أهلاً يا كابتن',
+    subtitle:widget.role==UserRole.customer?'سجّل دخولك وخلّي أكلك علينا.':'سجّل دخولك واستقبل طلباتك بسهولة.',
+    child:Column(children:[
+      AuthField(controller:email,label:'البريد الإلكتروني',hint:'name@example.com',icon:Icons.mail_outline_rounded,keyboardType:TextInputType.emailAddress),
+      const SizedBox(height:13),
+      AuthField(controller:pass,label:'كلمة المرور',hint:'••••••••',icon:Icons.lock_outline_rounded,obscureText:hide,suffix:IconButton(onPressed:()=>setState(()=>hide=!hide),icon:Icon(hide?Icons.visibility_outlined:Icons.visibility_off_outlined))),
+      Align(alignment:Alignment.centerLeft,child:TextButton(onPressed:()=>Navigator.push(c,MaterialPageRoute(builder:(_)=>ForgotPasswordScreen(role:widget.role))),child:const Text('نسيت كلمة المرور؟',style:TextStyle(color:orange,fontWeight:FontWeight.w800)))),
+      const SizedBox(height:3),
+      FilledButton(onPressed:busy?null:submit,child:busy?const SizedBox(width:22,height:22,child:CircularProgressIndicator(strokeWidth:2,color:Colors.white)):const Text('تسجيل الدخول')),
+      const SizedBox(height:18),
+      Row(children:[const Expanded(child:Divider()),Padding(padding:const EdgeInsets.symmetric(horizontal:12),child:Text('أو',style:TextStyle(color:muted,fontWeight:FontWeight.w700))),const Expanded(child:Divider())]),
       const SizedBox(height:15),
-      OutlinedButton.icon(
-        onPressed:()=>snack(c,'تسجيل Google جاهز للربط بخدمة OAuth عند إضافة مفاتيح المشروع'),
-        icon:const CircleAvatar(radius:11,backgroundColor:Colors.white,child:Text('G',style:TextStyle(color:Colors.blue,fontWeight:FontWeight.w900))),
-        label:const Text('تسجيل الدخول عبر Google'),
-        style:OutlinedButton.styleFrom(minimumSize:const Size.fromHeight(52)),
-      ),
-      const SizedBox(height:16),
-      TextButton(onPressed:()=>snack(c,'شاشة إنشاء الحساب سيتم ربطها بقاعدة البيانات'),child:const Text('ليس لديك حساب؟ إنشاء حساب',style:TextStyle(color:orange,fontWeight:FontWeight.w800))),
-    ],
-    ),
+      OutlinedButton.icon(onPressed:googleBusy?null:google,icon:googleBusy?const SizedBox(width:18,height:18,child:CircularProgressIndicator(strokeWidth:2)):const _GoogleMark(),label:const Text('المتابعة باستخدام Google')),
+      const SizedBox(height:18),
+      Row(mainAxisAlignment:MainAxisAlignment.center,children:[const Text('ليس لديك حساب؟',style:TextStyle(color:muted)),TextButton(onPressed:()=>Navigator.push(c,MaterialPageRoute(builder:(_)=>SignupScreen(role:widget.role))),child:const Text('إنشاء حساب',style:TextStyle(color:orange,fontWeight:FontWeight.w900)))])
+    ]),
   );
 }
 
+class SignupScreen extends StatefulWidget{
+  final UserRole role;
+  const SignupScreen({super.key,required this.role});
+  @override State<SignupScreen> createState()=>_SignupScreenState();
+}
+class _SignupScreenState extends State<SignupScreen>{
+  bool hide=true,confirmHide=true,busy=false;
+  final email=TextEditingController(),pass=TextEditingController(),confirm=TextEditingController();
+  @override void dispose(){email.dispose();pass.dispose();confirm.dispose();super.dispose();}
+  Future<void> createAccount() async {
+    final e=email.text.trim(),p=pass.text;
+    if(e.isEmpty||!e.contains('@')){snack(context,'اكتب بريد إلكتروني صحيح');return;}
+    if(p.length<6){snack(context,'كلمة المرور يجب أن تكون 6 أحرف على الأقل');return;}
+    if(p!=confirm.text){snack(context,'كلمتا المرور غير متطابقتين');return;}
+    setState(()=>busy=true);
+    try{
+      final res=await NovaSupabase.signUp(email:e,password:p,role:widget.role);
+      if(!mounted)return;
+      if(res.session!=null){Navigator.pop(context);snack(context,'تم إنشاء حسابك بنجاح 🎉');}
+      else{
+        await showDialog(context:context,builder:(_)=>AlertDialog(title:const Text('راجع بريدك الإلكتروني'),content:Text('أرسلنا رسالة تأكيد إلى $e. افتحها لتفعيل الحساب ثم سجّل الدخول.'),actions:[TextButton(onPressed:()=>Navigator.pop(context),child:const Text('حسناً'))]));
+        if(mounted)Navigator.pop(context);
+      }
+    }on AuthException catch(e){if(mounted)snack(context,_authMessage(e.message));}
+    catch(_){if(mounted)snack(context,'تعذر إنشاء الحساب. حاول مرة أخرى.');}
+    finally{if(mounted)setState(()=>busy=false);}
+  }
+  @override Widget build(BuildContext c)=>AuthScaffold(
+    onBack:()=>Navigator.pop(c),eyebrow:'حساب جديد',title:'ابدأ مع نوفا',subtitle:'أنشئ حسابك في ثواني وابدأ أول طلب.',
+    child:Column(children:[
+      AuthField(controller:email,label:'البريد الإلكتروني',hint:'name@example.com',icon:Icons.mail_outline_rounded,keyboardType:TextInputType.emailAddress),
+      const SizedBox(height:13),
+      AuthField(controller:pass,label:'كلمة المرور',hint:'6 أحرف أو أكثر',icon:Icons.lock_outline_rounded,obscureText:hide,suffix:IconButton(onPressed:()=>setState(()=>hide=!hide),icon:Icon(hide?Icons.visibility_outlined:Icons.visibility_off_outlined))),
+      const SizedBox(height:13),
+      AuthField(controller:confirm,label:'تأكيد كلمة المرور',hint:'أعد كتابة كلمة المرور',icon:Icons.verified_user_outlined,obscureText:confirmHide,suffix:IconButton(onPressed:()=>setState(()=>confirmHide=!confirmHide),icon:Icon(confirmHide?Icons.visibility_outlined:Icons.visibility_off_outlined))),
+      const SizedBox(height:18),
+      FilledButton(onPressed:busy?null:createAccount,child:busy?const SizedBox(width:22,height:22,child:CircularProgressIndicator(strokeWidth:2,color:Colors.white)):const Text('إنشاء الحساب')),
+      const SizedBox(height:12),const Text('بإنشاء الحساب أنت توافق على شروط الاستخدام وسياسة الخصوصية.',textAlign:TextAlign.center,style:TextStyle(color:muted,fontSize:11,height:1.5)),
+    ]),
+  );
+}
+
+class ForgotPasswordScreen extends StatefulWidget{
+  final UserRole role;
+  const ForgotPasswordScreen({super.key,required this.role});
+  @override State<ForgotPasswordScreen> createState()=>_ForgotPasswordScreenState();
+}
+class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>{
+  bool busy=false;
+  final email=TextEditingController();
+  @override void dispose(){email.dispose();super.dispose();}
+  Future<void> send() async {
+    final e=email.text.trim();
+    if(e.isEmpty||!e.contains('@')){snack(context,'اكتب بريد إلكتروني صحيح');return;}
+    setState(()=>busy=true);
+    try{
+      await NovaSupabase.sendPasswordReset(e);
+      if(mounted)await showDialog(context:context,builder:(_)=>AlertDialog(title:const Text('تم إرسال رابط الاستعادة'),content:Text('لو البريد $e مسجل، هتوصلك رسالة استعادة كلمة المرور. افتح الرابط من نفس الهاتف للعودة إلى نوفا.'),actions:[TextButton(onPressed:()=>Navigator.pop(context),child:const Text('حسناً'))]));
+    }on AuthException catch(e){if(mounted)snack(context,_authMessage(e.message));}
+    catch(_){if(mounted)snack(context,'تعذر إرسال رسالة الاستعادة. حاول مرة أخرى.');}
+    finally{if(mounted)setState(()=>busy=false);}
+  }
+  @override Widget build(BuildContext c)=>AuthScaffold(
+    onBack:()=>Navigator.pop(c),eyebrow:'استعادة الحساب',title:'نسيت كلمة المرور؟',subtitle:'اكتب بريدك وسنرسل لك رابطاً آمناً لإعادة تعيينها.',
+    child:Column(children:[
+      AuthField(controller:email,label:'البريد الإلكتروني',hint:'name@example.com',icon:Icons.mail_outline_rounded,keyboardType:TextInputType.emailAddress),
+      const SizedBox(height:18),FilledButton(onPressed:busy?null:send,child:busy?const SizedBox(width:22,height:22,child:CircularProgressIndicator(strokeWidth:2,color:Colors.white)):const Text('إرسال رابط الاستعادة')),
+    ]),
+  );
+}
+
+class UpdatePasswordScreen extends StatefulWidget{
+  final VoidCallback onDone;
+  const UpdatePasswordScreen({super.key,required this.onDone});
+  @override State<UpdatePasswordScreen> createState()=>_UpdatePasswordScreenState();
+}
+class _UpdatePasswordScreenState extends State<UpdatePasswordScreen>{
+  bool hide=true,busy=false;
+  final pass=TextEditingController(),confirm=TextEditingController();
+  @override void dispose(){pass.dispose();confirm.dispose();super.dispose();}
+  Future<void> update() async {
+    if(pass.text.length<6){snack(context,'كلمة المرور يجب أن تكون 6 أحرف على الأقل');return;}
+    if(pass.text!=confirm.text){snack(context,'كلمتا المرور غير متطابقتين');return;}
+    setState(()=>busy=true);
+    try{await NovaSupabase.updatePassword(pass.text);if(mounted){snack(context,'تم تغيير كلمة المرور بنجاح 🎉');widget.onDone();}}
+    on AuthException catch(e){if(mounted)snack(context,_authMessage(e.message));}
+    catch(_){if(mounted)snack(context,'تعذر تغيير كلمة المرور.');}
+    finally{if(mounted)setState(()=>busy=false);}
+  }
+  @override Widget build(BuildContext c)=>AuthScaffold(
+    onBack:widget.onDone,eyebrow:'حماية الحساب',title:'أنشئ كلمة مرور جديدة',subtitle:'اختار كلمة مرور قوية لا تستخدمها في حسابات أخرى.',
+    child:Column(children:[
+      AuthField(controller:pass,label:'كلمة المرور الجديدة',hint:'6 أحرف أو أكثر',icon:Icons.lock_reset_rounded,obscureText:hide,suffix:IconButton(onPressed:()=>setState(()=>hide=!hide),icon:Icon(hide?Icons.visibility_outlined:Icons.visibility_off_outlined))),
+      const SizedBox(height:13),AuthField(controller:confirm,label:'تأكيد كلمة المرور',hint:'أعد كتابة كلمة المرور',icon:Icons.verified_user_outlined,obscureText:true),
+      const SizedBox(height:18),FilledButton(onPressed:busy?null:update,child:busy?const SizedBox(width:22,height:22,child:CircularProgressIndicator(strokeWidth:2,color:Colors.white)):const Text('حفظ كلمة المرور')),
+    ]),
+  );
+}
+
+class AuthScaffold extends StatelessWidget{
+  final VoidCallback onBack; final String eyebrow,title,subtitle; final Widget child;
+  const AuthScaffold({super.key,required this.onBack,required this.eyebrow,required this.title,required this.subtitle,required this.child});
+  @override Widget build(BuildContext c){
+    final bottom=MediaQuery.viewInsetsOf(c).bottom;
+    return Scaffold(resizeToAvoidBottomInset:true,appBar:AppBar(leading:IconButton(onPressed:onBack,icon:const Icon(Icons.arrow_forward_rounded)),title:const BrandHero()),body:SafeArea(child:LayoutBuilder(builder:(c,box)=>SingleChildScrollView(
+      padding:EdgeInsets.fromLTRB(20,10,20,24+bottom),
+      child:ConstrainedBox(constraints:BoxConstraints(minHeight:box.maxHeight-34,maxWidth:560),child:Center(child:Container(width:double.infinity,padding:const EdgeInsets.all(22),decoration:BoxDecoration(color:Theme.of(c).colorScheme.surface,borderRadius:BorderRadius.circular(30),border:Border.all(color:Theme.of(c).dividerColor.withValues(alpha:.35)),boxShadow:[BoxShadow(color:Colors.black.withValues(alpha:.16),blurRadius:30,offset:const Offset(0,18))]),child:Column(crossAxisAlignment:CrossAxisAlignment.start,mainAxisAlignment:MainAxisAlignment.center,children:[
+        Container(padding:const EdgeInsets.symmetric(horizontal:11,vertical:7),decoration:BoxDecoration(color:orange.withValues(alpha:.10),borderRadius:BorderRadius.circular(30)),child:Text(eyebrow,style:const TextStyle(color:orange,fontSize:11,fontWeight:FontWeight.w900))),
+        const SizedBox(height:14),Text(title,style:const TextStyle(fontSize:30,fontWeight:FontWeight.w900,height:1.1)),const SizedBox(height:7),Text(subtitle,style:const TextStyle(color:muted,fontSize:13,height:1.5)),const SizedBox(height:23),child,
+      ]))),
+    )));
+  }
+}
+
+class AuthField extends StatelessWidget{
+  final TextEditingController controller; final String label,hint; final IconData icon; final TextInputType? keyboardType; final bool obscureText; final Widget? suffix;
+  const AuthField({super.key,required this.controller,required this.label,required this.hint,required this.icon,this.keyboardType,this.obscureText=false,this.suffix});
+  @override Widget build(BuildContext c)=>TextField(controller:controller,keyboardType:keyboardType,textDirection:keyboardType==TextInputType.emailAddress?TextDirection.ltr:null,textCapitalization:TextCapitalization.none,autocorrect:false,enableSuggestions:keyboardType!=TextInputType.emailAddress,inputFormatters:keyboardType==TextInputType.emailAddress?[FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z0-9@._+\\-]'))]:null,obscureText:obscureText,textInputAction:TextInputAction.next,decoration:InputDecoration(labelText:label,hintText:hint,prefixIcon:Icon(icon),suffixIcon:suffix));
+}
+
+class _GoogleMark extends StatelessWidget{
+  const _GoogleMark();
+  @override Widget build(BuildContext c)=>Container(width:22,height:22,alignment:Alignment.center,decoration:const BoxDecoration(shape:BoxShape.circle,color:Colors.white),child:const Text('G',style:TextStyle(color:Colors.blue,fontWeight:FontWeight.w900)));
+}
+String _authMessage(String message){
+  final m=message.toLowerCase();
+  if(m.contains('invalid login credentials'))return 'البريد الإلكتروني أو كلمة المرور غير صحيحة.';
+  if(m.contains('email not confirmed'))return 'أكد بريدك الإلكتروني أولاً من الرسالة التي وصلتك.';
+  if(m.contains('user already registered'))return 'هذا البريد مسجل بالفعل. جرّب تسجيل الدخول.';
+  if(m.contains('password'))return 'كلمة المرور غير صالحة أو لا تستوفي الشروط.';
+  if(m.contains('rate limit'))return 'طلبات كثيرة حالياً. انتظر قليلاً ثم حاول مرة أخرى.';
+  return 'تعذر تنفيذ العملية حالياً. حاول مرة أخرى.';
+}
 
 class CourierDashboard extends StatefulWidget {
   final VoidCallback onLogout;
