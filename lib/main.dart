@@ -230,7 +230,7 @@ class _RoleButton extends StatelessWidget{
 }
 class BrandHero extends StatelessWidget {
   const BrandHero({super.key});
-  @override Widget build(BuildContext c)=>const Center(child:RichText(text:TextSpan(children:[
+  @override Widget build(BuildContext c)=>Center(child:RichText(text:TextSpan(children:[
     TextSpan(text:'نوفا ',style:TextStyle(color:ink,fontSize:21,fontWeight:FontWeight.w900)),
     TextSpan(text:'ديليفري',style:TextStyle(color:orange,fontSize:21,fontWeight:FontWeight.w900)),
   ])));
@@ -956,7 +956,7 @@ class Home extends StatelessWidget {
   const Home({super.key,required this.onOpen,required this.onMap,required this.onSearch});
   @override Widget build(BuildContext context)=>ListView(padding:const EdgeInsets.fromLTRB(18,10,18,110),children:[
     Row(children:[
-      const Expanded(child:Center(child:RichText(text:TextSpan(children:[
+      Expanded(child:Center(child:RichText(text:TextSpan(children:[
         TextSpan(text:'نوفا ',style:TextStyle(color:ink,fontSize:25,fontWeight:FontWeight.w900)),
         TextSpan(text:'ديليفري',style:TextStyle(color:orange,fontSize:25,fontWeight:FontWeight.w900)),
       ])))),
@@ -1308,7 +1308,18 @@ class _ProfilePageState extends State<ProfilePage>{
       const SizedBox(width:14),Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text(name,style:const TextStyle(color:Colors.white,fontSize:21,fontWeight:FontWeight.w900)),const SizedBox(height:4),Text(owner?'حساب المالك • صلاحيات كاملة':'حساب العميل',style:const TextStyle(color:Colors.white70,fontSize:12)),const SizedBox(height:5),Text(NovaSupabase.currentUser?.email??'',maxLines:1,overflow:TextOverflow.ellipsis,style:const TextStyle(color:Colors.white54,fontSize:10))])),IconButton(onPressed:editProfile,icon:const Icon(Icons.edit_rounded,color:Colors.white)),
     ])),const SizedBox(height:18),const Text('حسابي',style:TextStyle(fontSize:22,fontWeight:FontWeight.w900)),const SizedBox(height:9),
     st(c,Icons.person_outline_rounded,'الاسم والصورة','غيّر الاسم أو صورة البروفايل',editProfile),st(c,Icons.location_on_outlined,'العناوين والخريطة','موقعك الحالي وفروع المطاعم والصيدليات',widget.onMap),st(c,Icons.credit_card_rounded,'طرق الدفع','كاش • بطاقة • محفظة',()=>showFeature(c,'طرق الدفع','اختر طريقة الدفع أثناء إتمام الطلب.')),st(c,Icons.favorite_border_rounded,'المفضلة','مطاعم وأطباق محفوظة',()=>showFeature(c,'المفضلة','يمكنك حفظ مطعم أو طبق من خلال زر القلب.')),st(c,Icons.notifications_none_rounded,'الإشعارات','الطلبات والعروض',()=>showNotifications(c)),st(c,Icons.security_rounded,'الأمان والخصوصية','جلسة آمنة واستعادة كلمة المرور',()=>showFeature(c,'الأمان والخصوصية','حسابك محمي بجلسة Supabase.')),st(c,Icons.help_outline_rounded,'مركز المساعدة','الدعم والطلبات',()=>showFeature(c,'مركز المساعدة','افتح طلبك من «طلباتي» للوصول للتتبع والدعم.')),
-    if(owner)...[const SizedBox(height:12),Container(padding:const EdgeInsets.all(16),decoration:BoxDecoration(color:orange.withValues(alpha:.07),borderRadius:BorderRadius.circular(24),border:Border.all(color:orange.withValues(alpha:.18))),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[const Row(children:[Icon(Icons.verified_user_rounded,color:orange),SizedBox(width:8),Text('صلاحيات المالك',style:TextStyle(fontSize:18,fontWeight:FontWeight.w900))]),const SizedBox(height:5),const Text('إدارة المنتجات والمطاعم ومحتوى التطبيق من داخله.',style:TextStyle(color:muted,fontSize:11)),const SizedBox(height:12),FilledButton.icon(onPressed:()=>Navigator.push(c,MaterialPageRoute(builder:(_)=>const OwnerStudioPage())),icon:const Icon(Icons.tune_rounded),label:const Text('فتح استوديو المالك'))]))],
+    if(owner) Container(
+      margin:const EdgeInsets.only(top:12),
+      padding:const EdgeInsets.all(16),
+      decoration:BoxDecoration(color:orange.withValues(alpha:.07),borderRadius:BorderRadius.circular(24),border:Border.all(color:orange.withValues(alpha:.18))),
+      child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
+        const Row(children:[Icon(Icons.verified_user_rounded,color:orange),SizedBox(width:8),Text('صلاحيات المالك',style:TextStyle(fontSize:18,fontWeight:FontWeight.w900))]),
+        const SizedBox(height:5),
+        const Text('إدارة المنتجات والمطاعم ومحتوى التطبيق من داخله.',style:TextStyle(color:muted,fontSize:11)),
+        const SizedBox(height:12),
+        FilledButton.icon(onPressed:()=>Navigator.push(c,MaterialPageRoute(builder:(_)=>const OwnerStudioPage())),icon:const Icon(Icons.tune_rounded),label:const Text('فتح استوديو المالك')),
+      ]),
+    ),
   );}
 }
 class CustomerOrderTrackingPage extends StatefulWidget{
@@ -1389,7 +1400,54 @@ if(me!=null)Marker(point:me!,width:56,height:56,child:Container(decoration:BoxDe
 Positioned(top:14,right:14,left:14,child:Container(padding:const EdgeInsets.symmetric(horizontal:14,vertical:12),decoration:BoxDecoration(color:Colors.white.withValues(alpha:.96),borderRadius:BorderRadius.circular(18)),child:Row(children:[Icon(locating?Icons.gps_not_fixed_rounded:Icons.gps_fixed_rounded,color:orange),const SizedBox(width:10),Expanded(child:Text(locationError??(locating?'جاري تحديد موقعك…':'أنت ظاهر على الخريطة الآن'),style:const TextStyle(fontWeight:FontWeight.w900,fontSize:13)))]))),
 ]));}}
 class MapPlace{final String name;final double lat,lng;const MapPlace(this.name,this.lat,this.lng);}
-class CategoryPage extends StatelessWidget{final String title,category;const CategoryPage({super.key,required this.title,required this.category});bool matches(R r){final h=(r.type+' '+r.name+' '+r.menu.map((m)=>m.name+' '+m.desc).join(' ')).toLowerCase();switch(category){case 'برجر':return h.contains('برجر')||h.contains('burger')||r.name.contains('ماكدونالدز')||r.name.contains('كاتشاب');case 'فراخ':return h.contains('فراخ')||h.contains('chicken')||h.contains('دجاج');case 'بيتزا':return h.contains('بيتزا')||h.contains('pizza');case 'حلويات':return h.contains('حلويات')||h.contains('كيك')||h.contains('dessert');case 'مشروبات':return h.contains('مشروب')||h.contains('بيبسي');case 'صحي':return h.contains('صحي')||h.contains('سلطة');case 'قهوة':return h.contains('كافيه')||r.name.contains('ستريو');case 'فطار':return h.contains('فطار')||h.contains('breakfast');default:return true;}}@override Widget build(BuildContext c){final list=data.where(matches).toList();return Scaffold(appBar:AppBar(title:Text(title)),body:ListView(padding:const EdgeInsets.all(18),children:[Container(padding:const EdgeInsets.all(20),decoration:BoxDecoration(gradient:const LinearGradient(colors:[ink,Color(0xFF303746)]),borderRadius:BorderRadius.circular(26)),child:Text('اختيارات '+category,style:const TextStyle(color:Colors.white,fontSize:22,fontWeight:FontWeight.w900))),const SizedBox(height:16),...list.map((r)=>Padding(padding:const EdgeInsets.only(bottom:14),child:CardR(r:r,onTap:()=>Navigator.push(c,MaterialPageRoute(builder:(_)=>RestaurantPage(r:r,fav:false,onFav:(){},onAdd:(rr,m)=>showFeature(c,'السلة','افتح المطعم لإضافة المنتج.'))))))]));}}
+class CategoryPage extends StatelessWidget{
+  final String title,category;
+  const CategoryPage({super.key,required this.title,required this.category});
+  bool matches(R r){
+    final h=(r.type+' '+r.name+' '+r.menu.map((m)=>m.name+' '+m.desc).join(' ')).toLowerCase();
+    switch(category){
+      case 'برجر':return h.contains('برجر')||h.contains('burger')||r.name.contains('ماكدونالدز')||r.name.contains('كاتشاب');
+      case 'فراخ':return h.contains('فراخ')||h.contains('chicken')||h.contains('دجاج');
+      case 'بيتزا':return h.contains('بيتزا')||h.contains('pizza');
+      case 'حلويات':return h.contains('حلويات')||h.contains('كيك')||h.contains('dessert');
+      case 'مشروبات':return h.contains('مشروب')||h.contains('بيبسي');
+      case 'صحي':return h.contains('صحي')||h.contains('سلطة');
+      case 'قهوة':return h.contains('كافيه')||r.name.contains('ستريو');
+      case 'فطار':return h.contains('فطار')||h.contains('breakfast');
+      default:return true;
+    }
+  }
+  @override Widget build(BuildContext c){
+    final list=data.where(matches).toList();
+    return Scaffold(
+      appBar:AppBar(title:Text(title)),
+      body:ListView(
+        padding:const EdgeInsets.all(18),
+        children:[
+          Container(
+            padding:const EdgeInsets.all(20),
+            decoration:BoxDecoration(gradient:const LinearGradient(colors:[ink,Color(0xFF303746)]),borderRadius:BorderRadius.circular(26)),
+            child:Text('اختيارات '+category,style:const TextStyle(color:Colors.white,fontSize:22,fontWeight:FontWeight.w900)),
+          ),
+          const SizedBox(height:16),
+          for(final r in list)
+            Padding(
+              padding:const EdgeInsets.only(bottom:14),
+              child:CardR(
+                r:r,
+                onTap:()=>Navigator.push(c,MaterialPageRoute(
+                  builder:(_)=>RestaurantPage(
+                    r:r,fav:false,onFav:(){},
+                    onAdd:(rr,m)=>showFeature(c,'السلة','أضف المنتج من صفحة المطعم.'),
+                  ),
+                )),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
 class OwnerStudioPage extends StatefulWidget{const OwnerStudioPage({super.key});@override State<OwnerStudioPage> createState()=>_OwnerStudioPageState();}
 class _OwnerStudioPageState extends State<OwnerStudioPage>{List<Map<String,dynamic>> restaurants=[];List<Map<String,dynamic>> content=[];bool loading=true;@override void initState(){super.initState();load();}Future<void> load()async{try{restaurants=await NovaSupabase.restaurants();content=await NovaSupabase.appContent();}catch(_){ }if(mounted)setState(()=>loading=false);}
 Future<void> editRestaurant(Map<String,dynamic> r)async{final n=TextEditingController(text:r['name']?.toString()??'');final d=TextEditingController(text:r['description']?.toString()??'');await showDialog(context:context,builder:(x)=>AlertDialog(title:const Text('تعديل المطعم'),content:Column(mainAxisSize:MainAxisSize.min,children:[TextField(controller:n,decoration:const InputDecoration(labelText:'اسم المطعم')),TextField(controller:d,decoration:const InputDecoration(labelText:'الوصف'))]),actions:[TextButton(onPressed:()=>Navigator.pop(x),child:const Text('إلغاء')),FilledButton(onPressed:()async{try{await NovaSupabase.updateRestaurant(r['id'].toString(),name:n.text,description:d.text);if(x.mounted)Navigator.pop(x);await load();}catch(e){if(x.mounted)snack(x,'تعذر الحفظ: '+e.toString());}},child:const Text('حفظ'))]));n.dispose();d.dispose();}
