@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter/services.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_map/flutter_map.dart';
@@ -1160,7 +1161,7 @@ class _HomeState extends State<Home>{
       ),
     ),
     const SizedBox(height:23),Text(appCopy['mood_title']??'اختار إللي على مزاجك',style:const TextStyle(fontSize:20,fontWeight:FontWeight.w900)),const SizedBox(height:11),
-    SizedBox(height:112,child:ListView(scrollDirection:Axis.horizontal,children:[Cat(Icons.lunch_dining_rounded,'برجر',onAdd:widget.onAdd),Cat(Icons.restaurant_rounded,'فراخ',onAdd:widget.onAdd),Cat(Icons.local_pizza_rounded,'بيتزا',onAdd:widget.onAdd),Cat(Icons.cake_rounded,'حلويات',onAdd:widget.onAdd),Cat(Icons.local_drink_rounded,'مشروبات',onAdd:widget.onAdd),Cat(Icons.spa_rounded,'صحي',onAdd:widget.onAdd),Cat(Icons.coffee_rounded,'قهوة',onAdd:widget.onAdd),Cat(Icons.breakfast_dining_rounded,'فطار',onAdd:widget.onAdd)])),
+    GridView.count(crossAxisCount:4,shrinkWrap:true,physics:const NeverScrollableScrollPhysics(),mainAxisSpacing:10,crossAxisSpacing:8,childAspectRatio:.88,children:[Cat('assets/categories/burger_3d.svg','برجر',onAdd:widget.onAdd),Cat('assets/categories/chicken_3d.svg','فراخ',onAdd:widget.onAdd),Cat('assets/categories/pizza_3d.svg','بيتزا',onAdd:widget.onAdd),Cat('assets/categories/dessert_3d.svg','حلويات',onAdd:widget.onAdd),Cat('assets/categories/drinks_3d.svg','مشروبات',onAdd:widget.onAdd),Cat('assets/categories/healthy_3d.svg','صحي',onAdd:widget.onAdd),Cat('assets/categories/breakfast_3d.svg','فطار',onAdd:widget.onAdd),Cat('assets/categories/snacks_3d.svg','سناكس',onAdd:widget.onAdd)]),
     const SizedBox(height:20),
     const Text('عروض معمولة ليك',style:TextStyle(fontSize:20,fontWeight:FontWeight.w900)),
     const SizedBox(height:11),
@@ -1184,10 +1185,25 @@ class _HomeState extends State<Home>{
 Widget title(String a,String b)=>Row(children:[Expanded(child:Text(a,style:const TextStyle(fontSize:20,fontWeight:FontWeight.w900))),if(b.isNotEmpty)Text(b,style:const TextStyle(color:orange,fontSize:12,fontWeight:FontWeight.bold))]);
 
 class Cat extends StatelessWidget {
-  final IconData icon; final String n; final void Function(R,M) onAdd; const Cat(this.icon,this.n,{super.key,required this.onAdd});
-  @override Widget build(BuildContext c)=>Material(color:Colors.transparent,child:InkWell(onTap:()=>Navigator.push(c,MaterialPageRoute(builder:(_)=>CategoryPage(title:n,category:n,onAdd:onAdd))),borderRadius:BorderRadius.circular(22),child:Container(width:104,margin:const EdgeInsets.only(left:10),padding:const EdgeInsets.all(10),decoration:BoxDecoration(color:Colors.white,borderRadius:BorderRadius.circular(22),border:Border.all(color:const Color(0xFFEDEDEF)),boxShadow:const[BoxShadow(color:Color(0x0A000000),blurRadius:18,offset:Offset(0,7))]),child:Column(mainAxisAlignment:MainAxisAlignment.center,children:[Container(width:48,height:48,decoration:BoxDecoration(color:orange.withValues(alpha:.10),shape:BoxShape.circle),child:Icon(icon,color:orange,size:25)),const SizedBox(height:7),Text(n,style:const TextStyle(fontWeight:FontWeight.w900,fontSize:12))]))));
+  final String asset,n; final void Function(R,M) onAdd;
+  const Cat(this.asset,this.n,{super.key,required this.onAdd});
+  @override Widget build(BuildContext c)=>Material(
+    color:Colors.transparent,
+    child:InkWell(
+      onTap:()=>Navigator.push(c,MaterialPageRoute(builder:(_)=>CategoryPage(title:n,category:n,onAdd:onAdd))),
+      borderRadius:BorderRadius.circular(18),
+      child:Container(
+        padding:const EdgeInsets.symmetric(vertical:5,horizontal:4),
+        decoration:BoxDecoration(color:Colors.white,borderRadius:BorderRadius.circular(18),border:Border.all(color:const Color(0xFFF0F0F2)),boxShadow:const[BoxShadow(color:Color(0x12000000),blurRadius:12,offset:Offset(0,5))]),
+        child:Column(mainAxisAlignment:MainAxisAlignment.center,children:[
+          Expanded(child:Padding(padding:const EdgeInsets.all(3),child:SvgPicture.asset(asset,fit:BoxFit.contain))),
+          const SizedBox(height:2),
+          Text(n,style:const TextStyle(fontWeight:FontWeight.w900,fontSize:11))
+        ]),
+      ),
+    ),
+  );
 }
-
 
 class _LivePromoCard extends StatelessWidget{
   final Map<String,dynamic> offer;
