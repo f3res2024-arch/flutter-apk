@@ -2015,11 +2015,101 @@ class _OwnerDashboardPageState extends State<OwnerDashboardPage> with SingleTick
   Future<void> _offer()async{final title=TextEditingController(),sub=TextEditingController();await showDialog(context:context,builder:(x)=>AlertDialog(title:const Text('عرض جديد'),content:Column(mainAxisSize:MainAxisSize.min,children:[TextField(controller:title,decoration:const InputDecoration(labelText:'العنوان')),TextField(controller:sub,decoration:const InputDecoration(labelText:'الوصف'))]),actions:[TextButton(onPressed:()=>Navigator.pop(x),child:const Text('إلغاء')),FilledButton(onPressed:()async{try{await NovaSupabase.createOffer(title:title.text,subtitle:sub.text);if(x.mounted)Navigator.pop(x);await _load();}catch(e){if(x.mounted)snack(x,'تعذر إنشاء العرض: $e');}},child:const Text('إنشاء'))]));title.dispose();sub.dispose();}
   Future<void> _contentEdit(Map<String,dynamic> item)async{final v=TextEditingController(text:'${item['text_value']??''}');await showDialog(context:context,builder:(x)=>AlertDialog(title:Text('تعديل ${item['key']}'),content:TextField(controller:v,maxLines:5,decoration:const InputDecoration(labelText:'النص')),actions:[TextButton(onPressed:()=>Navigator.pop(x),child:const Text('إلغاء')),FilledButton(onPressed:()async{await NovaSupabase.updateAppContent(item['key'].toString(),v.text);if(x.mounted)Navigator.pop(x);await _load();},child:const Text('حفظ'))]));v.dispose();}
   Widget _overview()=>ListView(padding:const EdgeInsets.all(16),children:[Container(padding:const EdgeInsets.all(22),decoration:BoxDecoration(gradient:const LinearGradient(colors:[ink,Color(0xFF2B303A)]),borderRadius:BorderRadius.circular(28)),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[const Text('استوديو نوفا',style:TextStyle(color:Colors.white,fontSize:27,fontWeight:FontWeight.w900)),const SizedBox(height:5),const Text('مركز التحكم في الطلبات والمطاعم والدعم والمحتوى',style:TextStyle(color:Colors.white70)),const SizedBox(height:18),Row(children:[Expanded(child:FilledButton.icon(onPressed:()=>tabs.animateTo(4),style:FilledButton.styleFrom(backgroundColor:orange),icon:const Icon(Icons.support_agent),label:Text(support.isEmpty?'الدعم':'${support.length} طلب دعم'))),const SizedBox(width:8),Expanded(child:OutlinedButton.icon(onPressed:_load,style:OutlinedButton.styleFrom(foregroundColor:Colors.white,side:const BorderSide(color:Colors.white24)),icon:const Icon(Icons.refresh),label:const Text('تحديث')))])]),const SizedBox(height:14),stat(Icons.receipt_long,'كل الطلبات','${orders.length}',orange),const SizedBox(height:9),stat(Icons.storefront,'المطاعم','${restaurants.length}',const Color(0xFF6B5CE7)),const SizedBox(height:9),stat(Icons.local_offer,'الكوبونات','${coupons.length}',const Color(0xFF1D9B72)),const SizedBox(height:9),stat(Icons.support_agent,'طلبات الدعم','${support.length}',const Color(0xFFE89B2B))]);
-  Widget _orders()=>ListView(padding:const EdgeInsets.all(16),children:[if(orders.isEmpty)const Padding(padding:EdgeInsets.all(30),child:Center(child:Text('لا توجد طلبات حتى الآن'))),...orders.map((o)=>Card(margin:const EdgeInsets.only(bottom:8),child:ListTile(title:Text('${o['restaurant_name']??'مطعم'} • #${_shortId(o['id'])}',style:const TextStyle(fontWeight:FontWeight.w900)),subtitle:Text('${o['customer_name']??'عميل'} • ${_money(o['total']).toStringAsFixed(0)} ج.م'),trailing:DropdownButton<String>(value:(o['status']??'pending').toString(),items:const['pending','accepted','preparing','ready','picked_up','on_the_way','delivered','cancelled'].map((x)=>DropdownMenuItem(value:x,child:Text(x))).toList(),onChanged:(v)async{if(v==null)return;await NovaSupabase.ownerUpdateOrderStatus(o['id'].toString(),v);await _load();})))]);
-  Widget _catalog()=>ListView(padding:const EdgeInsets.all(16),children:[FilledButton.icon(onPressed:_addRestaurant,icon:const Icon(Icons.add_business),label:const Text('إضافة مطعم')),const SizedBox(height:12),...restaurants.map((r)=>Card(child:ListTile(title:Text('${r['name']??''}',style:const TextStyle(fontWeight:FontWeight.w900)),subtitle:Text('${r['description']??''}'),leading:const Icon(Icons.storefront,color:orange),trailing:Wrap(children:[IconButton(onPressed:()=>_menu(r),icon:const Icon(Icons.restaurant_menu)),IconButton(onPressed:()=>_editRestaurant(r),icon:const Icon(Icons.edit_outlined))]))))];
-  Widget _marketing()=>ListView(padding:const EdgeInsets.all(16),children:[Row(children:[Expanded(child:FilledButton.icon(onPressed:_coupon,icon:const Icon(Icons.confirmation_num_outlined),label:const Text('كوبون'))),const SizedBox(width:8),Expanded(child:OutlinedButton.icon(onPressed:_offer,icon:const Icon(Icons.campaign_outlined),label:const Text('عرض')))]),const SizedBox(height:14),const Text('الكوبونات',style:TextStyle(fontSize:18,fontWeight:FontWeight.w900)),...coupons.map((x)=>SwitchListTile(title:Text('${x['code']??''} — ${x['title']??''}'),subtitle:Text('${x['discount_value']??0}% خصم'),value:x['is_active']==true,onChanged:(v)async{await NovaSupabase.updateCoupon(x['id'].toString(),{'is_active':v});await _load();})),const SizedBox(height:14),const Text('العروض',style:TextStyle(fontSize:18,fontWeight:FontWeight.w900)),...offers.map((x)=>SwitchListTile(title:Text('${x['title']??''}'),subtitle:Text('${x['subtitle']??''}'),value:x['is_active']==true,onChanged:(v)async{await NovaSupabase.updateOffer(x['id'].toString(),{'is_active':v});await _load();}))]);
-  Widget _support()=>ListView(padding:const EdgeInsets.all(16),children:[if(support.isEmpty)const Padding(padding:EdgeInsets.all(30),child:Center(child:Text('لا توجد محادثات دعم مفتوحة'))),...support.map((x){final waiting=x['status']=='waiting_admin';return Card(child:ListTile(onTap:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>OwnerSupportChatPage(conversationId:x['id'].toString()))).then((_){_loadSupport();}),leading:Badge(isLabelVisible:waiting,label:const Text('!'),child:const CircleAvatar(backgroundColor:Color(0xFFFFF0EA),child:Icon(Icons.support_agent,color:orange))),title:Text('عميل مجهول #${x['id'].toString().substring(0,6)}',style:const TextStyle(fontWeight:FontWeight.w900)),subtitle:Text(waiting?'العميل ينتظر مسؤولاً':'محادثة مفتوحة مع Nova AI'),trailing:const Icon(Icons.chevron_left));})]);
-  Widget _content()=>ListView(padding:const EdgeInsets.all(16),children:[const Text('محتوى التطبيق',style:TextStyle(fontSize:20,fontWeight:FontWeight.w900)),const SizedBox(height:8),...content.map((x)=>Card(child:ListTile(title:Text('${x['key']??''}',style:const TextStyle(fontWeight:FontWeight.w800)),subtitle:Text('${x['text_value']??x['image_url']??''}',maxLines:2,overflow:TextOverflow.ellipsis),trailing:const Icon(Icons.edit_outlined),onTap:()=>_contentEdit(x))))]);
+  Widget _orders()=>ListView(
+    padding:const EdgeInsets.all(16),
+    children:[
+      if(orders.isEmpty)const Padding(padding:EdgeInsets.all(30),child:Center(child:Text('لا توجد طلبات حتى الآن'))),
+      ...orders.map((o)=>Card(
+        margin:const EdgeInsets.only(bottom:8),
+        child:ListTile(
+          title:Text('${o['restaurant_name']??'مطعم'} • #${_shortId(o['id'])}',style:const TextStyle(fontWeight:FontWeight.w900)),
+          subtitle:Text('${o['customer_name']??'عميل'} • ${_money(o['total']).toStringAsFixed(0)} ج.م'),
+          trailing:DropdownButton<String>(
+            value:(o['status']??'pending').toString(),
+            items:const['pending','accepted','preparing','ready','picked_up','on_the_way','delivered','cancelled'].map((x)=>DropdownMenuItem(value:x,child:Text(x))).toList(),
+            onChanged:(v)async{if(v==null)return;await NovaSupabase.ownerUpdateOrderStatus(o['id'].toString(),v);await _load();},
+          ),
+        ),
+      )),
+    ],
+  );
+  Widget _catalog()=>ListView(
+    padding:const EdgeInsets.all(16),
+    children:[
+      FilledButton.icon(onPressed:_addRestaurant,icon:const Icon(Icons.add_business),label:const Text('إضافة مطعم')),
+      const SizedBox(height:12),
+      ...restaurants.map((r)=>Card(
+        child:ListTile(
+          title:Text('${r['name']??''}',style:const TextStyle(fontWeight:FontWeight.w900)),
+          subtitle:Text('${r['description']??''}'),
+          leading:const Icon(Icons.storefront,color:orange),
+          trailing:Wrap(children:[
+            IconButton(onPressed:()=>_menu(r),icon:const Icon(Icons.restaurant_menu)),
+            IconButton(onPressed:()=>_editRestaurant(r),icon:const Icon(Icons.edit_outlined)),
+          ]),
+        ),
+      )),
+    ],
+  );
+  Widget _marketing()=>ListView(
+    padding:const EdgeInsets.all(16),
+    children:[
+      Row(children:[
+        Expanded(child:FilledButton.icon(onPressed:_coupon,icon:const Icon(Icons.confirmation_num_outlined),label:const Text('كوبون'))),
+        const SizedBox(width:8),
+        Expanded(child:OutlinedButton.icon(onPressed:_offer,icon:const Icon(Icons.campaign_outlined),label:const Text('عرض'))),
+      ]),
+      const SizedBox(height:14),
+      const Text('الكوبونات',style:TextStyle(fontSize:18,fontWeight:FontWeight.w900)),
+      ...coupons.map((x)=>SwitchListTile(
+        title:Text('${x['code']??''} — ${x['title']??''}'),
+        subtitle:Text('${x['discount_value']??0}% خصم'),
+        value:x['is_active']==true,
+        onChanged:(v)async{await NovaSupabase.updateCoupon(x['id'].toString(),{'is_active':v});await _load();},
+      )),
+      const SizedBox(height:14),
+      const Text('العروض',style:TextStyle(fontSize:18,fontWeight:FontWeight.w900)),
+      ...offers.map((x)=>SwitchListTile(
+        title:Text('${x['title']??''}'),
+        subtitle:Text('${x['subtitle']??''}'),
+        value:x['is_active']==true,
+        onChanged:(v)async{await NovaSupabase.updateOffer(x['id'].toString(),{'is_active':v});await _load();},
+      )),
+    ],
+  );
+  Widget _support()=>ListView(
+    padding:const EdgeInsets.all(16),
+    children:[
+      if(support.isEmpty)const Padding(padding:EdgeInsets.all(30),child:Center(child:Text('لا توجد محادثات دعم مفتوحة'))),
+      ...support.map((x){
+        final waiting=x['status']=='waiting_admin';
+        return Card(
+          child:ListTile(
+            onTap:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>OwnerSupportChatPage(conversationId:x['id'].toString()))).then((_){_loadSupport();}),
+            leading:Badge(isLabelVisible:waiting,label:const Text('!'),child:const CircleAvatar(backgroundColor:Color(0xFFFFF0EA),child:Icon(Icons.support_agent,color:orange))),
+            title:Text('عميل مجهول #${x['id'].toString().substring(0,6)}',style:const TextStyle(fontWeight:FontWeight.w900)),
+            subtitle:Text(waiting?'العميل ينتظر مسؤولاً':'محادثة مفتوحة مع Nova AI'),
+            trailing:const Icon(Icons.chevron_left),
+          ),
+        );
+      }),
+    ],
+  );
+  Widget _content()=>ListView(
+    padding:const EdgeInsets.all(16),
+    children:[
+      const Text('محتوى التطبيق',style:TextStyle(fontSize:20,fontWeight:FontWeight.w900)),
+      const SizedBox(height:8),
+      ...content.map((x)=>Card(
+        child:ListTile(
+          title:Text('${x['key']??''}',style:const TextStyle(fontWeight:FontWeight.w800)),
+          subtitle:Text('${x['text_value']??x['image_url']??''}',maxLines:2,overflow:TextOverflow.ellipsis),
+          trailing:const Icon(Icons.edit_outlined),
+          onTap:()=>_contentEdit(x),
+        ),
+      )),
+    ],
+  );
   @override Widget build(BuildContext c){if(loading)return const Scaffold(body:Center(child:CircularProgressIndicator(color:orange)));return Directionality(textDirection:TextDirection.rtl,child:Scaffold(backgroundColor:const Color(0xFFF7F7F8),appBar:AppBar(title:const Text('لوحة نوفا',style:TextStyle(fontWeight:FontWeight.w900)),bottom:TabBar(controller:tabs,isScrollable:true,tabAlignment:TabAlignment.start,tabs:const[Tab(icon:Icon(Icons.dashboard_outlined),text:'نظرة عامة'),Tab(icon:Icon(Icons.receipt_long),text:'الطلبات'),Tab(icon:Icon(Icons.storefront),text:'المطاعم'),Tab(icon:Icon(Icons.local_offer),text:'التسويق'),Tab(icon:Icon(Icons.support_agent),text:'الدعم'),Tab(icon:Icon(Icons.edit_note),text:'المحتوى')])),body:TabBarView(controller:tabs,children:[_overview(),_orders(),_catalog(),_marketing(),_support(),_content()])));
   }
 }
