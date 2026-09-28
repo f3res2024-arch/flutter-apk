@@ -1169,7 +1169,7 @@ class _HomeState extends State<Home>{
       ),
     ),
     const SizedBox(height:23),title(appCopy['mood_title']??'اختار إللي على مزاجك','عرض الكل'),const SizedBox(height:11),
-    SizedBox(height:112,child:ListView(scrollDirection:Axis.horizontal,children:[Cat(Icons.lunch_dining_rounded,'برجر',widget.onAdd:widget.onAdd),Cat(Icons.restaurant_rounded,'فراخ',widget.onAdd:widget.onAdd),Cat(Icons.local_pizza_rounded,'بيتزا',widget.onAdd:widget.onAdd),Cat(Icons.cake_rounded,'حلويات',widget.onAdd:widget.onAdd),Cat(Icons.local_drink_rounded,'مشروبات',widget.onAdd:widget.onAdd),Cat(Icons.spa_rounded,'صحي',widget.onAdd:widget.onAdd),Cat(Icons.coffee_rounded,'قهوة',widget.onAdd:widget.onAdd),Cat(Icons.breakfast_dining_rounded,'فطار',widget.onAdd:widget.onAdd)])),
+    SizedBox(height:112,child:ListView(scrollDirection:Axis.horizontal,children:[Cat(Icons.lunch_dining_rounded,'برجر',onAdd:widget.onAdd),Cat(Icons.restaurant_rounded,'فراخ',onAdd:widget.onAdd),Cat(Icons.local_pizza_rounded,'بيتزا',onAdd:widget.onAdd),Cat(Icons.cake_rounded,'حلويات',onAdd:widget.onAdd),Cat(Icons.local_drink_rounded,'مشروبات',onAdd:widget.onAdd),Cat(Icons.spa_rounded,'صحي',onAdd:widget.onAdd),Cat(Icons.coffee_rounded,'قهوة',onAdd:widget.onAdd),Cat(Icons.breakfast_dining_rounded,'فطار',onAdd:widget.onAdd)])),
     const SizedBox(height:20),
     const Text('عروض معمولة ليك',style:TextStyle(fontSize:20,fontWeight:FontWeight.w900)),
     const SizedBox(height:11),
