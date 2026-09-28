@@ -8,3 +8,5 @@ void main() {
     expect(find.text('مطاعم حقيقية حولك'), findsOneWidget);
   });
 }
+
+// CI trigger: premium Nova UI build
