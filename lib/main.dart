@@ -3,8 +3,6 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 
 void main() => runApp(const Nova());
-  String get hours => 'حسب بيانات الفرع';
-  String get phone => 'متاح من المصدر';
 
 const orange = Color(0xFFFF5A36);
 const ink = Color(0xFF151922);
@@ -17,6 +15,8 @@ class R {
   final List<String> branches;
   final List<M> menu;
   const R(this.name, this.type, this.address, this.image, this.source, this.rating, this.reviews, this.lat, this.lng, this.branches, this.menu);
+  String get hours => 'حسب بيانات الفرع';
+  String get phone => 'متاح من المصدر';
 }
 class M {
   final String name, desc, image;
