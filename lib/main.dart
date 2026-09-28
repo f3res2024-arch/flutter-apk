@@ -1189,6 +1189,33 @@ class Cat extends StatelessWidget {
   @override Widget build(BuildContext c)=>Material(color:Colors.transparent,child:InkWell(onTap:()=>Navigator.push(c,MaterialPageRoute(builder:(_)=>CategoryPage(title:n,category:n,onAdd:onAdd))),borderRadius:BorderRadius.circular(22),child:Container(width:104,margin:const EdgeInsets.only(left:10),padding:const EdgeInsets.all(10),decoration:BoxDecoration(color:Colors.white,borderRadius:BorderRadius.circular(22),border:Border.all(color:const Color(0xFFEDEDEF)),boxShadow:const[BoxShadow(color:Color(0x0A000000),blurRadius:18,offset:Offset(0,7))]),child:Column(mainAxisAlignment:MainAxisAlignment.center,children:[Container(width:48,height:48,decoration:BoxDecoration(color:orange.withValues(alpha:.10),shape:BoxShape.circle),child:Icon(icon,color:orange,size:25)),const SizedBox(height:7),Text(n,style:const TextStyle(fontWeight:FontWeight.w900,fontSize:12))]))));
 }
 
+class _LivePromoCard extends StatelessWidget{
+  final Map<String,dynamic> offer;
+  const _LivePromoCard({required this.offer});
+  @override Widget build(BuildContext c){
+    final coupon=offer['coupons'] is Map?Map<String,dynamic>.from(offer['coupons'] as Map):null;
+    final code=coupon?['code']?.toString();
+    final image=offer['image_url']?.toString()??'';
+    return InkWell(
+      onTap:code==null?null:()=>showDialog(context:c,builder:(_)=>AlertDialog(title:Text((offer['title']??'عرض نوفا').toString()),content:Text('كود العرض: '+code+'\n\n'+(offer['subtitle']??'').toString()),actions:[TextButton(onPressed:(){Clipboard.setData(ClipboardData(text:code));Navigator.pop(c);snack(c,'تم نسخ الكود '+code);},child:const Text('نسخ')),TextButton(onPressed:()=>Navigator.pop(c),child:const Text('إغلاق'))])),
+      borderRadius:BorderRadius.circular(22),
+      child:Container(
+        width:255,margin:const EdgeInsets.only(left:10),clipBehavior:Clip.antiAlias,
+        decoration:BoxDecoration(color:ink,borderRadius:BorderRadius.circular(22),boxShadow:const[BoxShadow(color:Color(0x18000000),blurRadius:18,offset:Offset(0,7))]),
+        child:Stack(fit:StackFit.expand,children:[
+          if(image.isNotEmpty)Image.network(image,fit:BoxFit.cover,errorBuilder:(_,__,___)=>const SizedBox()),
+          const DecoratedBox(decoration:BoxDecoration(gradient:LinearGradient(begin:Alignment.topCenter,end:Alignment.bottomCenter,colors:[Color(0x11000000),Color(0xE6000000)]))),
+          Padding(padding:const EdgeInsets.all(15),child:Column(crossAxisAlignment:CrossAxisAlignment.start,mainAxisAlignment:MainAxisAlignment.end,children:[
+            Text((offer['title']??'عرض نوفا').toString(),style:const TextStyle(color:Colors.white,fontWeight:FontWeight.w900,fontSize:17)),
+            const SizedBox(height:3),Text((offer['subtitle']??'').toString(),maxLines:2,overflow:TextOverflow.ellipsis,style:const TextStyle(color:Colors.white70,fontSize:10)),
+            if(code!=null)Padding(padding:const EdgeInsets.only(top:7),child:Text(code,style:const TextStyle(color:orange,fontWeight:FontWeight.w900,fontSize:10,letterSpacing:1))),
+          ])),
+        ]),
+      ),
+    );
+  }
+}
+
 class _PromoCard extends StatelessWidget{
   final IconData icon; final String title,sub,code;
   const _PromoCard({required this.icon,required this.title,required this.sub,required this.code});
