@@ -51,13 +51,25 @@ class NovaSupabase {
 
   static Future<List<Map<String, dynamic>>> courierOrders() async {
     if (!configured || client.auth.currentUser == null) return [];
+    final userId = client.auth.currentUser!.id;
+    final rejectedRows = await client
+        .from('order_rejections')
+        .select('order_id')
+        .eq('courier_id', userId);
+    final rejectedIds = Set<String>.from(
+      (rejectedRows as List).map((row) => row['order_id'].toString()),
+    );
+
     final rows = await client
         .from('orders')
         .select('*, order_items(*)')
         .eq('status', 'pending')
         .filter('courier_id', 'is', 'null')
         .order('created_at', ascending: false);
-    return List<Map<String, dynamic>>.from(rows);
+
+    return List<Map<String, dynamic>>.from(rows)
+        .where((row) => !rejectedIds.contains(row['id'].toString()))
+        .toList();
   }
 
   static RealtimeChannel watchCourierOrders(
