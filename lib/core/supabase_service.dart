@@ -12,6 +12,41 @@ class NovaSupabase {
     await Supabase.initialize(url: url, publishableKey: key);
   }
 
+  static const authRedirectUrl = 'nova://auth-callback';
+
+  static Future<AuthResponse> signIn({required String email, required String password}) async {
+    if (!configured) throw const AuthException('خدمة الحساب غير مهيأة بعد.');
+    return client.auth.signInWithPassword(email: email.trim(), password: password);
+  }
+
+  static Future<AuthResponse> signUp({required String email, required String password, required UserRole role}) async {
+    if (!configured) throw const AuthException('خدمة الحساب غير مهيأة بعد.');
+    final response = await client.auth.signUp(email: email.trim(), password: password, emailRedirectTo: authRedirectUrl, data: {'role': role.name});
+    if (response.user != null) { try { await setUserRole(response.user!.id, role.name); } catch (_) {} }
+    return response;
+  }
+
+  static Future<void> sendPasswordReset(String email) async {
+    if (!configured) throw const AuthException('خدمة الحساب غير مهيأة بعد.');
+    await client.auth.resetPasswordForEmail(email.trim(), redirectTo: authRedirectUrl);
+  }
+
+  static Future<void> updatePassword(String password) async {
+    if (!configured) throw const AuthException('خدمة الحساب غير مهيأة بعد.');
+    await client.auth.updateUser(UserAttributes(password: password));
+  }
+
+  static Future<void> signInWithGoogle() async {
+    if (!configured) throw const AuthException('خدمة الحساب غير مهيأة بعد.');
+    await client.auth.signInWithOAuth(OAuthProvider.google, redirectTo: authRedirectUrl);
+  }
+
+  static Future<String?> currentUserRole() async {
+    if (!configured || client.auth.currentUser == null) return null;
+    final row = await client.from('profiles').select('role').eq('id', client.auth.currentUser!.id).maybeSingle();
+    return row?['role']?.toString();
+  }
+
   static Future<String?> uploadAvatar(String userId, Uint8List bytes) async {
     if (!configured) return null;
     final path = 'avatars/$userId/avatar.jpg';
