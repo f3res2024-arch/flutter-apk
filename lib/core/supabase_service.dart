@@ -83,6 +83,26 @@ class NovaSupabase {
     );
   }
 
+  static Future<AuthResponse> verifyEmailOtp({
+    required String email,
+    required String token,
+  }) async {
+    _requireReady();
+    return client.auth.verifyOTP(
+      email: email.trim(),
+      token: token.trim(),
+      type: OtpType.email,
+    );
+  }
+
+  static Future<void> resendSignupOtp(String email) async {
+    _requireReady();
+    await client.auth.resend(
+      type: OtpType.signup,
+      email: email.trim(),
+    );
+  }
+
   static Future<void> sendPasswordReset(String email) async {
     _requireReady();
     await client.auth.resetPasswordForEmail(
