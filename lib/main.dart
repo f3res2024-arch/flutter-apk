@@ -3,6 +3,8 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 
 void main() => runApp(const Nova());
+  String get hours => 'حسب بيانات الفرع';
+  String get phone => 'متاح من المصدر';
 
 const orange = Color(0xFFFF5A36);
 const ink = Color(0xFF151922);
@@ -184,24 +186,233 @@ class MenuCard extends StatelessWidget {
     const SizedBox(width:12),Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text(m.name,style:const TextStyle(fontWeight:FontWeight.w900,fontSize:15)),const SizedBox(height:5),Text(m.desc,maxLines:2,overflow:TextOverflow.ellipsis,style:const TextStyle(color:muted,fontSize:11)),const SizedBox(height:7),Text(m.price.toStringAsFixed(0)+' ج.م',style:const TextStyle(color:orange,fontWeight:FontWeight.w900,fontSize:15))])),IconButton.filled(onPressed:onAdd,icon:const Icon(Icons.add_rounded))
   ]));
 }
-
+class _SearchPageState extends State<SearchPage> {
+  String q = '';
+  @override
+  Widget build(BuildContext c) {
+    final list = data.where((r) => q.isEmpty || r.name.contains(q) || r.type.contains(q)).toList();
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(18, 18, 18, 100),
+      children: [
+        const Text('اكتشف', style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900)),
+        const SizedBox(height: 6),
+        const Text('مطاعم ومنيوهات حقيقية حولك', style: TextStyle(color: muted)),
+        const SizedBox(height: 18),
+        TextField(
+          onChanged: (v) => setState(() => q = v),
+          decoration: InputDecoration(
+            hintText: 'ابحث باسم المطعم أو النوع…',
+            prefixIcon: const Icon(Icons.search_rounded),
+            suffixIcon: const Icon(Icons.tune_rounded),
+            filled: true,
+            fillColor: Theme.of(c).colorScheme.surface,
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(18), borderSide: BorderSide.none),
+          ),
+        ),
+        const SizedBox(height: 18),
+        ...list.map((r) => Padding(
+          padding: const EdgeInsets.only(bottom: 14),
+          child: CardR(
+            r: r,
+            onTap: () => Navigator.push(c, MaterialPageRoute(
+              builder: (_) => RestaurantPage(r: r, fav: false, onFav: () {}, onAdd: (_, __) {}),
+            )),
+          ),
+        )),
+      ],
+    );
+  }
+}
 class SearchPage extends StatefulWidget{const SearchPage({super.key});@override State<SearchPage> createState()=>_SearchPageState();}
 class _SearchPageState extends State<SearchPage>{String q='';@override Widget build(BuildContext c){final list=data.where((r)=>q.isEmpty||r.name.contains(q)||r.type.contains(q)).toList();return ListView(padding:const EdgeInsets.fromLTRB(18,18,18,100),children:[const Text('اكتشف',style:TextStyle(fontSize:28,fontWeight:FontWeight.w900)),const SizedBox(height:6),const Text('مطاعم ومنيوهات حقيقية حولك',style:TextStyle(color:muted)),const SizedBox(height:18),TextField(onChanged:(v)=>setState(()=>q=v),decoration:InputDecoration(hintText:'ابحث باسم المطعم أو النوع…',prefixIcon:const Icon(Icons.search_rounded),suffixIcon:const Icon(Icons.tune_rounded),filled:true,fillColor:Theme.of(c).colorScheme.surface,border:OutlineInputBorder(borderRadius:BorderRadius.circular(18),borderSide:BorderSide.none))),const SizedBox(height:18),...list.map((r)=>Padding(padding:const EdgeInsets.only(bottom:14),child:CardR(r:r,onTap:()=>Navigator.push(c,MaterialPageRoute(builder:(_)=>RestaurantPage(r:r,fav:false,onFav:(){},onAdd:(_,__){})))))]);}}
-
+class OTile extends StatelessWidget {
+  final String id, shop, status;
+  final bool active;
+  const OTile(this.id, this.shop, this.status, this.active, {super.key});
+  @override
+  Widget build(BuildContext c) {
+    final col = active ? orange : Colors.green;
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(15),
+      decoration: BoxDecoration(color: Theme.of(c).colorScheme.surface, borderRadius: BorderRadius.circular(20)),
+      child: Column(children: [
+        Row(children: [
+          CircleAvatar(backgroundColor: col.withValues(alpha: .12), child: Icon(active ? Icons.delivery_dining : Icons.check, color: col)),
+          const SizedBox(width: 12),
+          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(shop, style: const TextStyle(fontWeight: FontWeight.w900)),
+            Text('#' + id, style: const TextStyle(color: muted, fontSize: 11)),
+          ])),
+          Icon(active ? Icons.location_on : Icons.check_circle, color: col),
+        ]),
+        const SizedBox(height: 12),
+        Row(children: [
+          Icon(active ? Icons.bolt : Icons.done_all, color: col, size: 18),
+          const SizedBox(width: 7),
+          Text(status, style: TextStyle(color: col, fontWeight: FontWeight.w800, fontSize: 12)),
+        ]),
+        if (active) ...[
+          const SizedBox(height: 12),
+          const LinearProgressIndicator(value: .72, color: orange, minHeight: 7),
+          const SizedBox(height: 8),
+          const Align(alignment: Alignment.centerRight, child: Text('متوقع الوصول خلال 18 دقيقة', style: TextStyle(color: muted, fontSize: 11))),
+        ],
+      ]),
+    );
+  }
+}
 class OrdersPage extends StatelessWidget{const OrdersPage({super.key});@override Widget build(BuildContext c)=>ListView(padding:const EdgeInsets.all(18),children:[const Text('طلباتي',style:TextStyle(fontSize:28,fontWeight:FontWeight.w900)),const SizedBox(height:18),const OTile('NV-2841','دجاج كنتاكي','السائق في الطريق إليك',true),const OTile('NV-2819','بازوكا','تم التسليم • أمس',false),const OTile('NV-2772','تيكتس','تم التسليم • 18 سبتمبر',false)]);}
-class OTile extends StatelessWidget{final String id,shop,status;final bool active;const OTile(this.id,this.shop,this.status,this.active,{super.key});@override Widget build(BuildContext c){final col=active?orange:Colors.green;return Container(margin:const EdgeInsets.only(bottom:12),padding:const EdgeInsets.all(15),decoration:BoxDecoration(color:Theme.of(c).colorScheme.surface,borderRadius:BorderRadius.circular(20)),child:Column(children:[Row(children:[CircleAvatar(backgroundColor:col.withValues(alpha:.12),child:Icon(active?Icons.delivery_dining:Icons.check,color:col)),const SizedBox(width:12),Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text(shop,style:const TextStyle(fontWeight:FontWeight.w900)),Text('#'+id,style:const TextStyle(color:muted,fontSize:11))])),Icon(active?Icons.location_on:Icons.check_circle,color:col)]),const SizedBox(height:12),Row(children:[Icon(active?Icons.bolt:Icons.done_all,color:col,size:18),const SizedBox(width:7),Text(status,style:TextStyle(color:col,fontWeight:FontWeight.w800,fontSize:12))]),if(active)...[const SizedBox(height:12),const LinearProgressIndicator(value:.72,color:orange,minHeight:7),const SizedBox(height:8),const Align(alignment:Alignment.centerRight,child:Text('متوقع الوصول خلال 18 دقيقة',style:TextStyle(color:muted,fontSize:11)))] ]);}}
+class CartPage extends StatelessWidget {
+  final List<Line> cart;
+  final double total;
+  final void Function(Line) onAdd, onSub;
+  const CartPage({super.key, required this.cart, required this.total, required this.onAdd, required this.onSub});
+  @override
+  Widget build(BuildContext c) {
+    if (cart.isEmpty) {
+      return const Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+        Icon(Icons.shopping_bag_outlined, size: 80, color: orange),
+        SizedBox(height: 15),
+        Text('السلة لسه فاضية', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900)),
+        Text('اختار أكلك المفضل وابدأ طلبك', style: TextStyle(color: muted)),
+      ]));
+    }
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(18, 18, 18, 100),
+      children: [
+        const Text('السلة', style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900)),
+        const SizedBox(height: 18),
+        ...cart.map((x) => Container(
+          margin: const EdgeInsets.only(bottom: 10),
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(color: Theme.of(c).colorScheme.surface, borderRadius: BorderRadius.circular(20)),
+          child: Row(children: [
+            ClipRRect(borderRadius: BorderRadius.circular(14), child: Image.network(x.m.image, width: 72, height: 72, fit: BoxFit.cover)),
+            const SizedBox(width: 10),
+            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(x.m.name, style: const TextStyle(fontWeight: FontWeight.w900)),
+              Text(x.r.name, style: const TextStyle(color: muted, fontSize: 11)),
+              Text((x.m.price * x.qty).toStringAsFixed(0) + ' ج.م', style: const TextStyle(color: orange, fontWeight: FontWeight.w900)),
+            ])),
+            Row(children: [
+              IconButton(onPressed: () => onSub(x), icon: const Icon(Icons.remove_circle_outline)),
+              Text(x.qty.toString()),
+              IconButton(onPressed: () => onAdd(x), icon: const Icon(Icons.add_circle_outline, color: orange)),
+            ]),
+          ]),
+        )),
+        line('المجموع', total),
+        line('التوصيل', 25),
+        line('الخدمة', 8),
+        const Divider(height: 28),
+        line('الإجمالي', total + 33, bold: true),
+        const SizedBox(height: 14),
+        FilledButton(onPressed: () => checkout(c, total + 33), style: FilledButton.styleFrom(backgroundColor: orange, minimumSize: const Size.fromHeight(55)), child: const Text('إتمام الطلب')),
+      ],
+    );
+  }
+}
 
 class CartPage extends StatelessWidget{final List<Line> cart;final double total;final void Function(Line) onAdd,onSub;const CartPage({super.key,required this.cart,required this.total,required this.onAdd,required this.onSub});@override Widget build(BuildContext c){if(cart.isEmpty)return const Center(child:Column(mainAxisAlignment:MainAxisAlignment.center,children:[Icon(Icons.shopping_bag_outlined,size:80,color:orange),SizedBox(height:15),Text('السلة لسه فاضية',style:TextStyle(fontSize:22,fontWeight:FontWeight.w900)),Text('اختار أكلك المفضل وابدأ طلبك',style:TextStyle(color:muted))]));return ListView(padding:const EdgeInsets.fromLTRB(18,18,18,100),children:[const Text('السلة',style:TextStyle(fontSize:28,fontWeight:FontWeight.w900)),const SizedBox(height:18),...cart.map((x)=>Container(margin:const EdgeInsets.only(bottom:10),padding:const EdgeInsets.all(10),decoration:BoxDecoration(color:Theme.of(c).colorScheme.surface,borderRadius:BorderRadius.circular(20)),child:Row(children:[ClipRRect(borderRadius:BorderRadius.circular(14),child:Image.network(x.m.image,width:72,height:72,fit:BoxFit.cover)),const SizedBox(width:10),Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text(x.m.name,style:const TextStyle(fontWeight:FontWeight.w900)),Text(x.r.name,style:const TextStyle(color:muted,fontSize:11)),Text((x.m.price*x.qty).toStringAsFixed(0)+' ج.م',style:const TextStyle(color:orange,fontWeight:FontWeight.w900))])),Row(children:[IconButton(onPressed:()=>onSub(x),icon:const Icon(Icons.remove_circle_outline)),Text(x.qty.toString()),IconButton(onPressed:()=>onAdd(x),icon:const Icon(Icons.add_circle_outline,color:orange))])])),line('المجموع',total),line('التوصيل',25),line('الخدمة',8),const Divider(height:28),line('الإجمالي',total+33,bold:true),const SizedBox(height:14),FilledButton(onPressed:()=>checkout(c,total+33),style:FilledButton.styleFrom(backgroundColor:orange,minimumSize:const Size.fromHeight(55)),child:const Text('إتمام الطلب'))];}}
 Widget line(String s,double v,{bool bold=false})=>Padding(padding:const EdgeInsets.symmetric(vertical:5),child:Row(children:[Expanded(child:Text(s,style:TextStyle(fontWeight:bold?FontWeight.w900:FontWeight.w500))),Text(v.toStringAsFixed(0)+' ج.م',style:TextStyle(fontWeight:FontWeight.w900,color:bold?orange:null))]));
 
 class ProfilePage extends StatelessWidget{final bool dark;final ValueChanged<bool> onDark;final VoidCallback onMap;const ProfilePage({super.key,required this.dark,required this.onDark,required this.onMap});@override Widget build(BuildContext c)=>ListView(padding:const EdgeInsets.fromLTRB(18,18,18,100),children:[Container(padding:const EdgeInsets.all(18),decoration:BoxDecoration(color:ink,borderRadius:BorderRadius.circular(26)),child:const Row(children:[CircleAvatar(radius:32,backgroundColor:orange,child:Icon(Icons.person,color:Colors.white,size:32)),SizedBox(width:14),Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text('نوفا ديليفري',style:TextStyle(color:Colors.white,fontSize:20,fontWeight:FontWeight.w900)),Text('حساب العميل',style:TextStyle(color:Colors.white70,fontSize:12))])])),const SizedBox(height:18),const Text('الإعدادات والخدمات',style:TextStyle(fontSize:21,fontWeight:FontWeight.w900)),const SizedBox(height:8),st(c,Icons.location_on_outlined,'العناوين والخريطة','حدد موقعك وفروع المطاعم',onMap),st(c,Icons.credit_card,'طرق الدفع','كاش • بطاقة • محفظة',(){}),st(c,Icons.favorite_border,'المفضلة','مطاعم وأطباق محفوظة',(){}),st(c,Icons.local_offer_outlined,'العروض والكوبونات','خصومات وعروض يومية',(){}),st(c,Icons.notifications_none,'الإشعارات','الطلب والعروض',()=>showNotifications(c)),st(c,Icons.dark_mode_outlined,'الوضع الليلي','تخصيص المظهر',()=>onDark(!dark),trailing:Switch(value:dark,onChanged:onDark)),st(c,Icons.security,'الأمان والخصوصية','حماية الحساب',(){}),st(c,Icons.help_outline,'مركز المساعدة','دعم وشكاوى ومحادثة',(){}),const SizedBox(height:12),OutlinedButton.icon(onPressed:()=>Navigator.push(c,MaterialPageRoute(builder:(_)=>const Roles())),icon:const Icon(Icons.dashboard_customize_outlined),label:const Text('لوحات المطعم والسائق والإدارة'))]);}
-Widget st(BuildContext c,IconData i,String a,String b,VoidCallback f,{Widget? trailing})=>Container(margin:const EdgeInsets.only(bottom:9),decoration:BoxDecoration(color:Theme.of(c).colorScheme.surface,borderRadius:BorderRadius.circular(18)),child:ListTile(onTap:f,leading:Container(padding:const EdgeInsets.all(10),decoration:BoxDecoration(color:orange.withValues(alpha:.1),borderRadius:BorderRadius.circular(13)),child:Icon(i,color:orange)),title:Text(a,style:const TextStyle(fontWeight:FontWeight.w800,fontSize:14)),subtitle:Text(b,style:const TextStyle(color:muted,fontSize:11)),trailing:trailing??const Icon(Icons.chevron_left)));
+class MapPage extends StatelessWidget {
+  final R? restaurant;
+  const MapPage({super.key, this.restaurant});
+  @override
+  Widget build(BuildContext c) {
+    final center = restaurant == null ? const LatLng(31.0445, 31.3540) : LatLng(restaurant!.lat, restaurant!.lng);
+    final list = restaurant == null ? data : [restaurant!];
+    return Scaffold(
+      appBar: AppBar(title: Text(restaurant == null ? 'خريطة المطاعم' : 'موقع ' + restaurant!.name)),
+      body: FlutterMap(
+        options: MapOptions(initialCenter: center, initialZoom: restaurant == null ? 14.2 : 15.2),
+        children: [
+          TileLayer(urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png', userAgentPackageName: 'com.nova.delivery'),
+          MarkerLayer(
+            markers: list.map<Marker>((r) => Marker(
+              point: LatLng(r.lat, r.lng),
+              width: 48,
+              height: 48,
+              child: GestureDetector(
+                onTap: () => showModalBottomSheet(
+                  context: c,
+                  showDragHandle: true,
+                  builder: (_) => Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: Column(mainAxisSize: MainAxisSize.min, children: [
+                      Text(r.name, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900)),
+                      const SizedBox(height: 8),
+                      Text(r.address, style: const TextStyle(color: muted)),
+                      const SizedBox(height: 12),
+                      FilledButton(onPressed: () => Navigator.pop(c), child: const Text('اختيار المطعم')),
+                    ]),
+                  ),
+                ),
+                child: Container(
+                  decoration: BoxDecoration(color: orange, shape: BoxShape.circle, border: Border.all(color: Colors.white, width: 3)),
+                  child: const Icon(Icons.restaurant, color: Colors.white),
+                ),
+              ),
+            )).toList(),
+          ),
+        ],
+      ),
+    );
+  }
+}
 
 class MapPage extends StatelessWidget{final R? restaurant;const MapPage({super.key,this.restaurant});@override Widget build(BuildContext c){final center=restaurant==null?const LatLng(31.0445,31.3540):LatLng(restaurant!.lat,restaurant!.lng);final list=restaurant==null?data:[restaurant!];return Scaffold(appBar:AppBar(title:Text(restaurant==null?'خريطة المطاعم':'موقع '+restaurant!.name)),body:FlutterMap(options:MapOptions(initialCenter:center,initialZoom:restaurant==null?14.2:15.2),children:[TileLayer(urlTemplate:'https://tile.openstreetmap.org/{z}/{x}/{y}.png',userAgentPackageName:'com.nova.delivery'),MarkerLayer(markers:list.map((r)=>Marker(point:LatLng(r.lat,r.lng),width:48,height:48,child:GestureDetector(onTap:()=>showModalBottomSheet(context:c,showDragHandle:true,builder:(_)=>Padding(padding:const EdgeInsets.all(20),child:Column(mainAxisSize:MainAxisSize.min,children:[Text(r.name,style:const TextStyle(fontSize:20,fontWeight:FontWeight.w900)),const SizedBox(height:8),Text(r.address,style:const TextStyle(color:muted)),const SizedBox(height:12),FilledButton(onPressed:()=>Navigator.pop(c),child:const Text('اختيار المطعم'))])),child:Container(decoration:BoxDecoration(color:orange,shape:BoxShape.circle,border:Border.all(color:Colors.white,width:3)),child:const Icon(Icons.restaurant,color:Colors.white))))).toList())]));}}
 
 class Roles extends StatelessWidget{const Roles({super.key});@override Widget build(BuildContext c)=>Scaffold(appBar:AppBar(title:const Text('مركز نوفا')),body:ListView(padding:const EdgeInsets.all(18),children:[const Text('لوحات النظام',style:TextStyle(fontSize:28,fontWeight:FontWeight.w900)),const SizedBox(height:18),role(c,Icons.restaurant_menu,'لوحة المطعم','الطلبات • المنيو • المخزون • الأرباح'),role(c,Icons.delivery_dining,'لوحة السائق','التكليفات • الملاحة • المحفظة • الأرباح'),role(c,Icons.admin_panel_settings,'لوحة الإدارة','المطاعم • العملاء • السائقين • التقارير') ]));}
-Widget role(BuildContext c,IconData i,String a,String b)=>Container(margin:const EdgeInsets.only(bottom:13),padding:const EdgeInsets.all(18),decoration:BoxDecoration(color:Theme.of(c).colorScheme.surface,borderRadius:BorderRadius.circular(23)),child:Row(children:[CircleAvatar(backgroundColor:orange.withValues(alpha:.1),child:Icon(i,color:orange)),const SizedBox(width:13),Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text(a,style:const TextStyle(fontWeight:FontWeight.w900,fontSize:17)),Text(b,style:const TextStyle(color:muted,fontSize:11))])),const Icon(Icons.chevron_left)]));
+void showNotifications(BuildContext c) {
+  showModalBottomSheet(
+    context: c,
+    showDragHandle: true,
+    builder: (_) => const Directionality(
+      textDirection: TextDirection.rtl,
+      child: Padding(
+        padding: EdgeInsets.all(18),
+        child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text('الإشعارات', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900)),
+          ListTile(leading: Icon(Icons.delivery_dining, color: orange), title: Text('طلبك NV-2841 في الطريق'), subtitle: Text('السائق استلم الطلب وسيصل قريباً')),
+          ListTile(leading: Icon(Icons.local_offer, color: orange), title: Text('عرض جديد من بازوكا'), subtitle: Text('اكتشف أحدث العروض في المنصورة')),
+          ListTile(leading: Icon(Icons.auto_awesome, color: orange), title: Text('نوفا ترحب بك'), subtitle: Text('مطاعم وفروع وبيانات حقيقية حولك')),
+        ]),
+      ),
+    ),
+  );
+}
 
-void showNotifications(BuildContext c)=>showModalBottomSheet(context:c,showDragHandle:true,builder:(_)=>const Directionality(textDirection:TextDirection.rtl,child:Padding(padding:EdgeInsets.all(18),child:Column(mainAxisSize:MainAxisSize.min,crossAxisAlignment:CrossAxisAlignment.start,children:[Text('الإشعارات',style:TextStyle(fontSize:24,fontWeight:FontWeight.w900)),ListTile(leading:Icon(Icons.delivery_dining,color:orange),title:Text('طلبك NV-2841 في الطريق'),subtitle:Text('السائق استلم الطلب وسيصل قريباً')),ListTile(leading:Icon(Icons.local_offer,color:orange),title:Text('عرض جديد من بازوكا'),subtitle:Text('اكتشف أحدث العروض في المنصورة')),ListTile(leading:Icon(Icons.auto_awesome,color:orange),title:Text('نوفا ترحب بك'),subtitle:Text('مطاعم وفروع وبيانات حقيقية حولك'))])));
+void checkout(BuildContext c, double total) {
+  showModalBottomSheet(
+    context: c,
+    showDragHandle: true,
+    builder: (_) => Directionality(
+      textDirection: TextDirection.rtl,
+      child: Padding(
+        padding: const EdgeInsets.all(18),
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          const Text('تأكيد الطلب', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900)),
+          const SizedBox(height: 14),
+          st(c, Icons.location_on, 'عنوان التوصيل', 'المنصورة • اختر عنواناً', () {}),
+          st(c, Icons.payments, 'طريقة الدفع', 'الدفع عند الاستلام', () {}),
+          line('الإجمالي النهائي', total, bold: true),
+          const SizedBox(height: 14),
+          FilledButton(
+            onPressed: () {
+              Navigator.pop(c);
+              ScaffoldMessenger.of(c).showSnackBar(const SnackBar(content: Text('تم إرسال الطلب بنجاح 🎉')));
+            },
+            style: FilledButton.styleFrom(backgroundColor: orange, minimumSize: const Size.fromHeight(54)),
+            child: const Text('تأكيد وإرسال الطلب'),
+          ),
+        ]),
+      ),
+    ),
+  );
+}
 
 void checkout(BuildContext c,double total)=>showModalBottomSheet(context:c,showDragHandle:true,builder:(_)=>Directionality(textDirection:TextDirection.rtl,child:Padding(padding:const EdgeInsets.all(18),child:Column(mainAxisSize:MainAxisSize.min,children:[const Text('تأكيد الطلب',style:TextStyle(fontSize:24,fontWeight:FontWeight.w900)),const SizedBox(height:14),st(c,Icons.location_on,'عنوان التوصيل','المنصورة • اختر عنواناً',(){}),st(c,Icons.payments,'طريقة الدفع','الدفع عند الاستلام',(){}),line('الإجمالي النهائي',total,bold:true),const SizedBox(height:14),FilledButton(onPressed:(){Navigator.pop(c);ScaffoldMessenger.of(c).showSnackBar(const SnackBar(content:Text('تم إرسال الطلب بنجاح 🎉')));},style:FilledButton.styleFrom(backgroundColor:orange,minimumSize:const Size.fromHeight(54)),child:const Text('تأكيد وإرسال الطلب'))])));
