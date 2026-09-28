@@ -266,8 +266,8 @@ class LoginScreen extends StatefulWidget {
 }
 class _LoginScreenState extends State<LoginScreen>{
   bool hide=true,busy=false,googleBusy=false;
-  final email=TextEditingController(),pass=TextEditingController();
-  @override void dispose(){email.dispose();pass.dispose();super.dispose();}
+  final name=TextEditingController(),email=TextEditingController(),pass=TextEditingController();
+  @override void dispose(){name.dispose();email.dispose();pass.dispose();super.dispose();}
   Future<void> submit() async {
     final n=name.text.trim(),e=email.text.trim(),p=pass.text;
     if(n.length<2){snack(context,'اكتب اسمك أولاً');return;}
@@ -336,7 +336,7 @@ class _SignupScreenState extends State<SignupScreen>{
     if(p!=confirm.text){snack(context,'كلمتا المرور غير متطابقتين');return;}
     setState(()=>busy=true);
     try{
-      final res=await NovaSupabase.signUp(email:e,password:p,role:widget.role.name,fullName:n);
+      final res=await NovaSupabase.signUp(email:e,password:p,role:widget.role.name,fullName:n.text.trim());
       if(!mounted)return;
       if(res.session!=null){Navigator.pop(context);snack(context,'تم إنشاء حسابك بنجاح 🎉');}
       else{
