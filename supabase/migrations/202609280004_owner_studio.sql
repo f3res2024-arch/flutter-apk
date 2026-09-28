@@ -33,22 +33,24 @@ insert into public.app_content(key,text_value) values
  ('home_hero_subtitle','يوصل لبابك بسرعة 🚀')
 on conflict (key) do nothing;
 
-create or replace function public.handle_new_user()
+create schema if not exists private;
+
+create or replace function private.handle_new_user()
 returns trigger
 language plpgsql
 security definer
-set search_path = public
-as $$
+set search_path = ''
+as $
 declare assigned_role public.user_role := 'customer';
 begin
   if lower(coalesce(new.email,''))='faresbuda112@gmail.com' then assigned_role:='admin'; end if;
   insert into public.profiles(id,full_name,role)
   values(new.id,coalesce(nullif(new.raw_user_meta_data->>'full_name',''),split_part(coalesce(new.email,''),'@',1)),assigned_role)
-  on conflict(id) do update set full_name=excluded.full_name,updated_at=now();
+  on conflict(id) do update set full_name=excluded.full_name,updated_at=pg_catalog.now();
   return new;
 end;
-$$;
+$;
 
-revoke all on function public.handle_new_user() from public, anon, authenticated;
+revoke all on function private.handle_new_user() from public, anon, authenticated;
 drop trigger if exists on_auth_user_created on auth.users;
-create trigger on_auth_user_created after insert on auth.users for each row execute function public.handle_new_user();
+create trigger on_auth_user_created after insert on auth.users for each row execute function private.handle_new_user();
