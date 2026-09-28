@@ -1937,10 +1937,37 @@ class _OwnerStudioPageState extends State<OwnerStudioPage> with SingleTickerProv
     final n=TextEditingController(text:(r['name']??'').toString()),d=TextEditingController(text:(r['description']??'').toString()),p=TextEditingController(text:(r['phone']??'').toString());
     await showDialog(context:context,builder:(x)=>AlertDialog(title:const Text('تعديل المطعم'),content:Column(mainAxisSize:MainAxisSize.min,children:[TextField(controller:n,decoration:const InputDecoration(labelText:'الاسم')),TextField(controller:d,decoration:const InputDecoration(labelText:'الوصف')),TextField(controller:p,decoration:const InputDecoration(labelText:'الهاتف'))]),actions:[TextButton(onPressed:()=>Navigator.pop(x),child:const Text('إلغاء')),FilledButton(onPressed:()async{try{await NovaSupabase.updateRestaurant(r['id'].toString(),name:n.text,description:d.text);if(x.mounted)Navigator.pop(x);await load();}catch(e){if(x.mounted)snack(x,'تعذر الحفظ: '+e.toString());}},child:const Text('حفظ'))]));n.dispose();d.dispose();p.dispose();
   }
-  Future<void> addMenu(Map<String,dynamic> r)async{
-    final n=TextEditingController(),d=TextEditingController(),p=TextEditingController();
-    await showDialog(context:context,builder:(x)=>AlertDialog(title:const Text('إضافة وجبة'),content:Column(mainAxisSize:MainAxisSize.min,children:[TextField(controller:n,decoration:const InputDecoration(labelText:'اسم الوجبة')),TextField(controller:d,decoration:const InputDecoration(labelText:'الوصف')),TextField(controller:p,keyboardType:TextInputType.number,decoration:const InputDecoration(labelText:'السعر'))]),actions:[TextButton(onPressed:()=>Navigator.pop(x),child:const Text('إلغاء')),FilledButton(onPressed:()async{final price=double.tryParse(p.text);if(n.text.trim().isEmpty||price==null){snack(x,'أدخل الاسم والسعر');return;}try{await NovaSupabase.addMenuItemFull(r['id'].toString(),name:n.text,price:price,description:d.text);if(x.mounted)Navigator.pop(x);await load();}catch(e){if(x.mounted)snack(x,'تعذر إضافة الوجبة: '+e.toString());}},child:const Text('إضافة'))]));n.dispose();d.dispose();p.dispose();
+  Future<void> addMenu(Map<String,dynamic> r) async {
+    final n=TextEditingController(), d=TextEditingController(), p=TextEditingController();
+    await showDialog(
+      context: context,
+      builder: (x) => AlertDialog(
+        title: const Text('إضافة وجبة'),
+        content: Column(mainAxisSize: MainAxisSize.min, children: [
+          TextField(controller:n, decoration:const InputDecoration(labelText:'اسم الوجبة')),
+          TextField(controller:d, decoration:const InputDecoration(labelText:'الوصف')),
+          TextField(controller:p, keyboardType:TextInputType.number, decoration:const InputDecoration(labelText:'السعر')),
+        ]),
+        actions: [
+          TextButton(onPressed:()=>Navigator.pop(x), child:const Text('إلغاء')),
+          FilledButton(
+            onPressed:() async {
+              final price=double.tryParse(p.text);
+              if(n.text.trim().isEmpty||price==null){snack(x,'أدخل الاسم والسعر');return;}
+              try {
+                await NovaSupabase.addMenuItemFull(r['id'].toString(),name:n.text,price:price,description:d.text);
+                if(x.mounted)Navigator.pop(x);
+                await load();
+              } catch(e) { if(x.mounted)snack(x,'تعذر إضافة الوجبة: $e'); }
+            },
+            child:const Text('إضافة'),
+          ),
+        ],
+      ),
+    );
+    n.dispose(); d.dispose(); p.dispose();
   }
+
   Future<void> manageMenu(Map<String,dynamic> r)async{
     final menu=await NovaSupabase.allRestaurantMenu(r['id'].toString());if(!mounted)return;
     await showModalBottomSheet(context:context,isScrollControlled:true,showDragHandle:true,builder:(s)=>Directionality(textDirection:TextDirection.rtl,child:SafeArea(child:Padding(padding:const EdgeInsets.all(18),child:Column(mainAxisSize:MainAxisSize.min,children:[
@@ -1949,25 +1976,128 @@ class _OwnerStudioPageState extends State<OwnerStudioPage> with SingleTickerProv
       SizedBox(width:double.infinity,child:FilledButton.icon(onPressed:()=>addMenu(r),icon:const Icon(Icons.add_rounded),label:const Text('إضافة وجبة'))),
     ]))));
   }
-  Future<void> editMenu(Map<String,dynamic> m)async{
-    final n=TextEditingController(text:(m['name']??'').toString()),d=TextEditingController(text:(m['description']??'').toString()),p=TextEditingController(text:_money(m['price']).toStringAsFixed(0));
-    await showDialog(context:context,builder:(x)=>AlertDialog(title:const Text('تعديل الوجبة'),content:Column(mainAxisSize:MainAxisSize.min,children:[TextField(controller:n),TextField(controller:d),TextField(controller:p,keyboardType:TextInputType.number)]),actions:[TextButton(onPressed:()=>Navigator.pop(x),child:const Text('إلغاء')),FilledButton(onPressed:()async{try{await NovaSupabase.updateMenuItem(m['id'].toString(),name:n.text,description:d.text,price:double.tryParse(p.text));if(x.mounted)Navigator.pop(x);}catch(e){if(x.mounted)snack(x,'تعذر الحفظ: '+e.toString());}},child:const Text('حفظ'))]));n.dispose();d.dispose();p.dispose();
+  Future<void> editMenu(Map<String,dynamic> m) async {
+    final n=TextEditingController(text:(m['name']??'').toString());
+    final d=TextEditingController(text:(m['description']??'').toString());
+    final p=TextEditingController(text:_money(m['price']).toStringAsFixed(0));
+    await showDialog(
+      context:context,
+      builder:(x)=>AlertDialog(
+        title:const Text('تعديل الوجبة'),
+        content:Column(mainAxisSize:MainAxisSize.min,children:[
+          TextField(controller:n),
+          TextField(controller:d),
+          TextField(controller:p,keyboardType:TextInputType.number),
+        ]),
+        actions:[
+          TextButton(onPressed:()=>Navigator.pop(x),child:const Text('إلغاء')),
+          FilledButton(onPressed:()async{
+            try{
+              final price=double.tryParse(p.text);
+              await NovaSupabase.updateMenuItem(m['id'].toString(),name:n.text,description:d.text,price:price);
+              if(x.mounted)Navigator.pop(x);
+            }catch(e){if(x.mounted)snack(x,'تعذر الحفظ: $e');}
+          },child:const Text('حفظ')),
+        ],
+      ),
+    );
+    n.dispose(); d.dispose(); p.dispose();
   }
-  Future<void> addCoupon()async{
-    final code=TextEditingController(),title=TextEditingController(),value=TextEditingController();String type='percentage';
-    await showDialog(context:context,builder:(x)=>StatefulBuilder(builder:(x,set)=>AlertDialog(title:const Text('إضافة كوبون'),content:Column(mainAxisSize:MainAxisSize.min,children:[TextField(controller:code,decoration:const InputDecoration(labelText:'الكود')),TextField(controller:title,decoration:const InputDecoration(labelText:'العنوان')),DropdownButtonFormField<String>(value:type,items:const[DropdownMenuItem(value:'percentage',child:Text('نسبة %')),DropdownMenuItem(value:'fixed',child:Text('مبلغ ثابت')),DropdownMenuItem(value:'free_delivery',child:Text('توصيل مجاني'))],onChanged:(v)=>set(()=>type=v??'percentage')),TextField(controller:value,keyboardType:TextInputType.number,decoration:const InputDecoration(labelText:'قيمة الخصم'))]),actions:[TextButton(onPressed:()=>Navigator.pop(x),child:const Text('إلغاء')),FilledButton(onPressed:()async{try{await NovaSupabase.createCoupon(code:code.text,title:title.text,discountType:type,discountValue:double.tryParse(value.text)??0);if(x.mounted)Navigator.pop(x);await load();}catch(e){if(x.mounted)snack(x,'تعذر إنشاء الكوبون: '+e.toString());}},child:const Text('إضافة'))]));code.dispose();title.dispose();value.dispose();
+
+  Future<void> addCoupon() async {
+    final code=TextEditingController(),title=TextEditingController(),value=TextEditingController();
+    String type='percentage';
+    await showDialog(
+      context:context,
+      builder:(x)=>StatefulBuilder(
+        builder:(x,set)=>AlertDialog(
+          title:const Text('إضافة كوبون'),
+          content:Column(mainAxisSize:MainAxisSize.min,children:[
+            TextField(controller:code,decoration:const InputDecoration(labelText:'الكود')),
+            TextField(controller:title,decoration:const InputDecoration(labelText:'العنوان')),
+            DropdownButtonFormField<String>(
+              value:type,
+              items:const[
+                DropdownMenuItem(value:'percentage',child:Text('نسبة %')),
+                DropdownMenuItem(value:'fixed',child:Text('مبلغ ثابت')),
+                DropdownMenuItem(value:'free_delivery',child:Text('توصيل مجاني')),
+              ],
+              onChanged:(v)=>set(()=>type=v??'percentage'),
+            ),
+            TextField(controller:value,keyboardType:TextInputType.number,decoration:const InputDecoration(labelText:'قيمة الخصم')),
+          ]),
+          actions:[
+            TextButton(onPressed:()=>Navigator.pop(x),child:const Text('إلغاء')),
+            FilledButton(onPressed:()async{
+              try{
+                await NovaSupabase.createCoupon(code:code.text,title:title.text,discountType:type,discountValue:double.tryParse(value.text)??0);
+                if(x.mounted)Navigator.pop(x);
+                await load();
+              }catch(e){if(x.mounted)snack(x,'تعذر إنشاء الكوبون: $e');}
+            },child:const Text('إضافة')),
+          ],
+        ),
+      ),
+    );
+    code.dispose();title.dispose();value.dispose();
   }
-  Future<void> addOffer()async{
-    final title=TextEditingController(),sub=TextEditingController(),target=TextEditingController();String type='coupon';String? coupon;XFile? image;
-    await showDialog(context:context,builder:(x)=>StatefulBuilder(builder:(x,set)=>AlertDialog(title:const Text('إضافة عرض معمولة ليك'),content:SingleChildScrollView(child:Column(mainAxisSize:MainAxisSize.min,children:[
-      TextField(controller:title,decoration:const InputDecoration(labelText:'عنوان العرض')),TextField(controller:sub,decoration:const InputDecoration(labelText:'الوصف')),
-      DropdownButtonFormField<String>(value:type,items:const[DropdownMenuItem(value:'coupon',child:Text('يفتح كوبون')),DropdownMenuItem(value:'restaurant',child:Text('يفتح مطعم')),DropdownMenuItem(value:'category',child:Text('يفتح قسم')),DropdownMenuItem(value:'map',child:Text('يفتح الخريطة')),DropdownMenuItem(value:'home',child:Text('يفتح الرئيسية')),DropdownMenuItem(value:'none',child:Text('بدون انتقال'))],onChanged:(v)=>set(()=>type=v??'coupon')),
-      if(type=='coupon')DropdownButtonFormField<String>(value:coupon,items:coupons.map((c)=>DropdownMenuItem(value:c['id'].toString(),child:Text((c['code']??'').toString()))).toList(),onChanged:(v)=>set(()=>coupon=v)),
-      if(type=='restaurant')DropdownButtonFormField<String>(items:restaurants.map((r)=>DropdownMenuItem(value:r['name'].toString(),child:Text(r['name'].toString()))).toList(),onChanged:(v)=>target.text=v??''),
-      if(type=='category')TextField(controller:target,decoration:const InputDecoration(labelText:'القسم')),
-      OutlinedButton.icon(onPressed:()async{final f=await ImagePicker().pickImage(source:ImageSource.gallery,imageQuality:90,maxWidth:1800);if(f!=null)set(()=>image=f);},icon:const Icon(Icons.add_photo_alternate_rounded),label:Text(image==null?'اختيار صورة العرض':'تم اختيار صورة العرض')),
-    ])),actions:[TextButton(onPressed:()=>Navigator.pop(x),child:const Text('إلغاء')),FilledButton(onPressed:()async{try{final id=await NovaSupabase.createOffer(title:title.text,subtitle:sub.text,couponId:coupon,targetType:type,targetValue:target.text);if(image!=null){final url=await NovaSupabase.uploadOfferImage(id,await image!.readAsBytes());if(url!=null)await NovaSupabase.updateOffer(id,{'image_url':url});}if(x.mounted)Navigator.pop(x);await load();}catch(e){if(x.mounted)snack(x,'تعذر إنشاء العرض: '+e.toString());}},child:const Text('نشر'))]));title.dispose();sub.dispose();target.dispose();
+
+  Future<void> addOffer() async {
+    final title=TextEditingController(),sub=TextEditingController(),target=TextEditingController();
+    String type='coupon'; String? coupon; XFile? image;
+    await showDialog(
+      context:context,
+      builder:(x)=>StatefulBuilder(
+        builder:(x,set)=>AlertDialog(
+          title:const Text('إضافة عرض معمولة ليك'),
+          content:SingleChildScrollView(child:Column(mainAxisSize:MainAxisSize.min,children:[
+            TextField(controller:title,decoration:const InputDecoration(labelText:'عنوان العرض')),
+            TextField(controller:sub,decoration:const InputDecoration(labelText:'الوصف')),
+            DropdownButtonFormField<String>(
+              value:type,
+              items:const[
+                DropdownMenuItem(value:'coupon',child:Text('يفتح كوبون')),
+                DropdownMenuItem(value:'restaurant',child:Text('يفتح مطعم')),
+                DropdownMenuItem(value:'category',child:Text('يفتح قسم')),
+                DropdownMenuItem(value:'map',child:Text('يفتح الخريطة')),
+                DropdownMenuItem(value:'home',child:Text('يفتح الرئيسية')),
+                DropdownMenuItem(value:'none',child:Text('بدون انتقال')),
+              ],
+              onChanged:(v)=>set(()=>type=v??'coupon'),
+            ),
+            if(type=='coupon') DropdownButtonFormField<String>(
+              value:coupon,
+              items:coupons.map((c)=>DropdownMenuItem(value:c['id'].toString(),child:Text((c['code']??'').toString()))).toList(),
+              onChanged:(v)=>set(()=>coupon=v),
+            ),
+            if(type=='restaurant') TextField(controller:target,decoration:const InputDecoration(labelText:'اسم المطعم')),
+            if(type=='category') TextField(controller:target,decoration:const InputDecoration(labelText:'القسم')),
+            OutlinedButton.icon(
+              onPressed:()async{final f=await ImagePicker().pickImage(source:ImageSource.gallery,imageQuality:90,maxWidth:1800);if(f!=null)set(()=>image=f);},
+              icon:const Icon(Icons.add_photo_alternate_rounded),
+              label:Text(image==null?'اختيار صورة العرض':'تم اختيار صورة العرض'),
+            ),
+          ])),
+          actions:[
+            TextButton(onPressed:()=>Navigator.pop(x),child:const Text('إلغاء')),
+            FilledButton(onPressed:()async{
+              try{
+                final id=await NovaSupabase.createOffer(title:title.text,subtitle:sub.text,couponId:coupon,targetType:type,targetValue:target.text);
+                if(image!=null){
+                  final url=await NovaSupabase.uploadOfferImage(id,await image!.readAsBytes());
+                  if(url!=null)await NovaSupabase.updateOffer(id,{'image_url':url});
+                }
+                if(x.mounted)Navigator.pop(x);
+                await load();
+              }catch(e){if(x.mounted)snack(x,'تعذر إنشاء العرض: $e');}
+            },child:const Text('نشر')),
+          ],
+        ),
+      ),
+    );
+    title.dispose();sub.dispose();target.dispose();
   }
+
   Widget restaurantCard(Map<String,dynamic> r)=>Card(child:ListTile(title:Text((r['name']??'مطعم').toString(),style:const TextStyle(fontWeight:FontWeight.w900)),subtitle:Text((r['description']??'').toString()),trailing:PopupMenuButton<String>(onSelected:(v){if(v=='edit')editRestaurant(r);if(v=='menu')manageMenu(r);if(v=='hide')deleteRestaurant(r);},itemBuilder:(_)=>const[PopupMenuItem(value:'edit',child:Text('تعديل')),PopupMenuItem(value:'menu',child:Text('الوجبات والمنيو')),PopupMenuItem(value:'hide',child:Text('إخفاء'))])));
   Future<void> deleteRestaurant(Map<String,dynamic> r)async{try{await NovaSupabase.deleteRestaurant(r['id'].toString());await load();}catch(e){if(mounted)snack(context,'تعذر إخفاء المطعم: '+e.toString());}}
   @override Widget build(BuildContext c){if(loading)return const Scaffold(body:Center(child:CircularProgressIndicator(color:orange)));return Scaffold(appBar:AppBar(title:const Text('Nova Owner Studio'),bottom:TabBar(controller:tabs,isScrollable:true,tabs:const[Tab(text:'الرئيسية'),Tab(text:'المطاعم والوجبات'),Tab(text:'الكوبونات'),Tab(text:'العروض'),Tab(text:'المحتوى')])),body:TabBarView(controller:tabs,children:[
