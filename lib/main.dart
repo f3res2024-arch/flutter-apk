@@ -54,6 +54,7 @@ const chicken = 'https://images.unsplash.com/photo-1626082927389-6cd097cdc6ec?au
 const dessert = 'https://images.unsplash.com/photo-1551024506-0bccd828d307?auto=format&fit=crop&w=900&q=85';
 
 final appCopy = <String,String>{};
+final appMedia = <String,String>{};
 
 final data = <R>[
   R('دجاج كنتاكي','فراخ مقلية','40 شارع الجمهورية، أمام بوابة جامعة المنصورة','https://s3-eu-west-1.amazonaws.com/elmenusv5-stg/Normal/dc5de1f8-2580-11e8-add5-0242ac110011.jpg','المنيوز',4.7,171,31.0429,31.3564,[
@@ -113,7 +114,7 @@ class _NovaState extends State<Nova>{
   Future<void> _loadRealCatalog() async {
     try {
       final copy=await NovaSupabase.appContent();
-      for(final row in copy){ final k=(row['key']??'').toString(); final v=(row['text_value']??'').toString(); if(k.isNotEmpty&&v.isNotEmpty)appCopy[k]=v; }
+      for(final row in copy){ final k=(row['key']??'').toString(); final v=(row['text_value']??'').toString(); final image=(row['image_url']??'').toString(); if(k.isNotEmpty&&v.isNotEmpty)appCopy[k]=v; if(k.isNotEmpty&&image.isNotEmpty)appMedia[k]=image; }
     } catch(_) {}
     try {
       final rows=await NovaSupabase.catalog();
@@ -190,7 +191,7 @@ class RoleChooser extends StatelessWidget{
           height:365,
           decoration:BoxDecoration(borderRadius:BorderRadius.circular(34),boxShadow:const[BoxShadow(color:Color(0x66000000),blurRadius:36,offset:Offset(0,18))]),
           child:ClipRRect(borderRadius:BorderRadius.circular(34),child:Stack(fit:StackFit.expand,children:[
-            Image.asset('assets/nova_rider.webp',fit:BoxFit.cover),
+            (appMedia['home_hero_image']??'').isEmpty ? Image.asset('assets/nova_rider.webp',fit:BoxFit.cover) : Image.network(appMedia['home_hero_image']!,fit:BoxFit.cover,errorBuilder:(_,__,___)=>Image.asset('assets/nova_rider.webp',fit:BoxFit.cover)),
             const DecoratedBox(decoration:BoxDecoration(gradient:LinearGradient(
               begin:Alignment.topCenter,end:Alignment.bottomCenter,
               colors:[Color(0x12000000),Color(0xE8000000)]))),
@@ -1751,7 +1752,7 @@ class _OwnerStudioPageState extends State<OwnerStudioPage> {
             if(file==null)return;
             try {
               final url=await NovaSupabase.uploadContentImage(r['key'].toString(),await file.readAsBytes());
-              if(url!=null)await NovaSupabase.updateAppContentImage(r['key'].toString(),url);
+              if(url!=null){await NovaSupabase.updateAppContentImage(r['key'].toString(),url);appMedia[r['key'].toString()]=url;}
               if(x.mounted)snack(x,'تم تحديث صورة المحتوى');
             } catch(e) { if(x.mounted)snack(x,'تعذر رفع الصورة: '+e.toString()); }
           },
