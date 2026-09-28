@@ -361,6 +361,85 @@ class NovaSupabase {
     if(await currentUserRole()!='admin') throw const AuthException('هذه الصلاحية للمالك فقط.');
     await client.from('branches').insert({'restaurant_id':restaurantId,'name':name.trim(),'address':address.trim(),'lat':lat,'lng':lng,'phone':phone.trim(),'is_open':true});
   }
+  static Future<Map<String,dynamic>> supportConversation() async {
+    _requireReady();
+    if (currentUser == null) throw const AuthException('يجب تسجيل الدخول أولاً.');
+    final existing = await client.from('support_conversations').select().eq('customer_id', currentUser!.id).neq('status','closed').order('updated_at', ascending:false).limit(1).maybeSingle();
+    if (existing != null) return Map<String,dynamic>.from(existing);
+    final row = await client.from('support_conversations').insert({'customer_id':currentUser!.id,'status':'ai'}).select().single();
+    return Map<String,dynamic>.from(row);
+  }
+
+  static Future<List<Map<String,dynamic>>> supportMessages(String conversationId) async {
+    _requireReady();
+    final rows = await client.from('support_messages').select().eq('conversation_id',conversationId).order('created_at');
+    return List<Map<String,dynamic>>.from(rows);
+  }
+
+  static Future<void> sendSupportMessage(String conversationId,String body) async {
+    _requireReady();
+    if (currentUser == null) throw const AuthException('يجب تسجيل الدخول أولاً.');
+    final text = body.trim();
+    if (text.isEmpty) return;
+    await client.from('support_messages').insert({'conversation_id':conversationId,'sender_type':'customer','sender_id':currentUser!.id,'body':text});
+    await client.functions.invoke('nova-ai-support-v2', body:{'conversation_id':conversationId,'message':text});
+  }
+
+  static Future<String> uploadSupportImage(String conversationId,Uint8List bytes) async {
+    _requireReady();
+    if (currentUser == null) throw const AuthException('يجب تسجيل الدخول أولاً.');
+    final path='support/'+conversationId+'/'+currentUser!.id+'/'+DateTime.now().millisecondsSinceEpoch.toString()+'.jpg';
+    await client.storage.from('nova-media').uploadBinary(path,bytes,fileOptions:const FileOptions(contentType:'image/jpeg'));
+    return client.storage.from('nova-media').getPublicUrl(path);
+  }
+
+  static Future<void> sendSupportImage(String conversationId,String imageUrl) async {
+    _requireReady();
+    if (currentUser == null) throw const AuthException('يجب تسجيل الدخول أولاً.');
+    await client.from('support_messages').insert({'conversation_id':conversationId,'sender_type':'customer','sender_id':currentUser!.id,'body':'','image_url':imageUrl});
+  }
+
+  static RealtimeChannel watchSupportMessages(String conversationId,Future<void> Function() onChanged) {
+    final channel=client.channel('nova-support-'+conversationId);
+    channel.onPostgresChanges(event:PostgresChangeEvent.all,schema:'public',table:'support_messages',filter:PostgresChangeFilter(type:PostgresChangeFilterType.eq,column:'conversation_id',value:conversationId),callback:(_)=>onChanged()).subscribe();
+    return channel;
+  }
+
+  static RealtimeChannel watchSupportInbox(Future<void> Function() onChanged) {
+    final channel=client.channel('nova-support-inbox');
+    channel.onPostgresChanges(event:PostgresChangeEvent.all,schema:'public',table:'support_conversations',callback:(_)=>onChanged()).subscribe();
+    return channel;
+  }
+
+  static Future<List<Map<String,dynamic>>> ownerSupportConversations() async {
+    _requireReady();
+    if(await currentUserRole()!='admin') throw const AuthException('هذه الصلاحية للمالك فقط.');
+    final rows=await client.from('support_conversations').select('id,status,last_message_at,created_at,updated_at').neq('status','closed').order('last_message_at',ascending:false).limit(100);
+    return List<Map<String,dynamic>>.from(rows);
+  }
+
+  static Future<List<Map<String,dynamic>>> ownerSupportMessages(String conversationId) async {
+    _requireReady();
+    if(await currentUserRole()!='admin') throw const AuthException('هذه الصلاحية للمالك فقط.');
+    final rows=await client.from('support_messages').select().eq('conversation_id',conversationId).order('created_at');
+    return List<Map<String,dynamic>>.from(rows);
+  }
+
+  static Future<void> ownerReplySupport(String conversationId,String body) async {
+    _requireReady();
+    if(await currentUserRole()!='admin') throw const AuthException('هذه الصلاحية للمالك فقط.');
+    final text=body.trim();
+    if(text.isEmpty)return;
+    await client.from('support_messages').insert({'conversation_id':conversationId,'sender_type':'admin','sender_id':currentUser!.id,'body':text});
+    await client.from('support_conversations').update({'status':'admin_active','assigned_admin_id':currentUser!.id,'updated_at':DateTime.now().toUtc().toIso8601String()}).eq('id',conversationId);
+  }
+
+  static Future<void> closeSupportConversation(String conversationId) async {
+    _requireReady();
+    if(await currentUserRole()!='admin') throw const AuthException('هذه الصلاحية للمالك فقط.');
+    await client.from('support_conversations').update({'status':'closed','updated_at':DateTime.now().toUtc().toIso8601String()}).eq('id',conversationId);
+  }
+
   static Future<List<Map<String,dynamic>>> ownerOrders() async {
     _requireReady();
     if(await currentUserRole()!='admin') throw const AuthException('هذه الصلاحية للمالك فقط.');
