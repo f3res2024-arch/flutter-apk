@@ -1332,7 +1332,7 @@ class _ProfilePageState extends State<ProfilePage>{
         FilledButton.icon(onPressed:()=>Navigator.push(c,MaterialPageRoute(builder:(_)=>const OwnerStudioPage())),icon:const Icon(Icons.tune_rounded),label:const Text('فتح استوديو المالك')),
       ]),
     ),
-  );}
+  ]);
 }
 class CustomerOrderTrackingPage extends StatefulWidget{
   final Map<String,dynamic> order;
