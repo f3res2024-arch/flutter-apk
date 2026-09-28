@@ -1174,13 +1174,13 @@ class _HomeState extends State<Home>{
         ));
       },
     ),
-    const SizedBox(height:22),title('مطاعم حقيقية حولك','الخريطة'),const SizedBox(height:12),
+    const SizedBox(height:22),title('جميع المأكولات والمشروبات',''),const SizedBox(height:12),
     ...data.map((r)=>Padding(padding:const EdgeInsets.only(bottom:14),child:CardR(r:r,onTap:()=>widget.onOpen(r)))),
     const SizedBox(height:4),const Text('المصادر: المنيوز و EGMenus • تحقق من البيانات: سبتمبر 2026',style:TextStyle(color:muted,fontSize:10)),
   ]);
 }
 
-Widget title(String a,String b)=>Row(children:[Expanded(child:Text(a,style:const TextStyle(fontSize:20,fontWeight:FontWeight.w900))),Text(b,style:const TextStyle(color:orange,fontSize:12,fontWeight:FontWeight.bold))]);
+Widget title(String a,String b)=>Row(children:[Expanded(child:Text(a,style:const TextStyle(fontSize:20,fontWeight:FontWeight.w900))),if(b.isNotEmpty)Text(b,style:const TextStyle(color:orange,fontSize:12,fontWeight:FontWeight.bold))]);
 
 class Cat extends StatelessWidget {
   final IconData icon; final String n; final void Function(R,M) onAdd; const Cat(this.icon,this.n,{super.key,required this.onAdd});
@@ -1252,7 +1252,7 @@ class CardR extends StatelessWidget {
     ]),
     Padding(padding:const EdgeInsets.all(14),child:Column(children:[
       Row(children:[Expanded(child:Text(r.name,style:const TextStyle(fontSize:17,fontWeight:FontWeight.w900))),Text(r.reviews.toString()+' تقييم',style:const TextStyle(color:muted,fontSize:10))]),
-      const SizedBox(height:6),Row(children:[const Icon(Icons.restaurant_menu,size:15,color:muted),const SizedBox(width:5),Text(r.type,style:const TextStyle(color:muted,fontSize:11)),const Spacer(),const Icon(Icons.access_time,size:15,color:muted),const SizedBox(width:4),Text('25–40 دقيقة',style:const TextStyle(color:muted,fontSize:11))]),
+      const SizedBox(height:6),Row(children:[const Icon(Icons.restaurant_menu,size:15,color:muted),const SizedBox(width:5),Expanded(child:Text(r.type,style:const TextStyle(color:muted,fontSize:11)))])
       const SizedBox(height:7),Row(children:[const Icon(Icons.location_on_outlined,size:15,color:orange),const SizedBox(width:4),Expanded(child:Text(r.address,maxLines:1,overflow:TextOverflow.ellipsis,style:const TextStyle(color:muted,fontSize:10)))]),
     ])),
   ])));
@@ -1600,7 +1600,7 @@ class _CustomerOrderTrackingPageState extends State<CustomerOrderTrackingPage>{
             Text((current['restaurant_name']??'مطعم نوفا').toString(),style:const TextStyle(fontSize:20,fontWeight:FontWeight.w900)),
             Text('#'+_shortId(current['id']),style:const TextStyle(color:muted,fontSize:10)),
             const SizedBox(height:12),
-            Text(status=='delivered'?'تم التسليم بنجاح 🎉':status=='on_the_way'?'السائق في الطريق إليك 🚴':status=='pending'?'في انتظار قبول الطلب':'جاري تجهيز طلبك',style:const TextStyle(fontWeight:FontWeight.w900)),
+            Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text(status=='delivered'?'تم التسليم بنجاح 🎉':status=='on_the_way'?'السائق في الطريق إليك 🚴':status=='pending'?'في انتظار قبول الطلب':'جاري تجهيز طلبك',style:const TextStyle(fontWeight:FontWeight.w900)),if(['accepted','preparing','ready','picked_up','on_the_way','delivering'].contains(status))const Padding(padding:EdgeInsets.only(top:5),child:Text('مدة التوصيل المتوقعة: 25–40 دقيقة',style:TextStyle(color:muted,fontSize:11,fontWeight:FontWeight.w700)))]),
             const SizedBox(height:10),
             Row(children:List.generate(steps.length,(i)=>Expanded(child:Container(height:7,margin:const EdgeInsets.symmetric(horizontal:2),decoration:BoxDecoration(color:i<=idx?orange:Colors.black12,borderRadius:BorderRadius.circular(8)))))),
             const SizedBox(height:12),
