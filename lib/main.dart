@@ -1848,7 +1848,7 @@ class CategoryPage extends StatelessWidget{
       case 'حلويات':return h.contains('حلويات')||h.contains('كيك')||h.contains('dessert');
       case 'مشروبات':return h.contains('مشروب')||h.contains('بيبسي');
       case 'صحي':return h.contains('صحي')||h.contains('سلطة');
-      case 'قهوة':return h.contains('كافيه')||h.contains('قهوة')||h.contains('coffee');
+      case 'سناكس':return h.contains('سناكس')||h.contains('snack')||h.contains('بطاطس')||h.contains('وجبات خفيفة');
       case 'فطار':return h.contains('فطار')||h.contains('breakfast');
       default:return true;
     }
