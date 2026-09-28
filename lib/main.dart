@@ -91,6 +91,7 @@ class _NovaState extends State<Nova> {
           : (role==null
             ? RoleChooser(onRole:(r)=>setState(()=>role=r))
             : LoginScreen(role:role!,onBack:()=>setState(()=>role=null),onSuccess:()=>setState(()=>logged=true))),
+      ),
     );
   }
 }
@@ -198,6 +199,7 @@ class _LoginScreenState extends State<LoginScreen> {
       const SizedBox(height:16),
       TextButton(onPressed:()=>snack(c,'شاشة إنشاء الحساب سيتم ربطها بقاعدة البيانات'),child:const Text('ليس لديك حساب؟ إنشاء حساب',style:TextStyle(color:orange,fontWeight:FontWeight.w800))),
     ],
+    ),
   );
 }
 
