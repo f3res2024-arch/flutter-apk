@@ -262,7 +262,8 @@ class _LoginScreenState extends State<LoginScreen>{
   final email=TextEditingController(),pass=TextEditingController();
   @override void dispose(){email.dispose();pass.dispose();super.dispose();}
   Future<void> submit() async {
-    final e=email.text.trim(),p=pass.text;
+    final n=name.text.trim(),e=email.text.trim(),p=pass.text;
+    if(n.length<2){snack(context,'اكتب اسمك أولاً');return;}
     if(e.isEmpty||!e.contains('@')){snack(context,'اكتب بريد إلكتروني صحيح');return;}
     if(p.length<6){snack(context,'كلمة المرور يجب أن تكون 6 أحرف على الأقل');return;}
     setState(()=>busy=true);
@@ -294,6 +295,8 @@ class _LoginScreenState extends State<LoginScreen>{
     title:widget.role==UserRole.customer?'مرحباً بك في نوفا':'أهلاً يا كابتن',
     subtitle:widget.role==UserRole.customer?'سجّل دخولك وخلّي أكلك علينا.':'سجّل دخولك واستقبل طلباتك بسهولة.',
     child:Column(children:[
+      AuthField(controller:name,label:'الاسم',hint:'اكتب اسمك الظاهر في نوفا',icon:Icons.person_outline_rounded),
+      const SizedBox(height:13),
       AuthField(controller:email,label:'البريد الإلكتروني',hint:'name@example.com',icon:Icons.mail_outline_rounded,keyboardType:TextInputType.emailAddress),
       const SizedBox(height:13),
       AuthField(controller:pass,label:'كلمة المرور',hint:'••••••••',icon:Icons.lock_outline_rounded,obscureText:hide,suffix:IconButton(onPressed:()=>setState(()=>hide=!hide),icon:Icon(hide?Icons.visibility_outlined:Icons.visibility_off_outlined))),
@@ -317,8 +320,8 @@ class SignupScreen extends StatefulWidget{
 }
 class _SignupScreenState extends State<SignupScreen>{
   bool hide=true,confirmHide=true,busy=false;
-  final email=TextEditingController(),pass=TextEditingController(),confirm=TextEditingController();
-  @override void dispose(){email.dispose();pass.dispose();confirm.dispose();super.dispose();}
+  final name=TextEditingController(),email=TextEditingController(),pass=TextEditingController(),confirm=TextEditingController();
+  @override void dispose(){name.dispose();email.dispose();pass.dispose();confirm.dispose();super.dispose();}
   Future<void> createAccount() async {
     final e=email.text.trim(),p=pass.text;
     if(e.isEmpty||!e.contains('@')){snack(context,'اكتب بريد إلكتروني صحيح');return;}
@@ -326,7 +329,7 @@ class _SignupScreenState extends State<SignupScreen>{
     if(p!=confirm.text){snack(context,'كلمتا المرور غير متطابقتين');return;}
     setState(()=>busy=true);
     try{
-      final res=await NovaSupabase.signUp(email:e,password:p,role:widget.role.name);
+      final res=await NovaSupabase.signUp(email:e,password:p,role:widget.role.name,fullName:n);
       if(!mounted)return;
       if(res.session!=null){Navigator.pop(context);snack(context,'تم إنشاء حسابك بنجاح 🎉');}
       else{
@@ -1047,7 +1050,7 @@ Widget title(String a,String b)=>Row(children:[Expanded(child:Text(a,style:const
 
 class Cat extends StatelessWidget {
   final IconData icon; final String n; const Cat(this.icon,this.n,{super.key});
-  @override Widget build(BuildContext c)=>Material(color:Colors.transparent,child:InkWell(onTap:()=>Navigator.push(c,MaterialPageRoute(builder:(_)=>CategoryPage(title:n,category:n))),borderRadius:BorderRadius.circular(22),child:Container(width:104,margin:const EdgeInsets.only(left:10),padding:const EdgeInsets.all(10),decoration:BoxDecoration(color:Colors.white,borderRadius:BorderRadius.circular(22),border:Border.all(color:const Color(0xFFEDEDEF)),boxShadow:const[BoxShadow(color:Color(0x0A000000),blurRadius:18,offset:Offset(0,7))]),child:Column(mainAxisAlignment:MainAxisAlignment.center,children:[Container(width:48,height:48,decoration:BoxDecoration(color:orange.withValues(alpha:.10),shape:BoxShape.circle),child:Icon(icon,color:orange,size:25)),const SizedBox(height:7),Text(n,style:const TextStyle(fontWeight:FontWeight.w900,fontSize:12))]))));
+  @override Widget build(BuildContext c)=>Material(color:Colors.transparent,child:InkWell(onTap:()=>Navigator.push(c,MaterialPageRoute(builder:(_)=>CategoryPage(title:n,category:n,onAdd:add))),borderRadius:BorderRadius.circular(22),child:Container(width:104,margin:const EdgeInsets.only(left:10),padding:const EdgeInsets.all(10),decoration:BoxDecoration(color:Colors.white,borderRadius:BorderRadius.circular(22),border:Border.all(color:const Color(0xFFEDEDEF)),boxShadow:const[BoxShadow(color:Color(0x0A000000),blurRadius:18,offset:Offset(0,7))]),child:Column(mainAxisAlignment:MainAxisAlignment.center,children:[Container(width:48,height:48,decoration:BoxDecoration(color:orange.withValues(alpha:.10),shape:BoxShape.circle),child:Icon(icon,color:orange,size:25)),const SizedBox(height:7),Text(n,style:const TextStyle(fontWeight:FontWeight.w900,fontSize:12))]))));
 }
 
 class _PromoCard extends StatelessWidget{
@@ -1533,7 +1536,7 @@ class _MapPageState extends State<MapPage> {
           child:Row(children:[
             Icon(locating?Icons.gps_not_fixed_rounded:Icons.gps_fixed_rounded,color:orange),
             const SizedBox(width:10),
-            Expanded(child:Text(loadingNearby?'جاري البحث عن المطاعم والصيدليات والسوبر ماركت القريبة…':locationError??(locating?'جاري تحديد موقعك…':'أنت ظاهر على الخريطة الآن'),style:const TextStyle(fontWeight:FontWeight.w900,fontSize:13))),
+            Expanded(child:Text(loadingNearby?'جاري البحث عن الالمطاعم والصيدليات والسوبر ماركت القريبة…':locationError??(locating?'جاري تحديد موقعك…':'أنت ظاهر على الخريطة الآن'),style:const TextStyle(fontWeight:FontWeight.w900,fontSize:13))),
           ]),
         )),
       ]),
@@ -1543,18 +1546,18 @@ class _MapPageState extends State<MapPage> {
 class NearbyPlace{final String name,type;final double lat,lng;const NearbyPlace(this.name,this.type,this.lat,this.lng);}
 class MapPlace{final String name;final double lat,lng;const MapPlace(this.name,this.lat,this.lng);}
 class CategoryPage extends StatelessWidget{
-  final String title,category;
-  const CategoryPage({super.key,required this.title,required this.category});
+  final String title,category; final void Function(R,M) onAdd;
+  const CategoryPage({super.key,required this.title,required this.category,required this.onAdd});
   bool matches(R r){
     final h=(r.type+' '+r.name+' '+r.menu.map((m)=>m.name+' '+m.desc).join(' ')).toLowerCase();
     switch(category){
-      case 'برجر':return h.contains('برجر')||h.contains('burger')||r.name.contains('ماكدونالدز')||r.name.contains('كاتشاب');
+      case 'برجر':return h.contains('برجر')||h.contains('burger');
       case 'فراخ':return h.contains('فراخ')||h.contains('chicken')||h.contains('دجاج');
       case 'بيتزا':return h.contains('بيتزا')||h.contains('pizza');
       case 'حلويات':return h.contains('حلويات')||h.contains('كيك')||h.contains('dessert');
       case 'مشروبات':return h.contains('مشروب')||h.contains('بيبسي');
       case 'صحي':return h.contains('صحي')||h.contains('سلطة');
-      case 'قهوة':return h.contains('كافيه')||r.name.contains('ستريو');
+      case 'قهوة':return h.contains('كافيه')||h.contains('قهوة')||h.contains('coffee');
       case 'فطار':return h.contains('فطار')||h.contains('breakfast');
       default:return true;
     }
@@ -1572,6 +1575,7 @@ class CategoryPage extends StatelessWidget{
             child:Text('اختيارات '+category,style:const TextStyle(color:Colors.white,fontSize:22,fontWeight:FontWeight.w900)),
           ),
           const SizedBox(height:16),
+          if(list.isEmpty) const Padding(padding:EdgeInsets.all(30),child:Center(child:Text('لا توجد مطاعم مطابقة حالياً'))),
           for(final r in list)
             Padding(
               padding:const EdgeInsets.only(bottom:14),
@@ -1580,7 +1584,7 @@ class CategoryPage extends StatelessWidget{
                 onTap:()=>Navigator.push(c,MaterialPageRoute(
                   builder:(_)=>RestaurantPage(
                     r:r,fav:false,onFav:(){},
-                    onAdd:(rr,m)=>showFeature(c,'السلة','أضف المنتج من صفحة المطعم.'),
+                    onAdd:onAdd,
                   ),
                 )),
               ),
