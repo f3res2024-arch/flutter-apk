@@ -1514,7 +1514,9 @@ class _ProfilePageState extends State<ProfilePage>{
             final file=await ImagePicker().pickImage(source:ImageSource.gallery,imageQuality:90,maxWidth:1400);
             if(file==null)return;
             try{
-              pickedAvatar=await NovaSupabase.uploadAvatar(NovaSupabase.currentUser!.id,await file.readAsBytes());
+              final user=NovaSupabase.currentUser;
+              if(user==null)throw const AuthException('يجب تسجيل الدخول أولاً.');
+              pickedAvatar=await NovaSupabase.uploadAvatar(user.id,await file.readAsBytes());
               setDialogState((){});
             }catch(e){if(d.mounted)snack(d,'تعذر رفع الصورة: '+e.toString());}
           },
