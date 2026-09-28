@@ -55,6 +55,7 @@ const dessert = 'https://images.unsplash.com/photo-1551024506-0bccd828d307?auto=
 
 final appCopy = <String,String>{};
 final appMedia = <String,String>{};
+final favoriteRestaurants = <String>{};
 
 final data = <R>[
   R('دجاج كنتاكي','فراخ مقلية','40 شارع الجمهورية، أمام بوابة جامعة المنصورة','https://s3-eu-west-1.amazonaws.com/elmenusv5-stg/Normal/dc5de1f8-2580-11e8-add5-0242ac110011.jpg','المنيوز',4.7,171,31.0429,31.3564,[
@@ -269,8 +270,9 @@ class _LoginScreenState extends State<LoginScreen>{
   final name=TextEditingController(),email=TextEditingController(),pass=TextEditingController();
   @override void dispose(){name.dispose();email.dispose();pass.dispose();super.dispose();}
   Future<void> submit() async {
-    final n=name.text.trim(),e=email.text.trim(),p=pass.text;
-    if(n.length<2){snack(context,'اكتب اسمك أولاً');return;}
+    final n=name.text.trim(),ph=phone.text.trim(),e=email.text.trim(),p=pass.text;
+    if(n.length<2){snack(context,'اكتب اسمك بالكامل');return;}
+    if(ph.length<8){snack(context,'اكتب رقم هاتف صحيح');return;}
     if(e.isEmpty||!e.contains('@')){snack(context,'اكتب بريد إلكتروني صحيح');return;}
     if(p.length<6){snack(context,'كلمة المرور يجب أن تكون 6 أحرف على الأقل');return;}
     setState(()=>busy=true);
@@ -299,10 +301,12 @@ class _LoginScreenState extends State<LoginScreen>{
   }
   @override Widget build(BuildContext c)=>AuthScaffold(
     onBack:widget.onBack,eyebrow:'تسجيل الدخول',
-    title:widget.role==UserRole.customer?'مرحباً بك في نوفا':'أهلاً يا كابتن',
+    title:'مرحباً بك',
     subtitle:widget.role==UserRole.customer?'سجّل دخولك وخلّي أكلك علينا.':'سجّل دخولك واستقبل طلباتك بسهولة.',
     child:Column(children:[
-      AuthField(controller:name,label:'الاسم',hint:'اكتب اسمك الظاهر في نوفا',icon:Icons.person_outline_rounded),
+      AuthField(controller:name,label:'الاسم',hint:'اكتب اسمك بالكامل',icon:Icons.person_outline_rounded),
+      const SizedBox(height:13),
+      AuthField(controller:phone,label:'رقم الهاتف',hint:'01xxxxxxxxx',icon:Icons.phone_outlined,keyboardType:TextInputType.phone),
       const SizedBox(height:13),
       AuthField(controller:email,label:'البريد الإلكتروني',hint:'name@example.com',icon:Icons.mail_outline_rounded,keyboardType:TextInputType.emailAddress),
       const SizedBox(height:13),
@@ -327,16 +331,18 @@ class SignupScreen extends StatefulWidget{
 }
 class _SignupScreenState extends State<SignupScreen>{
   bool hide=true,confirmHide=true,busy=false;
-  final name=TextEditingController(),email=TextEditingController(),pass=TextEditingController(),confirm=TextEditingController();
-  @override void dispose(){name.dispose();email.dispose();pass.dispose();confirm.dispose();super.dispose();}
+  final name=TextEditingController(),phone=TextEditingController(),email=TextEditingController(),pass=TextEditingController(),confirm=TextEditingController();
+  @override void dispose(){name.dispose();phone.dispose();email.dispose();pass.dispose();confirm.dispose();super.dispose();}
   Future<void> createAccount() async {
-    final e=email.text.trim(),p=pass.text;
+    final n=name.text.trim(),ph=phone.text.trim(),e=email.text.trim(),p=pass.text;
+    if(n.length<2){snack(context,'اكتب اسمك بالكامل');return;}
+    if(ph.length<8){snack(context,'اكتب رقم هاتف صحيح');return;}
     if(e.isEmpty||!e.contains('@')){snack(context,'اكتب بريد إلكتروني صحيح');return;}
     if(p.length<6){snack(context,'كلمة المرور يجب أن تكون 6 أحرف على الأقل');return;}
     if(p!=confirm.text){snack(context,'كلمتا المرور غير متطابقتين');return;}
     setState(()=>busy=true);
     try{
-      final res=await NovaSupabase.signUp(email:e,password:p,role:widget.role.name,fullName:name.text.trim());
+      final res=await NovaSupabase.signUp(email:e,password:p,role:widget.role.name,fullName:n,phone:ph);
       if(!mounted)return;
       if(res.session!=null){Navigator.pop(context);snack(context,'تم إنشاء حسابك بنجاح 🎉');}
       else{
@@ -350,6 +356,10 @@ class _SignupScreenState extends State<SignupScreen>{
   @override Widget build(BuildContext c)=>AuthScaffold(
     onBack:()=>Navigator.pop(c),eyebrow:'حساب جديد',title:'ابدأ مع نوفا',subtitle:'أنشئ حسابك في ثواني وابدأ أول طلب.',
     child:Column(children:[
+      AuthField(controller:name,label:'الاسم',hint:'اكتب اسمك بالكامل',icon:Icons.person_outline_rounded),
+      const SizedBox(height:13),
+      AuthField(controller:phone,label:'رقم الهاتف',hint:'01xxxxxxxxx',icon:Icons.phone_outlined,keyboardType:TextInputType.phone),
+      const SizedBox(height:13),
       AuthField(controller:email,label:'البريد الإلكتروني',hint:'name@example.com',icon:Icons.mail_outline_rounded,keyboardType:TextInputType.emailAddress),
       const SizedBox(height:13),
       AuthField(controller:pass,label:'كلمة المرور',hint:'6 أحرف أو أكثر',icon:Icons.lock_outline_rounded,obscureText:hide,suffix:IconButton(onPressed:()=>setState(()=>hide=!hide),icon:Icon(hide?Icons.visibility_outlined:Icons.visibility_off_outlined))),
@@ -481,7 +491,7 @@ class AuthField extends StatelessWidget{
 
 class _GoogleMark extends StatelessWidget{
   const _GoogleMark();
-  @override Widget build(BuildContext c)=>Container(width:22,height:22,alignment:Alignment.center,decoration:const BoxDecoration(shape:BoxShape.circle,color:Colors.white),child:const Text('G',style:TextStyle(color:Colors.blue,fontWeight:FontWeight.w900)));
+  @override Widget build(BuildContext c)=>Image.network('https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.png',width:22,height:22,errorBuilder:(_,__,___)=>const Text('G',style:TextStyle(color:Color(0xFF4285F4),fontWeight:FontWeight.w900,fontSize:19)));
 }
 String _authMessage(String message){
   final m=message.toLowerCase();
@@ -900,11 +910,11 @@ class _ShellState extends State<Shell> {
     if(mounted)ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('تمت إضافة المنتج للسلة ✓'),duration:Duration(milliseconds:900)));
   }
   void sub(Line x)=>setState((){if(x.qty>1){x.qty--;}else{cart.remove(x);}});
-  void open(R r)=>Navigator.push(context,MaterialPageRoute(builder:(_)=>RestaurantPage(r:r,fav:fav.contains(r.name),onFav:()=>setState((){if(!fav.add(r.name))fav.remove(r.name);}),onAdd:add)));
+  void open(R r)=>Navigator.push(context,MaterialPageRoute(builder:(_)=>RestaurantPage(r:r,fav:favoriteRestaurants.contains(r.name),onFav:()=>setState((){if(!favoriteRestaurants.add(r.name))favoriteRestaurants.remove(r.name);}),onAdd:add)));
   @override Widget build(BuildContext context){
     final pages=[
       Home(onOpen:open,onMap:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>const MapPage())),onSearch:(q)=>setState(()=>tab=1),onAdd:add),
-      SearchPage(onAdd:add,onFav:(r)=>setState((){if(!fav.add(r.name))fav.remove(r.name);}),),
+      SearchPage(onAdd:add,onFav:(r)=>setState((){if(!favoriteRestaurants.add(r.name))favoriteRestaurants.remove(r.name);}),),
       OrdersPage(onTrack:(o)=>Navigator.push(context,MaterialPageRoute(builder:(_)=>CustomerOrderTrackingPage(order:o))),),
       ProfilePage(onMap:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>const MapPage())),onLogout:()=>NovaSupabase.signOut()),
     ];
@@ -1372,7 +1382,7 @@ class _ProfilePageState extends State<ProfilePage>{
       st(c,Icons.person_outline_rounded,'الاسم والصورة','غيّر الاسم أو صورة البروفايل',editProfile),
       st(c,Icons.location_on_outlined,'العناوين والخريطة','موقعك الحالي والأماكن القريبة',widget.onMap),
       st(c,Icons.credit_card_rounded,'طرق الدفع','الدفع عند الاستلام متاح حالياً • الدفع الإلكتروني قيد الربط',()=>showFeature(c,'طرق الدفع','اختر طريقة الدفع أثناء إتمام الطلب.')),
-      st(c,Icons.favorite_border_rounded,'المفضلة','مطاعم وأطباق محفوظة',()=>showFeature(c,'المفضلة','احفظ ما تحبه من صفحات المطاعم.')),
+      st(c,Icons.favorite_border_rounded,'المفضلة',favoriteRestaurants.isEmpty?'لم تحفظ أي مطعم بعد':'${favoriteRestaurants.length} مطعم محفوظ',()=>Navigator.push(c,MaterialPageRoute(builder:(_)=>const FavoritesPage()))),
       st(c,Icons.notifications_none_rounded,'الإشعارات','الطلبات والعروض',()=>showNotifications(c)),
       st(c,Icons.security_rounded,'الأمان والخصوصية','إدارة جلسة الحساب',()=>showFeature(c,'الأمان والخصوصية','حسابك يعمل بجلسة Supabase آمنة.')),
       if(owner) st(c,Icons.tune_rounded,'استوديو المالك','تعديل المطاعم والمنتجات ومحتوى التطبيق',()=>Navigator.push(c,MaterialPageRoute(builder:(_)=>const OwnerStudioPage()))),
