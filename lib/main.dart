@@ -1196,31 +1196,6 @@ class _LivePromoCard extends StatelessWidget{
   }
 }
 
-class _PromoCard extends StatelessWidget{
-  final IconData icon; final String title,sub,code;
-  const _PromoCard({required this.icon,required this.title,required this.sub,required this.code});
-  @override Widget build(BuildContext c)=>InkWell(
-    onTap:()=>showDialog(context:c,builder:(_)=>AlertDialog(title:Text(title),content:Text('كود العرض: $code\n\nاضغط نسخ لاستخدامه عند الدفع.'),actions:[TextButton(onPressed:(){Clipboard.setData(ClipboardData(text:code));Navigator.pop(c);snack(c,'تم نسخ الكود $code');},child:const Text('نسخ')),TextButton(onPressed:()=>Navigator.pop(c),child:const Text('إغلاق'))])),
-    borderRadius:BorderRadius.circular(22),
-    child:Container(
-    width:235,margin:const EdgeInsets.only(left:10),padding:const EdgeInsets.all(16),
-    decoration:BoxDecoration(
-      gradient:const LinearGradient(colors:[ink,Color(0xFF292E39)]),
-      borderRadius:BorderRadius.circular(22),
-      boxShadow:const[BoxShadow(color:Color(0x18000000),blurRadius:18,offset:Offset(0,7))],
-    ),
-      child:Row(children:[
-      Container(width:46,height:46,decoration:BoxDecoration(color:orange.withValues(alpha:.16),shape:BoxShape.circle),child:Icon(icon,color:orange)),
-      const SizedBox(width:11),
-      Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,mainAxisAlignment:MainAxisAlignment.center,children:[
-        Text(title,style:const TextStyle(color:Colors.white,fontWeight:FontWeight.w900,fontSize:16)),
-        const SizedBox(height:3),Text(sub,style:const TextStyle(color:Colors.white60,fontSize:10)),
-        const SizedBox(height:7),Text(code,style:const TextStyle(color:orange,fontSize:9,fontWeight:FontWeight.w900,letterSpacing:1)),
-      ])),
-    ]),
-    ),
-  );
-}
 class CardR extends StatelessWidget {
   final R r; final VoidCallback onTap; const CardR({super.key,required this.r,required this.onTap});
   @override Widget build(BuildContext c)=>InkWell(onTap:onTap,borderRadius:BorderRadius.circular(24),child:Container(decoration:BoxDecoration(color:Theme.of(c).colorScheme.surface,borderRadius:BorderRadius.circular(24),boxShadow:const[BoxShadow(color:Color(0x0C000000),blurRadius:18,offset:Offset(0,7))]),child:Column(children:[
