@@ -2130,23 +2130,43 @@ Future<void> checkout(BuildContext c, List<Line> cart, double total, VoidCallbac
 
 Future<Map<String,dynamic>?> addAddressDialog(BuildContext c) async {
   final label=TextEditingController(text:'المنزل');
-  final address=TextEditingController();
+  final address=TextEditingController(text:'جاري تحديد عنوانك الحالي…');
+  double? lat,lng;
   Map<String,dynamic>? result;
+  try{
+    if(await Geolocator.isLocationServiceEnabled()){
+      var permission=await Geolocator.checkPermission();
+      if(permission==LocationPermission.denied)permission=await Geolocator.requestPermission();
+      if(permission!=LocationPermission.denied&&permission!=LocationPermission.deniedForever){
+        final p=await Geolocator.getCurrentPosition(locationSettings:const LocationSettings(accuracy:LocationAccuracy.high));
+        lat=p.latitude;lng=p.longitude;
+        try{
+          final uri=Uri.https('nominatim.openstreetmap.org','/reverse',{'lat':lat.toString(),'lon':lng.toString(),'format':'jsonv2','accept-language':'ar','zoom':'18','addressdetails':'1'});
+          final response=await http.get(uri,headers:{'User-Agent':'NovaDelivery/2.1'});
+          if(response.statusCode==200){
+            final json=Map<String,dynamic>.from(jsonDecode(response.body) as Map);
+            address.text=(json['display_name']??'موقعك الحالي').toString();
+          }else{address.text='الموقع الحالي ('+lat.toStringAsFixed(5)+', '+lng.toStringAsFixed(5)+')';}
+        }catch(_){address.text='الموقع الحالي ('+lat.toStringAsFixed(5)+', '+lng.toStringAsFixed(5)+')';}
+      }
+    }
+  }catch(_){}
   await showDialog(context:c,builder:(dialog)=>AlertDialog(
     title:const Text('إضافة عنوان'),
     content:Column(mainAxisSize:MainAxisSize.min,children:[
       TextField(controller:label,decoration:const InputDecoration(labelText:'اسم العنوان')),
       const SizedBox(height:10),
       TextField(controller:address,maxLines:3,decoration:const InputDecoration(labelText:'العنوان بالتفصيل')),
+      if(lat!=null)const Padding(padding:EdgeInsets.only(top:8),child:Align(alignment:Alignment.centerRight,child:Text('تم التقاط موقعك الحالي وسيظهر للمندوب مع الطلب.',style:TextStyle(color:muted,fontSize:10)))),
     ]),
     actions:[
       TextButton(onPressed:()=>Navigator.pop(dialog),child:const Text('إلغاء')),
-      FilledButton(onPressed:() async {
-        if(address.text.trim().isEmpty){snack(dialog,'اكتب العنوان بالتفصيل');return;}
+      FilledButton(onPressed:()async{
+        if(address.text.trim().isEmpty||address.text.contains('جاري تحديد')){snack(dialog,'اكتب العنوان بالتفصيل');return;}
         try{
-          result=await NovaSupabase.createAddress(label:label.text.trim().isEmpty?'المنزل':label.text.trim(),address:address.text.trim());
+          result=await NovaSupabase.createAddress(label:label.text.trim().isEmpty?'المنزل':label.text.trim(),address:address.text.trim(),lat:lat,lng:lng);
           if(dialog.mounted)Navigator.pop(dialog);
-        }catch(e){if(dialog.mounted)snack(dialog,'تعذر حفظ العنوان: $e');}
+        }catch(e){if(dialog.mounted)snack(dialog,'تعذر حفظ العنوان: '+e.toString());}
       },child:const Text('حفظ')),
     ],
   ));
