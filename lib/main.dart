@@ -1896,9 +1896,42 @@ class _OwnerStudioPageState extends State<OwnerStudioPage> with SingleTickerProv
 
 class FavoritesPage extends StatelessWidget {
   const FavoritesPage({super.key});
-  @override Widget build(BuildContext context){
-    final list=data.where((r)=>favoriteRestaurants.contains(r.name)).toList();
-    return Scaffold(appBar:AppBar(title:const Text('المفضلة')),body:list.isEmpty?const Center(child:Text('لم تحفظ أي مطعم بعد')):ListView.builder(padding:const EdgeInsets.all(18),itemCount:list.length,itemBuilder:(context,index)=>Padding(padding:const EdgeInsets.only(bottom:12),child:CardR(r:list[index],onTap:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>RestaurantPage(r:list[index],fav:true,onFav:(){},onAdd:(r,m){}))))));
+
+  @override
+  Widget build(BuildContext context) {
+    final list = data.where((r) => favoriteRestaurants.contains(r.name)).toList();
+
+    return Scaffold(
+      appBar: AppBar(title: const Text('المفضلة')),
+      body: list.isEmpty
+          ? const Center(child: Text('لم تحفظ أي مطعم بعد'))
+          : ListView.builder(
+              padding: const EdgeInsets.all(18),
+              itemCount: list.length,
+              itemBuilder: (context, index) {
+                final restaurant = list[index];
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: CardR(
+                    r: restaurant,
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => RestaurantPage(
+                            r: restaurant,
+                            fav: true,
+                            onFav: () {},
+                            onAdd: (r, m) {},
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                );
+              },
+            ),
+    );
   }
 }
 Widget st(BuildContext c, IconData icon, String titleText, String sub, VoidCallback onTap, {Widget? trailing}) {
