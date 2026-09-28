@@ -94,7 +94,37 @@ class _NovaOwnerControlCenterState extends State<NovaOwnerControlCenter>{
     const SizedBox(height:16),card(Column(crossAxisAlignment:CrossAxisAlignment.start,children:[const Text('تشغيل سريع',style:TextStyle(fontSize:17,fontWeight:FontWeight.w900)),const SizedBox(height:10),Wrap(spacing:8,runSpacing:8,children:[ActionChip(label:const Text('مطعم جديد'),avatar:const Icon(Icons.add_business,color:ownerOrange),onPressed:addRestaurant),ActionChip(label:const Text('منتج جديد'),avatar:const Icon(Icons.add_circle,color:ownerOrange),onPressed:restaurants.isEmpty?null:()=>addProduct(restaurants.first)),ActionChip(label:const Text('كوبون'),avatar:const Icon(Icons.confirmation_number,color:ownerOrange),onPressed:coupon),ActionChip(label:const Text('عرض'),avatar:const Icon(Icons.campaign,color:ownerOrange),onPressed:offer),ActionChip(label:const Text('واجهة التطبيق'),avatar:const Icon(Icons.auto_awesome,color:ownerOrange),onPressed:()=>setState(()=>tab=5))])]))
   ]);
   Widget ordersPage()=>ListView(children:[pageTitle('إدارة الطلبات','متابعة وتغيير حالات الطلبات.'),const SizedBox(height:14),Row(children:[Expanded(child:metric('كل الطلبات',orders.length.toString(),Icons.receipt_long,ownerOrange)),const SizedBox(width:8),Expanded(child:metric('نشطة',active.toString(),Icons.bolt,Colors.green))]),const SizedBox(height:12),...orders.map((o)=>card(ListTile(title:Text(s(o,'restaurant_name'),style:const TextStyle(fontWeight:FontWeight.w900)),subtitle:Text('#'+id(o['id'])+' • '+s(o,'customer_name')),leading:const Icon(Icons.receipt_long,color:ownerOrange),trailing:PopupMenuButton<String>(onSelected:(x)async{await NovaSupabase.ownerUpdateOrderStatus(s(o,'id'),x);await refresh();},itemBuilder:(_)=>const['pending','accepted','preparing','ready','picked_up','on_the_way','delivered','cancelled'].map((x)=>PopupMenuItem(value:x,child:Text(x))).toList(),child:Chip(label:Text(s(o,'status')))))) )]);
-  Widget restaurantsPage()=>ListView(children:[pageTitle('المطاعم والفروع','إضافة وتعديل المطاعم والفروع وإدارة منيو كل مطعم.'),const SizedBox(height:14),FilledButton.icon(onPressed:addRestaurant,icon:const Icon(Icons.add_business),label:const Text('إضافة مطعم جديد')),const SizedBox(height:12),...restaurants.map((r)=>card(Column(children:[Row(children:[ClipRRect(borderRadius:BorderRadius.circular(16),child:Image.network((r['cover_url']??r['logo_url']??'').toString(),width:70,height:70,fit:BoxFit.cover,errorBuilder:(_,__,___)=>Container(width:70,height:70,color:const Color(0xFFF1F2F4),child:const Icon(Icons.storefront,color:ownerOrange)))),const SizedBox(width:10),Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text(s(r,'name'),style:const TextStyle(fontWeight:FontWeight.w900,fontSize:16)),Text(s(r,'description'),maxLines:2,overflow:TextOverflow.ellipsis,style:const TextStyle(color:ownerMuted,fontSize:10))])),PopupMenuButton<String>(onSelected:(x)async{if(x=='edit')await editRestaurant(r);if(x=='branch')await addBranch(r);if(x=='menu')await menu(r);if(x=='delete'){await NovaSupabase.deleteRestaurant(s(r,'id'));await refresh();}},itemBuilder:(_)=>const[PopupMenuItem(value:'edit',child:Text('تعديل')),PopupMenuItem(value:'branch',child:Text('إضافة فرع')),PopupMenuItem(value:'menu',child:Text('المنيو')),PopupMenuItem(value:'delete',child:Text('إيقاف'))])]),const SizedBox(height:10),Row(children:[Expanded(child:OutlinedButton.icon(onPressed:()=>addBranch(r),icon:const Icon(Icons.location_on_outlined),label:const Text('فرع جديد'))),const SizedBox(width:8),Expanded(child:FilledButton.icon(onPressed:()=>menu(r),icon:const Icon(Icons.restaurant_menu),label:const Text('المنيو')))])])));
+  Widget restaurantsPage()=>ListView(children:[
+    pageTitle('المطاعم والفروع','إضافة وتعديل المطاعم والفروع وإدارة منيو كل مطعم.'),
+    const SizedBox(height:14),
+    FilledButton.icon(onPressed:addRestaurant,icon:const Icon(Icons.add_business),label:const Text('إضافة مطعم جديد')),
+    const SizedBox(height:12),
+    ...restaurants.map((r)=>card(Column(children:[
+      Row(children:[
+        ClipRRect(borderRadius:BorderRadius.circular(16),child:Image.network((r['cover_url']??r['logo_url']??'').toString(),width:70,height:70,fit:BoxFit.cover,errorBuilder:(_,error,stack)=>Container(width:70,height:70,color:const Color(0xFFF1F2F4),child:const Icon(Icons.storefront,color:ownerOrange)))),
+        const SizedBox(width:10),
+        Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
+          Text(s(r,'name'),style:const TextStyle(fontWeight:FontWeight.w900,fontSize:16)),
+          Text(s(r,'description'),maxLines:2,overflow:TextOverflow.ellipsis,style:const TextStyle(color:ownerMuted,fontSize:10)),
+        ])),
+        PopupMenuButton<String>(
+          onSelected:(x)async{if(x=='edit')await editRestaurant(r);if(x=='branch')await addBranch(r);if(x=='menu')await menu(r);if(x=='delete'){await NovaSupabase.deleteRestaurant(s(r,'id'));await refresh();}},
+          itemBuilder:(_)=>const[
+            PopupMenuItem(value:'edit',child:Text('تعديل')),
+            PopupMenuItem(value:'branch',child:Text('إضافة فرع')),
+            PopupMenuItem(value:'menu',child:Text('المنيو')),
+            PopupMenuItem(value:'delete',child:Text('إيقاف')),
+          ],
+        ),
+      ]),
+      const SizedBox(height:10),
+      Row(children:[
+        Expanded(child:OutlinedButton.icon(onPressed:()=>addBranch(r),icon:const Icon(Icons.location_on_outlined),label:const Text('فرع جديد'))),
+        const SizedBox(width:8),
+        Expanded(child:FilledButton.icon(onPressed:()=>menu(r),icon:const Icon(Icons.restaurant_menu),label:const Text('المنيو'))),
+      ]),
+    ]))),
+  ]);
   Widget menuPage()=>ListView(children:[pageTitle('المنتجات والمنيو','إدارة الأسعار والتوفر والمنتجات لكل مطعم.'),const SizedBox(height:12),...restaurants.map((r)=>card(ListTile(title:Text(s(r,'name'),style:const TextStyle(fontWeight:FontWeight.w900)),leading:const Icon(Icons.restaurant_menu,color:ownerOrange),trailing:const Icon(Icons.chevron_left),onTap:()=>menu(r))))]);
   Widget marketingPage()=>ListView(children:[pageTitle('العروض والكوبونات','إنشاء وتفعيل وإيقاف الحملات.'),const SizedBox(height:12),Row(children:[Expanded(child:FilledButton.icon(onPressed:coupon,icon:const Icon(Icons.confirmation_number),label:const Text('كوبون'))),const SizedBox(width:8),Expanded(child:OutlinedButton.icon(onPressed:offer,icon:const Icon(Icons.campaign),label:const Text('عرض')))]),const SizedBox(height:12),card(Column(children:coupons.map((x)=>SwitchListTile(contentPadding:EdgeInsets.zero,title:Text(s(x,'code')+' • '+s(x,'title')),subtitle:Text(s(x,'discount_value')+'% خصم'),value:x['is_active']==true,onChanged:(b)async{await NovaSupabase.updateCoupon(s(x,'id'),{'is_active':b});await refresh();})).toList())),card(Column(children:offers.map((x)=>SwitchListTile(contentPadding:EdgeInsets.zero,title:Text(s(x,'title')),subtitle:Text(s(x,'subtitle')),value:x['is_active']==true,onChanged:(b)async{await NovaSupabase.updateOffer(s(x,'id'),{'is_active':b});await refresh();})).toList()))]);
   Widget contentPage()=>ListView(children:[pageTitle('واجهة التطبيق','تعديل النصوص والصور بدون تحديث APK.'),const SizedBox(height:12),card(Column(children:content.map((x)=>ListTile(contentPadding:EdgeInsets.zero,title:Text(s(x,'key'),style:const TextStyle(fontWeight:FontWeight.w900)),subtitle:Text(s(x,'text_value'),maxLines:2,overflow:TextOverflow.ellipsis,style:const TextStyle(color:ownerMuted,fontSize:10)),trailing:IconButton(onPressed:()=>contentEdit(x),icon:const Icon(Icons.edit,color:ownerOrange)))).toList()))]);
@@ -122,10 +152,57 @@ class _NovaOwnerControlCenterState extends State<NovaOwnerControlCenter>{
     ))),
   ]);
   Widget settingsPage()=>ListView(children:[pageTitle('الإعدادات','حالة النظام وصلاحيات حساب المالك.'),const SizedBox(height:12),card(Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text(NovaSupabase.currentUser?.email??'حساب المالك',style:const TextStyle(fontWeight:FontWeight.w900)),const SizedBox(height:5),const Text('RLS يحمي عمليات الإدارة الحساسة.',style:TextStyle(color:ownerMuted,fontSize:11)),const SizedBox(height:12),OutlinedButton.icon(onPressed:()=>NovaSupabase.signOut(),icon:const Icon(Icons.logout),label:const Text('تسجيل الخروج'))]))]);
-  @override Widget build(BuildContext c){
+  @override
+  Widget build(BuildContext c){
     if(loading)return const Scaffold(body:Center(child:CircularProgressIndicator(color:ownerOrange)));
     final pages=[overview(),ordersPage(),restaurantsPage(),menuPage(),marketingPage(),contentPage(),supportPage(),settingsPage()];
-    return Directionality(textDirection:TextDirection.rtl,child:LayoutBuilder(builder:(c,box){final wide=box.maxWidth>=900;return Scaffold(backgroundColor:const Color(0xFFF7F8FA),appBar:AppBar(backgroundColor:Colors.white,title:const Text('مركز تحكم نوفا',style:TextStyle(fontWeight:FontWeight.w900)),actions:[IconButton(onPressed:()=>setState(()=>tab=6),tooltip:'الدعم الفني',icon:Badge(isLabelVisible:waitingSupport>0,label:Text(waitingSupport.toString()),backgroundColor:ownerOrange,child:const Icon(Icons.support_agent_rounded))),IconButton(onPressed:refresh,icon:const Icon(Icons.refresh)),IconButton(onPressed:()=>NovaSupabase.signOut(),icon:const Icon(Icons.logout))]),body:Row(children:[if(wide)Container(width:245,margin:const EdgeInsets.fromLTRB(14,14,0,14),padding:const EdgeInsets.all(10),decoration:BoxDecoration(color:Colors.white,borderRadius:BorderRadius.circular(26),border:Border.all(color:const Color(0xFFE5E7EB))),child:ListView(children:[const Padding(padding:EdgeInsets.all(14),child:Text('NOVA ADMIN',style:TextStyle(fontSize:18,fontWeight:FontWeight.w900))),...List.generate(labels.length,(i)=>ListTile(selected:tab==i,selectedTileColor:ownerOrange.withValues(alpha:.1),leading:Icon(icons[i],color:tab==i?ownerOrange:ownerMuted),title:Text(labels[i],style:TextStyle(fontSize:12,fontWeight:tab==i?FontWeight.w900:FontWeight.w700)),onTap:()=>setState(()=>tab=i)))])),Expanded(child:Padding(padding:const EdgeInsets.fromLTRB(18,18,18,22),child:pages[tab]))]),bottomNavigationBar:wide?null:NavigationBar(selectedIndex:tab>4?4:tab,onDestinationSelected:(i)=>setState(()=>tab=i),destinations:const[NavigationDestination(icon:Icon(Icons.space_dashboard),label:'الرئيسية'),NavigationDestination(icon:Icon(Icons.receipt_long),label:'الطلبات'),NavigationDestination(icon:Icon(Icons.storefront),label:'المطاعم'),NavigationDestination(icon:Icon(Icons.restaurant_menu),label:'المنيو'),NavigationDestination(icon:Icon(Icons.local_offer),label:'العروض')])));}));
+    return Directionality(
+      textDirection:TextDirection.rtl,
+      child:LayoutBuilder(builder:(c,box){
+        final wide=box.maxWidth>=900;
+        return Scaffold(
+          backgroundColor:const Color(0xFFF7F8FA),
+          appBar:AppBar(
+            backgroundColor:Colors.white,
+            title:const Text('مركز تحكم نوفا',style:TextStyle(fontWeight:FontWeight.w900)),
+            actions:[
+              IconButton(onPressed:()=>setState(()=>tab=6),tooltip:'الدعم الفني',icon:Badge(isLabelVisible:waitingSupport>0,label:Text(waitingSupport.toString()),backgroundColor:ownerOrange,child:const Icon(Icons.support_agent_rounded))),
+              IconButton(onPressed:refresh,icon:const Icon(Icons.refresh)),
+              IconButton(onPressed:()=>NovaSupabase.signOut(),icon:const Icon(Icons.logout)),
+            ],
+          ),
+          body:Row(children:[
+            if(wide)
+              Container(
+                width:245,margin:const EdgeInsets.fromLTRB(14,14,0,14),padding:const EdgeInsets.all(10),
+                decoration:BoxDecoration(color:Colors.white,borderRadius:BorderRadius.circular(26),border:Border.all(color:const Color(0xFFE5E7EB))),
+                child:ListView(children:[
+                  const Padding(padding:EdgeInsets.all(14),child:Text('NOVA ADMIN',style:TextStyle(fontSize:18,fontWeight:FontWeight.w900))),
+                  ...List.generate(labels.length,(i)=>ListTile(
+                    selected:tab==i,
+                    selectedTileColor:ownerOrange.withValues(alpha:.1),
+                    leading:Icon(icons[i],color:tab==i?ownerOrange:ownerMuted),
+                    title:Text(labels[i],style:TextStyle(fontSize:12,fontWeight:tab==i?FontWeight.w900:FontWeight.w700)),
+                    onTap:()=>setState(()=>tab=i),
+                  )),
+                ]),
+              ),
+            Expanded(child:Padding(padding:const EdgeInsets.fromLTRB(18,18,18,22),child:pages[tab])),
+          ]),
+          bottomNavigationBar:wide?null:NavigationBar(
+            selectedIndex:tab>4?4:tab,
+            onDestinationSelected:(i)=>setState(()=>tab=i),
+            destinations:const[
+              NavigationDestination(icon:Icon(Icons.space_dashboard),label:'الرئيسية'),
+              NavigationDestination(icon:Icon(Icons.receipt_long),label:'الطلبات'),
+              NavigationDestination(icon:Icon(Icons.storefront),label:'المطاعم'),
+              NavigationDestination(icon:Icon(Icons.restaurant_menu),label:'المنيو'),
+              NavigationDestination(icon:Icon(Icons.local_offer),label:'العروض'),
+            ],
+          ),
+        );
+      }),
+    );
   }
 }
 
