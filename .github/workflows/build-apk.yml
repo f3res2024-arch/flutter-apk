@@ -22,11 +22,12 @@ jobs:
 
       - name: Generate Android project
         run: |
-          flutter create . --platforms=android --project-name nova_delivery --org nova.delivery
-          # Keep the requested Android application id exactly: nova.delivery
-          sed -i 's/applicationId = "[^"]*"/applicationId = "nova.delivery"/' android/app/build.gradle.kts
-          sed -i 's/namespace = "[^"]*"/namespace = "nova.delivery"/' android/app/build.gradle.kts
+          flutter create . --platforms=android --project-name delivery --org nova
+          # Generate the Android package directly as nova.delivery so the
+          # MainActivity package, namespace, and application id all agree.
           sed -i 's/android:label="[^"]*"/android:label="نوفا ديليفري"/' android/app/src/main/AndroidManifest.xml
+          grep -R 'package nova.delivery' android/app/src/main/kotlin android/app/src/main/java
+          grep -n 'applicationId = "nova.delivery"' android/app/build.gradle.kts
 
       - name: Get dependencies
         run: flutter pub get
