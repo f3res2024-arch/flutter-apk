@@ -1253,7 +1253,7 @@ class CardR extends StatelessWidget {
     ]),
     Padding(padding:const EdgeInsets.all(14),child:Column(children:[
       Row(children:[Expanded(child:Text(r.name,style:const TextStyle(fontSize:17,fontWeight:FontWeight.w900))),Text(r.reviews.toString()+' تقييم',style:const TextStyle(color:muted,fontSize:10))]),
-      const SizedBox(height:6),Row(children:[const Icon(Icons.restaurant_menu,size:15,color:muted),const SizedBox(width:5),Expanded(child:Text(r.type,style:const TextStyle(color:muted,fontSize:11)))])
+      const SizedBox(height:6),Row(children:[const Icon(Icons.restaurant_menu,size:15,color:muted),const SizedBox(width:5),Expanded(child:Text(r.type,style:const TextStyle(color:muted,fontSize:11)))]),
       const SizedBox(height:7),Row(children:[const Icon(Icons.location_on_outlined,size:15,color:orange),const SizedBox(width:4),Expanded(child:Text(r.address,maxLines:1,overflow:TextOverflow.ellipsis,style:const TextStyle(color:muted,fontSize:10)))]),
     ])),
   ])));
