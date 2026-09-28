@@ -5,7 +5,16 @@ import 'core/supabase_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await NovaSupabase.initialize();
+
+  // Never block the Android process from starting because a remote backend
+  // configuration is temporarily invalid or unavailable.
+  try {
+    await NovaSupabase.initialize();
+  } catch (_) {
+    // The UI can still start; authenticated/backend features will retry
+    // when they are used after the configuration is corrected.
+  }
+
   runApp(const Nova());
 }
 
