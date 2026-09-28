@@ -23,10 +23,8 @@ jobs:
       - name: Generate Android project
         run: |
           flutter create . --platforms=android,ios --project-name delivery --org nova
-          # Generate the Android package directly as nova.delivery so the
-          # MainActivity package, namespace, and application id all agree.
           sed -i 's/android:label="[^"]*"/android:label="نوفا ديليفري"/' android/app/src/main/AndroidManifest.xml
-          python3 -c "from pathlib import Path; p=Path('android/app/src/main/AndroidManifest.xml'); s=p.read_text(); s=s.replace('</activity>', '<intent-filter><action android:name=\"android.intent.action.VIEW\"/><category android:name=\"android.intent.category.DEFAULT\"/><category android:name=\"android.intent.category.BROWSABLE\"/><data android:scheme=\"nova\" android:host=\"auth-callback\"/></intent-filter></activity>', 1); p.write_text(s)"
+          python3 -c "from pathlib import Path; p=Path('android/app/src/main/AndroidManifest.xml'); s=p.read_text(); s=s.replace('</activity>', '<intent-filter><action android:name="android.intent.action.VIEW"/><category android:name="android.intent.category.DEFAULT"/><category android:name="android.intent.category.BROWSABLE"/><data android:scheme="nova" android:host="auth-callback"/></intent-filter></activity>', 1); p.write_text(s)"
           python3 -c "from pathlib import Path; p=Path('ios/Runner/Info.plist'); s=p.read_text(); block='\\n\\t<key>CFBundleURLTypes</key>\\n\\t<array><dict><key>CFBundleTypeRole</key><string>Editor</string><key>CFBundleURLSchemes</key><array><string>nova</string></array></dict></array>'; s=s.replace('</dict>\\n</plist>', block+'\\n</dict>\\n</plist>'); p.write_text(s)"
           grep -R 'package nova.delivery' android/app/src/main/kotlin android/app/src/main/java
           grep -n 'applicationId = "nova.delivery"' android/app/build.gradle.kts
@@ -47,6 +45,9 @@ jobs:
         run: |
           test -n "$SUPABASE_URL" || (echo "Missing SUPABASE_URL GitHub secret" && exit 1)
           test -n "$SUPABASE_PUBLISHABLE_KEY" || (echo "Missing SUPABASE_PUBLISHABLE_KEY GitHub secret" && exit 1)
+          case "$SUPABASE_URL" in https://*.supabase.co) ;; *) echo "SUPABASE_URL format is invalid"; exit 1;; esac
+          status=$(curl -sS -o /tmp/supabase-settings.json -w "%{http_code}" -H "apikey: $SUPABASE_PUBLISHABLE_KEY" -H "Authorization: Bearer $SUPABASE_PUBLISHABLE_KEY" "$SUPABASE_URL/auth/v1/settings")
+          test "$status" = "200" || (echo "Supabase Auth endpoint rejected the GitHub secrets (HTTP $status)" && cat /tmp/supabase-settings.json && exit 1)
 
       - name: Build release APK
         env:
