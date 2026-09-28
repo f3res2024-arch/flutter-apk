@@ -295,8 +295,7 @@ class _LoginScreenState extends State<LoginScreen>{
     if(p.length<6){snack(context,'كلمة المرور يجب أن تكون 6 أحرف على الأقل');return;}
     setState(()=>busy=true);
     try{await NovaSupabase.signIn(email:e,password:p);if(mounted)widget.onSuccess();}
-    on Object catch(e){if(mounted)snack(context,_authMessage(e.toString()));}
-    catch(_){if(mounted)snack(context,'تعذر تسجيل الدخول. حاول مرة أخرى.');}
+    catch(e){if(mounted)snack(context,_authMessage(e.toString()));}
     finally{if(mounted)setState(()=>busy=false);}
   }
   Future<void> google() async {
