@@ -264,7 +264,7 @@ class _RoleButton extends StatelessWidget{
           Text(title,style:const TextStyle(color:Colors.white,fontSize:16,fontWeight:FontWeight.w900)),
           const SizedBox(height:2),Text(sub,style:TextStyle(color:primary?Colors.white70:Colors.white54,fontSize:10)),
         ])),
-        Container(width:34,height:34,decoration:BoxDecoration(color:Colors.white.withValues(alpha:.08),shape:BoxShape.circle),child:const Icon(Icons.arrow_back_rounded,color:Colors.white,size:17)),
+        Container(width:34,height:34,decoration:BoxDecoration(color:Colors.white.withValues(alpha:.08),shape:BoxShape.circle),child:const Icon(Icons.arrow_forward_rounded,color:Colors.white,size:17)),
       ]),
     )),
   );
@@ -858,9 +858,9 @@ class _CourierDashboardState extends State<CourierDashboard>{
     const CircleAvatar(radius:40,backgroundColor:orange,child:Icon(Icons.person,color:Colors.white,size:40)),
     const SizedBox(height:12),const Center(child:Text('مندوب نوفا',style:TextStyle(fontSize:23,fontWeight:FontWeight.w900))),
     const SizedBox(height:15),
-    ListTile(onTap:()=>snack(context,'البيانات الشخصية'),leading:const Icon(Icons.person_outline,color:orange),title:const Text('البيانات الشخصية'),trailing:const Icon(Icons.chevron_left)),
-    ListTile(onTap:()=>snack(context,'المركبة والمستندات'),leading:const Icon(Icons.two_wheeler,color:orange),title:const Text('المركبة والمستندات'),trailing:const Icon(Icons.chevron_left)),
-    ListTile(onTap:()=>snack(context,'الدعم'),leading:const Icon(Icons.support_agent,color:orange),title:const Text('الدعم'),trailing:const Icon(Icons.chevron_left)),
+    ListTile(onTap:()=>snack(context,'البيانات الشخصية'),leading:const Icon(Icons.person_outline,color:orange),title:const Text('البيانات الشخصية'),trailing:const Icon(Icons.chevron_right)),
+    ListTile(onTap:()=>snack(context,'المركبة والمستندات'),leading:const Icon(Icons.two_wheeler,color:orange),title:const Text('المركبة والمستندات'),trailing:const Icon(Icons.chevron_right)),
+    ListTile(onTap:()=>snack(context,'الدعم'),leading:const Icon(Icons.support_agent,color:orange),title:const Text('الدعم'),trailing:const Icon(Icons.chevron_right)),
     OutlinedButton.icon(onPressed:widget.onLogout,icon:const Icon(Icons.logout),label:const Text('تسجيل الخروج')),
   ]);
 }
@@ -963,7 +963,7 @@ class _CourierRoutePageState extends State<CourierRoutePage>{
           child:Column(children:[
             Row(children:[
               Expanded(child:routeStep(c,0,Icons.storefront_outlined,'المطعم',shop)),
-              const Padding(padding:EdgeInsets.symmetric(horizontal:7),child:Icon(Icons.arrow_back_rounded,color:muted)),
+              const Padding(padding:EdgeInsets.symmetric(horizontal:7),child:Icon(Icons.arrow_forward_rounded,color:muted)),
               Expanded(child:routeStep(c,1,Icons.person_pin_circle_outlined,'العميل',customerName)),
             ]),
             const SizedBox(height:12),
@@ -1149,7 +1149,7 @@ class _HomeState extends State<Home>{
       IconButton.filledTonal(onPressed:()=>showNotifications(context),icon:const Icon(Icons.notifications_none_rounded,color:ink)),
     ]),
     const SizedBox(height:16),
-    InkWell(onTap:onMap,borderRadius:BorderRadius.circular(18),child:Container(padding:const EdgeInsets.all(14),decoration:BoxDecoration(color:Theme.of(context).colorScheme.surface,borderRadius:BorderRadius.circular(18)),child:Row(children:[const Icon(Icons.location_on_rounded,color:orange),const SizedBox(width:9),Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[const Text('عنوان التوصيل',style:TextStyle(color:muted,fontSize:10)),FutureBuilder<String>(future:resolveCurrentAddress(),builder:(c,s){return Text(s.data??'جاري تحديد عنوانك الحالي…',maxLines:2,overflow:TextOverflow.ellipsis,style:const TextStyle(fontWeight:FontWeight.bold));})])),const Icon(Icons.chevron_left_rounded)]))),
+    InkWell(onTap:onMap,borderRadius:BorderRadius.circular(18),child:Container(padding:const EdgeInsets.all(14),decoration:BoxDecoration(color:Theme.of(context).colorScheme.surface,borderRadius:BorderRadius.circular(18)),child:Row(children:[const Icon(Icons.location_on_rounded,color:orange),const SizedBox(width:9),Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[const Text('عنوان التوصيل',style:TextStyle(color:muted,fontSize:10)),FutureBuilder<String>(future:resolveCurrentAddress(),builder:(c,s){return Text(s.data??'جاري تحديد عنوانك الحالي…',maxLines:2,overflow:TextOverflow.ellipsis,style:const TextStyle(fontWeight:FontWeight.bold));})])),const Icon(Icons.chevron_right_rounded)]))),
     const SizedBox(height:18),
     Container(
       height:210,
@@ -1296,20 +1296,110 @@ class CardR extends StatelessWidget {
   ])));
 }
 
-class RestaurantPage extends StatelessWidget {
+class RestaurantPage extends StatefulWidget {
   final R r; final bool fav; final VoidCallback onFav; final void Function(R,M) onAdd;
   const RestaurantPage({super.key,required this.r,required this.fav,required this.onFav,required this.onAdd});
-  @override Widget build(BuildContext c)=>Scaffold(body:CustomScrollView(slivers:[
-    SliverAppBar(expandedHeight:260,pinned:true,backgroundColor:ink,actions:[IconButton(onPressed:onFav,icon:Icon(fav?Icons.favorite:Icons.favorite_border,color:Colors.white))],flexibleSpace:FlexibleSpaceBar(title:Text(r.name,style:const TextStyle(fontWeight:FontWeight.w900)),background:Stack(fit:StackFit.expand,children:[Image.network(r.image,fit:BoxFit.cover),const DecoratedBox(decoration:BoxDecoration(gradient:LinearGradient(begin:Alignment.topCenter,end:Alignment.bottomCenter,colors:[Colors.transparent,Color(0xD9000000)])))]))),
-    SliverToBoxAdapter(child:Padding(padding:const EdgeInsets.all(18),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
-      Row(children:[const Icon(Icons.star_rounded,color:Color(0xFFFFB300)),const SizedBox(width:4),Text(r.rating.toString(),style:const TextStyle(fontWeight:FontWeight.w900)),Text(' • '+r.reviews.toString()+' تقييم',style:const TextStyle(color:muted)),const Spacer(),FilledButton.tonalIcon(onPressed:()=>Navigator.push(c,MaterialPageRoute(builder:(_)=>MapPage(restaurant:r))),icon:const Icon(Icons.map_outlined),label:const Text('الخريطة'))]),
-      const SizedBox(height:12),Text(r.address,style:const TextStyle(fontWeight:FontWeight.w700)),const SizedBox(height:5),Text(r.hours+' • '+r.phone,style:const TextStyle(color:muted,fontSize:12)),
-      const SizedBox(height:20),const Text('الفروع الحقيقية',style:TextStyle(fontSize:20,fontWeight:FontWeight.w900)),const SizedBox(height:9),
-      ...r.branches.map((b)=>Container(margin:const EdgeInsets.only(bottom:8),padding:const EdgeInsets.all(13),decoration:BoxDecoration(color:Theme.of(c).colorScheme.surface,borderRadius:BorderRadius.circular(16)),child:Row(children:[const Icon(Icons.storefront_outlined,color:orange),const SizedBox(width:9),Expanded(child:Text(b,style:const TextStyle(fontSize:12,fontWeight:FontWeight.w600)))]))),
-      const SizedBox(height:16),Row(children:[const Expanded(child:Text('المنيو',style:TextStyle(fontSize:22,fontWeight:FontWeight.w900))),Chip(label:Text(r.source),avatar:const Icon(Icons.verified_rounded,size:15,color:orange))]),const SizedBox(height:10),
-      ...r.menu.map((m)=>MenuCard(m:m,onAdd:()=>onAdd(r,m))),
-    ]))),
-  ]));
+  @override State<RestaurantPage> createState()=>_RestaurantPageState();
+}
+
+class _RestaurantPageState extends State<RestaurantPage> {
+  late bool isFav;
+
+  @override
+  void initState(){
+    super.initState();
+    isFav=widget.fav;
+  }
+
+  void toggleFavorite(){
+    setState(()=>isFav=!isFav);
+    widget.onFav();
+  }
+
+  @override
+  Widget build(BuildContext c){
+    final r=widget.r;
+    return Scaffold(
+      body:Directionality(
+        textDirection:TextDirection.rtl,
+        child:CustomScrollView(slivers:[
+          SliverAppBar(
+            expandedHeight:260,
+            pinned:true,
+            backgroundColor:ink,
+            actions:[
+              IconButton(
+                tooltip:isFav?'إزالة من المفضلة':'إضافة للمفضلة',
+                onPressed:toggleFavorite,
+                icon:AnimatedSwitcher(
+                  duration:const Duration(milliseconds:140),
+                  switchInCurve:Curves.easeOutBack,
+                  switchOutCurve:Curves.easeIn,
+                  child:Icon(
+                    isFav?Icons.favorite:Icons.favorite_border,
+                    key:ValueKey(isFav),
+                    color:isFav?const Color(0xFFE53935):Colors.white,
+                    size:27,
+                  ),
+                ),
+              ),
+            ],
+            flexibleSpace:FlexibleSpaceBar(
+              titlePadding:const EdgeInsetsDirectional.only(start:56,end:56,bottom:16),
+              title:Text(r.name,overflow:TextOverflow.ellipsis,style:const TextStyle(color:Colors.white,fontWeight:FontWeight.w900,fontSize:16)),
+              background:Stack(fit:StackFit.expand,children:[
+                Image.network(r.image,fit:BoxFit.cover,errorBuilder:(_,__,___)=>Container(color:const Color(0xFFEDEAE4),child:const Icon(Icons.restaurant_rounded,size:55,color:orange))),
+                const DecoratedBox(decoration:BoxDecoration(gradient:LinearGradient(begin:Alignment.topCenter,end:Alignment.bottomCenter,colors:[Colors.transparent,Color(0xD9000000)]))),
+              ]),
+            ),
+          ),
+          SliverToBoxAdapter(
+            child:Padding(
+              padding:const EdgeInsets.all(18),
+              child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
+                Row(children:[
+                  const Icon(Icons.star_rounded,color:Color(0xFFFFB300)),
+                  const SizedBox(width:4),
+                  Text(r.rating.toString(),style:const TextStyle(fontWeight:FontWeight.w900)),
+                  Text(' • '+r.reviews.toString()+' تقييم',style:const TextStyle(color:muted)),
+                  const Spacer(),
+                  FilledButton.tonalIcon(
+                    onPressed:()=>Navigator.push(c,MaterialPageRoute(builder:(_)=>MapPage(restaurant:r))),
+                    icon:const Icon(Icons.map_outlined),
+                    label:const Text('الخريطة'),
+                  ),
+                ]),
+                const SizedBox(height:12),
+                Text(r.address,style:const TextStyle(fontWeight:FontWeight.w700)),
+                const SizedBox(height:5),
+                Text(r.hours+' • '+r.phone,style:const TextStyle(color:muted,fontSize:12)),
+                const SizedBox(height:20),
+                const Text('الفروع الحقيقية',style:TextStyle(fontSize:20,fontWeight:FontWeight.w900)),
+                const SizedBox(height:9),
+                ...r.branches.map((b)=>Container(
+                  margin:const EdgeInsets.only(bottom:8),
+                  padding:const EdgeInsets.all(13),
+                  decoration:BoxDecoration(color:Theme.of(c).colorScheme.surface,borderRadius:BorderRadius.circular(16)),
+                  child:Row(children:[
+                    const Icon(Icons.storefront_outlined,color:orange),
+                    const SizedBox(width:9),
+                    Expanded(child:Text(b,style:const TextStyle(fontSize:12,fontWeight:FontWeight.w600))),
+                  ]),
+                )),
+                const SizedBox(height:16),
+                Row(children:[
+                  const Expanded(child:Text('المنيو',style:TextStyle(fontSize:22,fontWeight:FontWeight.w900))),
+                  Chip(label:Text(r.source),avatar:const Icon(Icons.verified_rounded,size:15,color:orange)),
+                ]),
+                const SizedBox(height:10),
+                ...r.menu.map((m)=>MenuCard(m:m,onAdd:()=>widget.onAdd(r,m))),
+              ]),
+            ),
+          ),
+        ]),
+      ),
+    );
+  }
 }
 
 class MenuCard extends StatelessWidget {
@@ -1460,7 +1550,7 @@ class _OrdersPageState extends State<OrdersPage>{
           const SizedBox(height:4),Text(status,style:TextStyle(color:active?orange:Colors.green,fontWeight:FontWeight.w800,fontSize:11)),
         ])),
         Text(_money(o['total']).toStringAsFixed(0)+' ج.م',style:const TextStyle(fontWeight:FontWeight.w900)),
-        const SizedBox(width:4),const Icon(Icons.chevron_left_rounded,color:muted),
+        const SizedBox(width:4),const Icon(Icons.chevron_right_rounded,color:muted),
       ]),
     ));
   }
@@ -1853,7 +1943,7 @@ class _MapPageState extends State<MapPage>{
                 leading:const CircleAvatar(backgroundColor:Color(0x12FF5A36),child:Icon(Icons.place_rounded,color:orange)),
                 title:Text(p.name,maxLines:2,overflow:TextOverflow.ellipsis,style:const TextStyle(fontSize:12,fontWeight:FontWeight.w800)),
                 subtitle:Text(p.lat.toStringAsFixed(5)+', '+p.lng.toStringAsFixed(5),style:const TextStyle(color:muted,fontSize:10)),
-                trailing:const Icon(Icons.chevron_left_rounded),
+                trailing:const Icon(Icons.chevron_right_rounded),
               );
             },
           ),
@@ -2032,7 +2122,7 @@ Widget st(BuildContext c, IconData icon, String titleText, String sub, VoidCallb
       ),
       title:Text(titleText,style:const TextStyle(fontWeight:FontWeight.w800,fontSize:14)),
       subtitle:Text(sub,style:const TextStyle(color:muted,fontSize:11)),
-      trailing:trailing??const Icon(Icons.chevron_left),
+      trailing:trailing??const Icon(Icons.chevron_right),
     ),
   );
 }
@@ -2101,10 +2191,10 @@ Future<void> checkout(BuildContext c, List<Line> cart, double total, VoidCallbac
               ListTile(leading:const Icon(Icons.add_location_alt,color:orange),title:const Text('إضافة عنوان جديد'),onTap:()async{Navigator.pop(sheet);final created=await addAddressDialog(sheet);if(created!=null&&sheet.mounted)setSheet(()=>selected=created);}),
             ])));
           }),
-          st(sheet,Icons.payments_rounded,'طريقة الدفع','الدفع عند الاستلام — الدفع الإلكتروني غير مفعّل بعد',(){
+          st(sheet,Icons.payments_rounded,'طريقة الدفع','الدفع عند الاستلام • الدفع بالفيزا سيُفعّل لاحقاً عبر بوابة دفع حقيقية',(){
             showModalBottomSheet(context:sheet,builder:(_)=>Directionality(textDirection:TextDirection.rtl,child:Column(mainAxisSize:MainAxisSize.min,children:[
               ListTile(title:const Text('الدفع عند الاستلام'),leading:const Icon(Icons.payments,color:orange),onTap:(){setSheet(()=>payment='cash');Navigator.pop(sheet);}),
-              ListTile(title:const Text('بطاقة'),subtitle:const Text('سيتم تفعيلها بعد ربط بوابة دفع حقيقية',style:TextStyle(color:muted,fontSize:11)),leading:const Icon(Icons.credit_card,color:Colors.black26),enabled:false),
+              ListTile(title:const Text('بطاقة فيزا'),subtitle:const Text('سيتم تفعيل الدفع بالفيزا بعد ربط بوابة دفع حقيقية',style:TextStyle(color:muted,fontSize:11)),leading:const Icon(Icons.credit_card_rounded,color:Colors.black26),enabled:false),
               ListTile(title:const Text('محفظة'),subtitle:const Text('سيتم تفعيلها بعد ربط مزود المحفظة',style:TextStyle(color:muted,fontSize:11)),leading:const Icon(Icons.account_balance_wallet,color:Colors.black26),enabled:false),
             ])));
           }),
