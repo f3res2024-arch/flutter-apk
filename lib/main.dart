@@ -913,10 +913,14 @@ class _ShellState extends State<Shell> {
   void open(R r)=>Navigator.push(context,MaterialPageRoute(builder:(_)=>RestaurantPage(r:r,fav:fav.contains(r.name),onFav:()=>setState((){if(!fav.add(r.name))fav.remove(r.name);}),onAdd:add)));
   @override Widget build(BuildContext context){
     final pages=[
-      Home(onOpen:open,onMap:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>const MapPage()))),
-      SearchPage(onAdd:add),
-      const OrdersPage(),
-      CartPage(cart:cart,total:total,onAdd:(x)=>add(x.r,x.m),onSub:sub),
+      Home(
+        onOpen:open,
+        onMap:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>const MapPage())),
+        onSearch:(q)=>setState((){tab=1;}),
+      ),
+      SearchPage(onAdd:add,onFav:(r)=>setState((){if(!fav.add(r.name))fav.remove(r.name);}),),
+      OrdersPage(onTrack:(o)=>Navigator.push(context,MaterialPageRoute(builder:(_)=>CustomerOrderTrackingPage(order:o))),),
+      CartPage(cart:cart,total:total,onAdd:(x)=>add(x.r,x.m),onSub:sub,onCheckoutSuccess:()=>setState(cart.clear)),
       ProfilePage(dark:widget.dark,onDark:widget.onDark,onMap:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>const MapPage()))),
     ];
     return Directionality(
@@ -999,8 +1003,8 @@ class _ShellState extends State<Shell> {
 }
 
 class Home extends StatelessWidget {
-  final ValueChanged<R> onOpen; final VoidCallback onMap;
-  const Home({super.key,required this.onOpen,required this.onMap});
+  final ValueChanged<R> onOpen; final VoidCallback onMap; final ValueChanged<String> onSearch;
+  const Home({super.key,required this.onOpen,required this.onMap,required this.onSearch});
   @override Widget build(BuildContext context)=>ListView(padding:const EdgeInsets.fromLTRB(18,10,18,110),children:[
     Row(children:[
       Container(width:48,height:48,decoration:BoxDecoration(color:orange,borderRadius:BorderRadius.circular(15)),child:const Icon(Icons.delivery_dining_rounded,color:Colors.white,size:29)),
@@ -1064,20 +1068,23 @@ Widget title(String a,String b)=>Row(children:[Expanded(child:Text(a,style:const
 
 class Cat extends StatelessWidget {
   final String e,n; const Cat(this.e,this.n,{super.key});
-  @override Widget build(BuildContext c)=>Container(width:82,margin:const EdgeInsets.only(left:10),decoration:BoxDecoration(color:Theme.of(c).colorScheme.surface,borderRadius:BorderRadius.circular(20)),child:Column(mainAxisAlignment:MainAxisAlignment.center,children:[Text(e,style:const TextStyle(fontSize:30)),const SizedBox(height:5),Text(n,style:const TextStyle(fontWeight:FontWeight.w700,fontSize:12))]));
+  @override Widget build(BuildContext c)=>Material(color:Colors.transparent,child:InkWell(onTap:()=>showDialog(context:c,builder:(_)=>AlertDialog(title:Text(n),content:Text('سيتم تصفية المطاعم حسب فئة $n في الإصدار المتصل بالكتالوج.'),actions:[TextButton(onPressed:()=>Navigator.pop(c),child:const Text('حسناً'))])),borderRadius:BorderRadius.circular(20),child:Container(width:82,margin:const EdgeInsets.only(left:10),decoration:BoxDecoration(color:Theme.of(c).colorScheme.surface,borderRadius:BorderRadius.circular(20)),child:Column(mainAxisAlignment:MainAxisAlignment.center,children:[Text(e,style:const TextStyle(fontSize:30)),const SizedBox(height:5),Text(n,style:const TextStyle(fontWeight:FontWeight.w700,fontSize:12))]))));
 }
 
 class _PromoCard extends StatelessWidget{
   final IconData icon; final String title,sub,code;
   const _PromoCard({required this.icon,required this.title,required this.sub,required this.code});
-  @override Widget build(BuildContext c)=>Container(
+  @override Widget build(BuildContext c)=>InkWell(
+    onTap:()=>showDialog(context:c,builder:(_)=>AlertDialog(title:Text(title),content:Text('كود العرض: $code\n\nاضغط نسخ لاستخدامه عند الدفع.'),actions:[TextButton(onPressed:(){Clipboard.setData(ClipboardData(text:code));Navigator.pop(c);snack(c,'تم نسخ الكود $code');},child:const Text('نسخ')),TextButton(onPressed:()=>Navigator.pop(c),child:const Text('إغلاق'))])),
+    borderRadius:BorderRadius.circular(22),
+    child:Container(
     width:235,margin:const EdgeInsets.only(left:10),padding:const EdgeInsets.all(16),
     decoration:BoxDecoration(
       gradient:const LinearGradient(colors:[ink,Color(0xFF292E39)]),
       borderRadius:BorderRadius.circular(22),
       boxShadow:const[BoxShadow(color:Color(0x18000000),blurRadius:18,offset:Offset(0,7))],
     ),
-    child:Row(children:[
+      child:Row(children:[
       Container(width:46,height:46,decoration:BoxDecoration(color:orange.withValues(alpha:.16),shape:BoxShape.circle),child:Icon(icon,color:orange)),
       const SizedBox(width:11),
       Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,mainAxisAlignment:MainAxisAlignment.center,children:[
@@ -1086,6 +1093,7 @@ class _PromoCard extends StatelessWidget{
         const SizedBox(height:7),Text(code,style:const TextStyle(color:orange,fontSize:9,fontWeight:FontWeight.w900,letterSpacing:1)),
       ])),
     ]),
+    ),
   );
 }
 class CardR extends StatelessWidget {
@@ -1128,7 +1136,8 @@ class MenuCard extends StatelessWidget {
   ]));
 }
 class _SearchPageState extends State<SearchPage> {
-  String q = '';
+  late String q;
+  @override void initState(){super.initState();q=widget.initialQuery;}
   @override
   Widget build(BuildContext c) {
     final list = data.where((r) => q.isEmpty || r.name.contains(q) || r.type.contains(q)).toList();
@@ -1156,7 +1165,7 @@ class _SearchPageState extends State<SearchPage> {
           child: CardR(
             r: r,
             onTap: () => Navigator.push(c, MaterialPageRoute(
-              builder: (_) => RestaurantPage(r: r, fav: false, onFav: () {}, onAdd: widget.onAdd),
+              builder: (_) => RestaurantPage(r: r, fav: false, onFav: ()=>widget.onFav(r), onAdd: widget.onAdd),
             )),
           ),
         )),
@@ -1164,7 +1173,8 @@ class _SearchPageState extends State<SearchPage> {
     );
   }
 }
-class SearchPage extends StatefulWidget{final void Function(R,M) onAdd; const SearchPage({super.key,required this.onAdd}); @override State<SearchPage> createState()=>_SearchPageState();}
+class SearchPage extends StatefulWidget{final void Function(R,M) onAdd; final ValueChanged<R> onFav; final String initialQuery;
+  const SearchPage({super.key,required this.onAdd,required this.onFav,this.initialQuery='' }); @override State<SearchPage> createState()=>_SearchPageState();}
 class OTile extends StatelessWidget {
   final String id, shop, status;
   final bool active;
@@ -1202,49 +1212,81 @@ class OTile extends StatelessWidget {
     );
   }
 }
-class OrdersPage extends StatelessWidget{
-  const OrdersPage({super.key});
-  @override Widget build(BuildContext c)=>ListView(
-    padding:const EdgeInsets.fromLTRB(18,18,18,110),
-    children:[
-      const Text('طلباتي',style:TextStyle(fontSize:30,fontWeight:FontWeight.w900)),
-      const SizedBox(height:5),
-      const Text('كل طلباتك في مكان واحد',style:TextStyle(color:muted)),
-      const SizedBox(height:18),
-      Container(
-        padding:const EdgeInsets.all(5),
-        decoration:BoxDecoration(color:Theme.of(c).colorScheme.surface,borderRadius:BorderRadius.circular(17)),
-        child:const Row(children:[
-          Expanded(child:Center(child:Padding(padding:EdgeInsets.all(10),child:Text('الحالية',style:TextStyle(color:orange,fontWeight:FontWeight.w900))))),
-          Expanded(child:Center(child:Padding(padding:EdgeInsets.all(10),child:Text('السابقة',style:TextStyle(color:muted,fontWeight:FontWeight.w700))))),
-        ]),
-      ),
-      const SizedBox(height:15),
-      Container(
-        padding:const EdgeInsets.all(16),
-        decoration:BoxDecoration(color:ink,borderRadius:BorderRadius.circular(24)),
-        child:const Row(children:[
-          CircleAvatar(radius:26,backgroundColor:Color(0x22FF5A36),child:Icon(Icons.delivery_dining_rounded,color:orange)),
-          SizedBox(width:12),
-          Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
-            Text('دجاج كنتاكي',style:TextStyle(color:Colors.white,fontWeight:FontWeight.w900,fontSize:16)),
-            SizedBox(height:4),Text('NV-2841 • السائق في الطريق',style:TextStyle(color:Colors.white60,fontSize:10)),
-          ])),
-          Text('312 ج.م',style:TextStyle(color:Colors.white,fontWeight:FontWeight.w900)),
-        ]),
-      ),
-      const SizedBox(height:12),
-      const OTile('NV-2841','دجاج كنتاكي','السائق في الطريق إليك',true),
-      const OTile('NV-2819','بازوكا','تم التسليم • أمس',false),
-      const OTile('NV-2772','تيكتس','تم التسليم • 18 سبتمبر',false),
-    ],
-  );
+class OrdersPage extends StatefulWidget{
+  final ValueChanged<Map<String,dynamic>> onTrack;
+  const OrdersPage({super.key,required this.onTrack});
+  @override State<OrdersPage> createState()=>_OrdersPageState();
 }
+class _OrdersPageState extends State<OrdersPage>{
+  int tab=0;
+  bool loading=true;
+  List<Map<String,dynamic>> orders=[];
+  dynamic channel;
+  @override void initState(){super.initState();load();}
+  @override void dispose(){channel?.unsubscribe();super.dispose();}
+  Future<void> load() async{
+    if(!NovaSupabase.initialized || NovaSupabase.currentUser==null){
+      if(mounted)setState(()=>loading=false);
+      return;
+    }
+    try{
+      final rows=await NovaSupabase.customerOrders();
+      if(!mounted)return;
+      setState(()=>orders=rows);
+      channel ??=NovaSupabase.watchCustomerOrders(load);
+    }catch(e){if(mounted)snack(context,'تعذر تحميل الطلبات: $e');}
+    finally{if(mounted)setState(()=>loading=false);}
+  }
+  String statusText(String s)=>switch(s){
+    'pending'=>'في انتظار المطعم','accepted'=>'المطعم قبل الطلب','preparing'=>'جاري التحضير','ready'=>'جاهز للاستلام','picked_up'=>'تم الاستلام','on_the_way'=>'السائق في الطريق','delivered'=>'تم التسليم','cancelled'=>'تم الإلغاء',_=>s
+  };
+  @override Widget build(BuildContext c){
+    final current=orders.where((o)=>!['delivered','cancelled'].contains(o['status'])).toList();
+    final history=orders.where((o)=>['delivered','cancelled'].contains(o['status'])).toList();
+    final list=tab==0?current:history;
+    return RefreshIndicator(onRefresh:load,child:ListView(
+      physics:const AlwaysScrollableScrollPhysics(),
+      padding:const EdgeInsets.fromLTRB(18,18,18,110),
+      children:[
+        const Text('طلباتي',style:TextStyle(fontSize:30,fontWeight:FontWeight.w900)),
+        const SizedBox(height:5),const Text('كل طلباتك في مكان واحد',style:TextStyle(color:muted)),
+        const SizedBox(height:18),
+        Container(padding:const EdgeInsets.all(5),decoration:BoxDecoration(color:Theme.of(c).colorScheme.surface,borderRadius:BorderRadius.circular(17)),child:Row(children:[
+          Expanded(child:InkWell(onTap:()=>setState(()=>tab=0),child:Center(child:Padding(padding:const EdgeInsets.all(10),child:Text('الحالية',style:TextStyle(color:tab==0?orange:muted,fontWeight:FontWeight.w900)))))),
+          Expanded(child:InkWell(onTap:()=>setState(()=>tab=1),child:Center(child:Padding(padding:const EdgeInsets.all(10),child:Text('السابقة',style:TextStyle(color:tab==1?orange:muted,fontWeight:FontWeight.w900)))))),
+        ])),
+        const SizedBox(height:15),
+        if(loading)const Padding(padding:EdgeInsets.all(35),child:Center(child:CircularProgressIndicator(color:orange)))
+        else if(list.isEmpty)Container(padding:const EdgeInsets.all(28),decoration:BoxDecoration(color:Theme.of(c).colorScheme.surface,borderRadius:BorderRadius.circular(22)),child:const Column(children:[Icon(Icons.receipt_long_outlined,size:58,color:orange),SizedBox(height:10),Text('لا توجد طلبات هنا',style:TextStyle(fontSize:18,fontWeight:FontWeight.w900)),SizedBox(height:5),Text('طلباتك الجديدة ستظهر هنا تلقائياً',style:TextStyle(color:muted))]))
+        else ...list.map((o)=>orderTile(c,o,statusText(o['status']?.toString()??''))),
+      ],
+    ));
+  }
+  Widget orderTile(BuildContext c,Map<String,dynamic> o,String status){
+    final active=!['delivered','cancelled'].contains(o['status']);
+    return InkWell(onTap:()=>widget.onTrack(o),borderRadius:BorderRadius.circular(22),child:Container(
+      margin:const EdgeInsets.only(bottom:12),padding:const EdgeInsets.all(16),
+      decoration:BoxDecoration(color:Theme.of(c).colorScheme.surface,borderRadius:BorderRadius.circular(22),border:Border.all(color:active?orange.withValues(alpha:.18):Colors.transparent)),
+      child:Row(children:[
+        CircleAvatar(backgroundColor:(active?orange:Colors.green).withValues(alpha:.12),child:Icon(active?Icons.delivery_dining:Icons.check_circle,color:active?orange:Colors.green)),
+        const SizedBox(width:12),
+        Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
+          Text((o['restaurant_name']??'مطعم نوفا').toString(),style:const TextStyle(fontWeight:FontWeight.w900,fontSize:16)),
+          Text('#'+_shortId(o['id']),style:const TextStyle(color:muted,fontSize:10)),
+          const SizedBox(height:4),Text(status,style:TextStyle(color:active?orange:Colors.green,fontWeight:FontWeight.w800,fontSize:11)),
+        ])),
+        Text(_money(o['total']).toStringAsFixed(0)+' ج.م',style:const TextStyle(fontWeight:FontWeight.w900)),
+        const SizedBox(width:4),const Icon(Icons.chevron_left_rounded,color:muted),
+      ]),
+    ));
+  }
+}
+
 class CartPage extends StatelessWidget {
   final List<Line> cart;
   final double total;
-  final void Function(Line) onAdd, onSub;
-  const CartPage({super.key, required this.cart, required this.total, required this.onAdd, required this.onSub});
+  final void Function(Line) onAdd, onSub; final VoidCallback onCheckoutSuccess;
+  const CartPage({super.key, required this.cart, required this.total, required this.onAdd, required this.onSub, required this.onCheckoutSuccess});
   @override
   Widget build(BuildContext c) {
     if (cart.isEmpty) {
@@ -1285,7 +1327,7 @@ class CartPage extends StatelessWidget {
         const Divider(height: 28),
         line('الإجمالي', total + 33, bold: true),
         const SizedBox(height: 14),
-        FilledButton(onPressed: () => checkout(c, total + 33), style: FilledButton.styleFrom(backgroundColor: orange, minimumSize: const Size.fromHeight(55)), child: const Text('إتمام الطلب')),
+        FilledButton(onPressed: () => checkout(c, cart, total + 33, onCheckoutSuccess), style: FilledButton.styleFrom(backgroundColor: orange, minimumSize: const Size.fromHeight(55)), child: const Text('إتمام الطلب')),
       ],
     );
   }
@@ -1297,7 +1339,7 @@ void snack(BuildContext c,String message){
 
 Widget line(String s,double v,{bool bold=false})=>Padding(padding:const EdgeInsets.symmetric(vertical:5),child:Row(children:[Expanded(child:Text(s,style:TextStyle(fontWeight:bold?FontWeight.w900:FontWeight.w500))),Text(v.toStringAsFixed(0)+' ج.م',style:TextStyle(fontWeight:FontWeight.w900,color:bold?orange:null))]));
 
-class ProfilePage extends StatelessWidget{final bool dark;final ValueChanged<bool> onDark;final VoidCallback onMap;const ProfilePage({super.key,required this.dark,required this.onDark,required this.onMap});@override Widget build(BuildContext c)=>ListView(padding:const EdgeInsets.fromLTRB(18,18,18,100),children:[Container(padding:const EdgeInsets.all(18),decoration:BoxDecoration(color:ink,borderRadius:BorderRadius.circular(26)),child:const Row(children:[CircleAvatar(radius:32,backgroundColor:orange,child:Icon(Icons.person,color:Colors.white,size:32)),SizedBox(width:14),Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text('نوفا ديليفري',style:TextStyle(color:Colors.white,fontSize:20,fontWeight:FontWeight.w900)),Text('حساب العميل',style:TextStyle(color:Colors.white70,fontSize:12))])])),const SizedBox(height:18),const Text('الإعدادات والخدمات',style:TextStyle(fontSize:21,fontWeight:FontWeight.w900)),const SizedBox(height:8),st(c,Icons.location_on_outlined,'العناوين والخريطة','حدد موقعك وفروع المطاعم',onMap),st(c,Icons.credit_card,'طرق الدفع','كاش • بطاقة • محفظة',(){}),st(c,Icons.favorite_border,'المفضلة','مطاعم وأطباق محفوظة',(){}),st(c,Icons.local_offer_outlined,'العروض والكوبونات','خصومات وعروض يومية',(){}),st(c,Icons.notifications_none,'الإشعارات','الطلب والعروض',()=>showNotifications(c)),st(c,Icons.dark_mode_outlined,'الوضع الليلي','تخصيص المظهر',()=>onDark(!dark),trailing:Switch(value:dark,onChanged:onDark)),st(c,Icons.security,'الأمان والخصوصية','حماية الحساب',(){}),st(c,Icons.help_outline,'مركز المساعدة','دعم وشكاوى ومحادثة',(){}),const SizedBox(height:12),OutlinedButton.icon(onPressed:()=>Navigator.push(c,MaterialPageRoute(builder:(_)=>const Roles())),icon:const Icon(Icons.dashboard_customize_outlined),label:const Text('لوحات المطعم والسائق والإدارة'))]);}
+class ProfilePage extends StatelessWidget{final bool dark;final ValueChanged<bool> onDark;final VoidCallback onMap;const ProfilePage({super.key,required this.dark,required this.onDark,required this.onMap});@override Widget build(BuildContext c)=>ListView(padding:const EdgeInsets.fromLTRB(18,18,18,100),children:[Container(padding:const EdgeInsets.all(18),decoration:BoxDecoration(color:ink,borderRadius:BorderRadius.circular(26)),child:const Row(children:[CircleAvatar(radius:32,backgroundColor:orange,child:Icon(Icons.person,color:Colors.white,size:32)),SizedBox(width:14),Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text('نوفا ديليفري',style:TextStyle(color:Colors.white,fontSize:20,fontWeight:FontWeight.w900)),Text('حساب العميل',style:TextStyle(color:Colors.white70,fontSize:12))])])),const SizedBox(height:18),const Text('الإعدادات والخدمات',style:TextStyle(fontSize:21,fontWeight:FontWeight.w900)),const SizedBox(height:8),st(c,Icons.location_on_outlined,'العناوين والخريطة','حدد موقعك وفروع المطاعم',onMap),st(c,Icons.credit_card,'طرق الدفع','كاش • بطاقة • محفظة',()=>showFeature(c,'طرق الدفع','اختر طريقة الدفع أثناء إتمام الطلب: كاش، بطاقة، أو محفظة.')),st(c,Icons.favorite_border,'المفضلة','مطاعم وأطباق محفوظة',()=>showFeature(c,'المفضلة','اضغط قلب أي مطعم لحفظه في مفضلة حسابك.')),st(c,Icons.local_offer_outlined,'العروض والكوبونات','خصومات وعروض يومية',()=>showFeature(c,'العروض','NOVA20 و FREEDEL متاحان من شاشة إتمام الطلب.')),st(c,Icons.notifications_none,'الإشعارات','الطلب والعروض',()=>showNotifications(c)),st(c,Icons.dark_mode_outlined,'الوضع الليلي','تخصيص المظهر',()=>onDark(!dark),trailing:Switch(value:dark,onChanged:onDark)),st(c,Icons.security,'الأمان والخصوصية','حماية الحساب',()=>showFeature(c,'الأمان والخصوصية','حسابك يستخدم جلسة Supabase آمنة. استخدم استعادة كلمة المرور من شاشة الدخول عند الحاجة.')),st(c,Icons.help_outline,'مركز المساعدة','دعم وشكاوى ومحادثة',()=>showFeature(c,'مركز المساعدة','للدعم: افتح طلبك من «طلباتي» واضغط عليه للتتبع، أو تواصل معنا عبر القناة التي ستُربط لاحقاً.')),const SizedBox(height:12),OutlinedButton.icon(onPressed:()=>Navigator.push(c,MaterialPageRoute(builder:(_)=>const Roles())),icon:const Icon(Icons.dashboard_customize_outlined),label:const Text('لوحات المطعم والسائق والإدارة'))]);}
 class MapPage extends StatelessWidget {
   final R? restaurant;
   const MapPage({super.key, this.restaurant});
@@ -1400,45 +1442,115 @@ void showNotifications(BuildContext c) {
   );
 }
 
-void checkout(BuildContext c, double total) {
+void showFeature(BuildContext c,String titleText,String body){showDialog(context:c,builder:(_)=>AlertDialog(title:Text(titleText),content:Text(body),actions:[TextButton(onPressed:()=>Navigator.pop(c),child:const Text('حسناً'))]));}
+
+Future<void> checkout(BuildContext c, List<Line> cart, double total, VoidCallback onSuccess) async {
+  if(cart.isEmpty)return;
+  final restaurant=cart.first.r;
+  if(cart.any((x)=>x.r.name!=restaurant.name)){
+    snack(c,'السلة يجب أن تحتوي على مطعم واحد فقط.');
+    return;
+  }
+  if(!NovaSupabase.initialized || NovaSupabase.currentUser==null){
+    snack(c,'سجّل الدخول أولاً لإتمام طلب حقيقي.');
+    return;
+  }
+  List<Map<String,dynamic>> addresses=[];
+  try{addresses=await NovaSupabase.addresses();}catch(e){snack(c,'تعذر تحميل العناوين: $e');return;}
+  Map<String,dynamic>? selected=addresses.cast<Map<String,dynamic>?>().firstWhere((x)=>x?['is_default']==true,orElse:()=>null);
+  selected ??=addresses.isNotEmpty?addresses.first:null;
+  if(selected==null){
+    final created=await addAddressDialog(c);
+    if(created==null)return;
+    selected=created;
+  }
+  String payment='cash';
+  String notes='';
+  if(!c.mounted)return;
   showModalBottomSheet(
     context:c,isScrollControlled:true,showDragHandle:true,
     backgroundColor:Theme.of(c).scaffoldBackgroundColor,
-    builder:(_)=>Directionality(
+    builder:(sheet)=>StatefulBuilder(builder:(sheet,setSheet)=>Directionality(
       textDirection:TextDirection.rtl,
       child:SafeArea(child:Padding(
-        padding:const EdgeInsets.fromLTRB(18,8,18,18),
+        padding:EdgeInsets.fromLTRB(18,8,18,18+MediaQuery.viewInsetsOf(sheet).bottom),
         child:Column(mainAxisSize:MainAxisSize.min,crossAxisAlignment:CrossAxisAlignment.start,children:[
           const Text('إتمام الطلب',style:TextStyle(fontSize:28,fontWeight:FontWeight.w900)),
           const SizedBox(height:5),const Text('راجع التفاصيل قبل التأكيد',style:TextStyle(color:muted)),
-          const SizedBox(height:18),
-          st(c,Icons.location_on_rounded,'عنوان التوصيل','المنصورة • اختر عنواناً محفوظاً',(){}),
-          st(c,Icons.payments_rounded,'طريقة الدفع','الدفع عند الاستلام',(){}),
-          st(c,Icons.local_offer_rounded,'كود الخصم','أضف كوبوناً للحصول على خصم',(){}),
+          const SizedBox(height:16),
+          st(sheet,Icons.location_on_rounded,'عنوان التوصيل',(selected!['label']??'المنزل').toString()+' • '+(selected!['address']??'').toString(),() async {
+            final all=await NovaSupabase.addresses();
+            if(!sheet.mounted)return;
+            showModalBottomSheet(context:sheet,builder:(_)=>Directionality(textDirection:TextDirection.rtl,child:ListView(padding:const EdgeInsets.all(18),children:[
+              const Text('اختر عنواناً',style:TextStyle(fontSize:22,fontWeight:FontWeight.w900)),
+              ...all.map((a)=>ListTile(title:Text((a['label']??'عنوان').toString()),subtitle:Text((a['address']??'').toString()),onTap:(){setSheet(()=>selected=a);Navigator.pop(sheet);})),
+              ListTile(leading:const Icon(Icons.add_location_alt,color:orange),title:const Text('إضافة عنوان جديد'),onTap:()async{Navigator.pop(sheet);final created=await addAddressDialog(sheet);if(created!=null&&sheet.mounted)setSheet(()=>selected=created);}),
+            ])));
+          }),
+          st(sheet,Icons.payments_rounded,'طريقة الدفع',payment=='cash'?'الدفع عند الاستلام':payment=='card'?'بطاقة':'محفظة',(){
+            showModalBottomSheet(context:sheet,builder:(_)=>Directionality(textDirection:TextDirection.rtl,child:Column(mainAxisSize:MainAxisSize.min,children:[
+              ListTile(title:const Text('الدفع عند الاستلام'),leading:const Icon(Icons.payments),onTap:(){setSheet(()=>payment='cash');Navigator.pop(sheet);}),
+              ListTile(title:const Text('بطاقة'),leading:const Icon(Icons.credit_card),onTap:(){setSheet(()=>payment='card');Navigator.pop(sheet);}),
+              ListTile(title:const Text('محفظة'),leading:const Icon(Icons.account_balance_wallet),onTap:(){setSheet(()=>payment='wallet');Navigator.pop(sheet);}),
+            ])));
+          }),
+          st(sheet,Icons.local_offer_rounded,'كود الخصم','اضغط لإدخال كود NOVA20 أو FREEDEL',()=>showDialog(context:sheet,builder:(_)=>AlertDialog(title:const Text('العروض'),content:const Text('NOVA20: خصم 20% على أول طلب\nFREEDEL: توصيل مجاني على المطاعم المختارة'),actions:[TextButton(onPressed:()=>Navigator.pop(sheet),child:const Text('إغلاق'))]))),
           const SizedBox(height:8),
-          Container(
-            padding:const EdgeInsets.all(16),
-            decoration:BoxDecoration(color:Theme.of(c).colorScheme.surface,borderRadius:BorderRadius.circular(20)),
-            child:Column(children:[
-              line('قيمة الطلب',total-33),
-              line('التوصيل',25),
-              line('الخدمة',8),
-              const Divider(height:20),
-              line('الإجمالي النهائي',total,bold:true),
-            ]),
-          ),
+          Container(padding:const EdgeInsets.all(16),decoration:BoxDecoration(color:Theme.of(sheet).colorScheme.surface,borderRadius:BorderRadius.circular(20)),child:Column(children:[
+            line('قيمة الطلب',total-33),line('التوصيل',25),line('الخدمة',8),const Divider(height:20),line('الإجمالي النهائي',total,bold:true),
+          ])),
           const SizedBox(height:14),
-          FilledButton.icon(
-            onPressed:(){
-              Navigator.pop(c);
-              snack(c,'تم استلام طلبك وتجهيزه للتنفيذ 🎉');
+          SizedBox(width:double.infinity,child:FilledButton.icon(
+            onPressed:() async {
+              try{
+                setSheet(()=>payment=payment);
+                final id=await NovaSupabase.createCustomerOrder(
+                  restaurantName:restaurant.name,
+                  items:cart.map((x)=>{'name':x.m.name,'quantity':x.qty}).toList(),
+                  addressId:selected!['id'].toString(),
+                  paymentMethod:payment,
+                  notes:notes,
+                );
+                if(!sheet.mounted)return;
+                Navigator.pop(sheet);
+                onSuccess();
+                snack(c,'تم إنشاء الطلب الحقيقي #'+_shortId(id)+' بنجاح 🎉');
+              }catch(e){
+                if(sheet.mounted)snack(sheet,'تعذر إنشاء الطلب: $e');
+              }
             },
-            icon:const Icon(Icons.arrow_back_rounded),
+            icon:const Icon(Icons.check_circle_rounded),
             style:FilledButton.styleFrom(minimumSize:const Size.fromHeight(56),backgroundColor:orange),
             label:Text('تأكيد الطلب • '+total.toStringAsFixed(0)+' ج.م'),
-          ),
+          )),
         ]),
       )),
-    ),
+    )),
   );
+}
+
+Future<Map<String,dynamic>?> addAddressDialog(BuildContext c) async {
+  final label=TextEditingController(text:'المنزل');
+  final address=TextEditingController();
+  Map<String,dynamic>? result;
+  await showDialog(context:c,builder:(dialog)=>AlertDialog(
+    title:const Text('إضافة عنوان'),
+    content:Column(mainAxisSize:MainAxisSize.min,children:[
+      TextField(controller:label,decoration:const InputDecoration(labelText:'اسم العنوان')),
+      const SizedBox(height:10),
+      TextField(controller:address,maxLines:3,decoration:const InputDecoration(labelText:'العنوان بالتفصيل')),
+    ]),
+    actions:[
+      TextButton(onPressed:()=>Navigator.pop(dialog),child:const Text('إلغاء')),
+      FilledButton(onPressed:() async {
+        if(address.text.trim().isEmpty){snack(dialog,'اكتب العنوان بالتفصيل');return;}
+        try{
+          result=await NovaSupabase.createAddress(label:label.text.trim().isEmpty?'المنزل':label.text.trim(),address:address.text.trim());
+          if(dialog.mounted)Navigator.pop(dialog);
+        }catch(e){if(dialog.mounted)snack(dialog,'تعذر حفظ العنوان: $e');}
+      },child:const Text('حفظ')),
+    ],
+  ));
+  label.dispose();address.dispose();
+  return result;
 }
