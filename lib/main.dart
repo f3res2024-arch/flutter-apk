@@ -1442,10 +1442,9 @@ class _HomeState extends State<Home>{
       child:ClipRRect(
         borderRadius:BorderRadius.circular(28),
         child:Stack(fit:StackFit.expand,children:[
-          if((appMedia['home_hero_image']??'').isNotEmpty)
-            Image.network((appMedia['home_hero_image']??''),fit:BoxFit.cover,errorBuilder:(_,__,___)=>Image.asset('assets/nova_rider.webp',fit:BoxFit.cover)),
-          else
-            Image.asset('assets/nova_rider.webp',fit:BoxFit.cover),
+          (appMedia['home_hero_image']??'').isNotEmpty
+              ? Image.network((appMedia['home_hero_image']??''),fit:BoxFit.cover,errorBuilder:(_,__,___)=>Image.asset('assets/nova_rider.webp',fit:BoxFit.cover))
+              : Image.asset('assets/nova_rider.webp',fit:BoxFit.cover),
           const DecoratedBox(decoration:BoxDecoration(gradient:LinearGradient(begin:Alignment.topCenter,end:Alignment.bottomCenter,colors:[Color(0x22000000),Color(0xD9000000)]))),
           Positioned(right:18,top:18,child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
             Text(appCopy['home_hero_subtitle']??'كل اللي نفسك فيه…',style:const TextStyle(color:Colors.white70)),
