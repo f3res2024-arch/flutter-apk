@@ -296,20 +296,191 @@ class _NovaOwnerControlCenterState extends State<NovaOwnerControlCenter>{
 }
 
 class NovaMenuManager extends StatefulWidget{
-  final Map<String,dynamic> restaurant;final List<Map<String,dynamic>> items;final Future<void> Function() onRefresh;
+  final Map<String,dynamic> restaurant;
+  final List<Map<String,dynamic>> items;
+  final Future<void> Function() onRefresh;
   const NovaMenuManager({super.key,required this.restaurant,required this.items,required this.onRefresh});
   @override State<NovaMenuManager> createState()=>_NovaMenuManagerState();
 }
 class _NovaMenuManagerState extends State<NovaMenuManager>{
   late List<Map<String,dynamic>> items;
   @override void initState(){super.initState();items=[...widget.items];}
-  Future<void> reload()async{final x=await NovaSupabase.allRestaurantMenu(widget.restaurant['id'].toString());if(mounted)setState(()=>items=x);}
-  Future<void> edit(Map<String,dynamic> x)async{
-    final n=TextEditingController(text:(x['name']??'').toString()),p=TextEditingController(text:(x['price']??0).toString()),d=TextEditingController(text:(x['description']??'').toString());
-    await showDialog(context:context,builder:(c)=>AlertDialog(title:const Text('تعديل المنتج'),content:Column(mainAxisSize:MainAxisSize.min,children:[TextField(controller:n,decoration:const InputDecoration(labelText:'الاسم')),TextField(controller:d,decoration:const InputDecoration(labelText:'الوصف')),TextField(controller:p,keyboardType:TextInputType.number,decoration:const InputDecoration(labelText:'السعر'))]),actions:[TextButton(onPressed:()=>Navigator.pop(c),child:const Text('إلغاء')),FilledButton(onPressed:()async{await NovaSupabase.updateMenuItem(x['id'].toString(),name:n.text,description:d.text,price:double.tryParse(p.text)??0);if(c.mounted)Navigator.pop(c);await reload();await widget.onRefresh();},child:const Text('حفظ'))]));
+  Future<void> reload()async{
+    final x=await NovaSupabase.allRestaurantMenu(widget.restaurant['id'].toString());
+    if(mounted)setState(()=>items=x);
+  }
+  Future<void> add()async{
+    final n=TextEditingController(),p=TextEditingController(),d=TextEditingController();
+    Uint8List? imageBytes;
+    await showModalBottomSheet(
+      context:context,isScrollControlled:true,showDragHandle:true,backgroundColor:Colors.transparent,
+      builder:(sheet)=>StatefulBuilder(builder:(sheet,setSheet)=>Directionality(
+        textDirection:TextDirection.rtl,
+        child:SafeArea(child:Container(
+          margin:const EdgeInsets.only(top:28),
+          padding:EdgeInsets.fromLTRB(18,10,18,18+MediaQuery.viewInsetsOf(sheet).bottom),
+          decoration:const BoxDecoration(color:Colors.white,borderRadius:BorderRadius.vertical(top:Radius.circular(34))),
+          child:Column(mainAxisSize:MainAxisSize.min,children:[
+            Row(children:[
+              Container(width:48,height:48,decoration:BoxDecoration(color:ownerOrange.withValues(alpha:.1),borderRadius:BorderRadius.circular(16)),child:const Icon(Icons.add_a_photo_rounded,color:ownerOrange)),
+              const SizedBox(width:12),
+              const Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
+                Text('إضافة منتج للمنيو',style:TextStyle(fontSize:23,fontWeight:FontWeight.w900)),
+                Text('أضف صورة ووصف وسعر وتوفر المنتج.',style:TextStyle(color:ownerMuted,fontSize:11)),
+              ])),
+            ]),
+            const SizedBox(height:14),
+            ConstrainedBox(
+              constraints:BoxConstraints(maxHeight:MediaQuery.sizeOf(sheet).height*.58),
+              child:SingleChildScrollView(child:Column(children:[
+                TextField(controller:n,decoration:const InputDecoration(labelText:'اسم المنتج')),
+                const SizedBox(height:10),
+                TextField(controller:d,maxLines:3,decoration:const InputDecoration(labelText:'الوصف')),
+                const SizedBox(height:10),
+                TextField(controller:p,keyboardType:TextInputType.number,decoration:const InputDecoration(labelText:'السعر بالجنيه')),
+                const SizedBox(height:12),
+                if(imageBytes!=null)
+                  ClipRRect(borderRadius:BorderRadius.circular(20),child:Image.memory(imageBytes!,height:160,width:double.infinity,fit:BoxFit.cover))
+                else
+                  Container(height:130,width:double.infinity,decoration:BoxDecoration(color:const Color(0xFFF7F7F8),borderRadius:BorderRadius.circular(20)),child:const Icon(Icons.add_photo_alternate_rounded,size:45,color:ownerOrange)),
+                const SizedBox(height:8),
+                OutlinedButton.icon(
+                  onPressed:()async{
+                    final pick=await ImagePicker().pickImage(source:ImageSource.gallery,imageQuality:92,maxWidth:2200);
+                    if(pick==null)return;
+                    final bytes=await pick.readAsBytes();
+                    if(sheet.mounted)setSheet(()=>imageBytes=bytes);
+                  },
+                  icon:const Icon(Icons.photo_library_outlined),
+                  label:const Text('اختيار صورة المنتج'),
+                ),
+              ])),
+            ),
+            const SizedBox(height:10),
+            Row(children:[
+              Expanded(child:OutlinedButton(onPressed:()=>Navigator.pop(sheet),child:const Text('إلغاء'))),
+              const SizedBox(width:10),
+              Expanded(child:FilledButton.icon(
+                onPressed:()async{
+                  try{
+                    final price=double.tryParse(p.text)??0;
+                    if(n.text.trim().isEmpty||price<=0)throw Exception('اكتب اسم المنتج والسعر.');
+                    final id=await NovaSupabase.addMenuItemFull(widget.restaurant['id'].toString(),name:n.text,description:d.text,price:price);
+                    if(imageBytes!=null){
+                      final url=await NovaSupabase.uploadMenuImage(id,imageBytes!);
+                      if(url!=null)await NovaSupabase.updateMenuItem(id,imageUrl:url);
+                    }
+                    if(sheet.mounted)Navigator.pop(sheet);
+                    await reload();await widget.onRefresh();
+                  }catch(e){
+                    if(sheet.mounted)ScaffoldMessenger.of(sheet).showSnackBar(SnackBar(content:Text('تعذر الحفظ: '+e.toString())));
+                  }
+                },
+                icon:const Icon(Icons.check_rounded),label:const Text('إضافة المنتج'),
+              )),
+            ]),
+          ]),
+        )),
+      )),
+    );
     n.dispose();p.dispose();d.dispose();
   }
-  @override Widget build(BuildContext c)=>Directionality(textDirection:TextDirection.rtl,child:Scaffold(appBar:AppBar(title:Text((widget.restaurant['name']??'المنيو').toString())),body:ListView(padding:const EdgeInsets.all(16),children:items.map((x)=>Card(child:ListTile(title:Text((x['name']??'').toString()),subtitle:Text((x['price']??0).toString()+' ج.م'),trailing:Wrap(children:[Switch(value:x['is_available']==true,onChanged:(b)async{await NovaSupabase.setMenuItemAvailability(x['id'].toString(),b);await reload();}),IconButton(onPressed:()=>edit(x),icon:const Icon(Icons.edit)),IconButton(onPressed:()async{await NovaSupabase.deleteMenuItem(x['id'].toString());await reload();await widget.onRefresh();},icon:const Icon(Icons.delete_outline,color:Colors.red))])))).toList())));
+  Future<void> edit(Map<String,dynamic> x)async{
+    final n=TextEditingController(text:(x['name']??'').toString());
+    final p=TextEditingController(text:(x['price']??0).toString());
+    final d=TextEditingController(text:(x['description']??'').toString());
+    Uint8List? imageBytes;
+    await showModalBottomSheet(
+      context:context,isScrollControlled:true,showDragHandle:true,backgroundColor:Colors.transparent,
+      builder:(sheet)=>StatefulBuilder(builder:(sheet,setSheet)=>Directionality(textDirection:TextDirection.rtl,child:SafeArea(child:Container(
+        margin:const EdgeInsets.only(top:28),padding:EdgeInsets.fromLTRB(18,10,18,18+MediaQuery.viewInsetsOf(sheet).bottom),
+        decoration:const BoxDecoration(color:Colors.white,borderRadius:BorderRadius.vertical(top:Radius.circular(34))),
+        child:Column(mainAxisSize:MainAxisSize.min,children:[
+          Row(children:[const Icon(Icons.edit_rounded,color:ownerOrange,size:30),const SizedBox(width:10),Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
+            const Text('تعديل المنتج',style:TextStyle(fontSize:23,fontWeight:FontWeight.w900)),
+            Text((x['name']??'').toString(),style:const TextStyle(color:ownerMuted,fontSize:11)),
+          ]))]),
+          const SizedBox(height:14),
+          ConstrainedBox(constraints:BoxConstraints(maxHeight:MediaQuery.sizeOf(sheet).height*.58),child:SingleChildScrollView(child:Column(children:[
+            TextField(controller:n,decoration:const InputDecoration(labelText:'اسم المنتج')),
+            const SizedBox(height:10),TextField(controller:d,maxLines:3,decoration:const InputDecoration(labelText:'الوصف')),
+            const SizedBox(height:10),TextField(controller:p,keyboardType:TextInputType.number,decoration:const InputDecoration(labelText:'السعر')),
+            const SizedBox(height:12),
+            if(imageBytes!=null)
+              ClipRRect(borderRadius:BorderRadius.circular(20),child:Image.memory(imageBytes!,height:160,width:double.infinity,fit:BoxFit.cover))
+            else if((x['image_url']??'').toString().isNotEmpty)
+              ClipRRect(borderRadius:BorderRadius.circular(20),child:Image.network(x['image_url'].toString(),height:160,width:double.infinity,fit:BoxFit.cover,errorBuilder:(_,__,___)=>Container(height:160,color:const Color(0xFFF1F2F4),child:const Icon(Icons.image_not_supported_rounded,size:40,color:ownerMuted))))
+            else
+              Container(height:130,width:double.infinity,decoration:BoxDecoration(color:const Color(0xFFF7F7F8),borderRadius:BorderRadius.circular(20)),child:const Icon(Icons.image_rounded,size:45,color:ownerOrange)),
+            const SizedBox(height:8),
+            OutlinedButton.icon(onPressed:()async{
+              final pick=await ImagePicker().pickImage(source:ImageSource.gallery,imageQuality:92,maxWidth:2200);
+              if(pick==null)return;
+              final bytes=await pick.readAsBytes();
+              if(sheet.mounted)setSheet(()=>imageBytes=bytes);
+            },icon:const Icon(Icons.photo_library_outlined),label:const Text('تغيير صورة المنتج')),
+          ]))),
+          const SizedBox(height:10),
+          Row(children:[
+            Expanded(child:OutlinedButton(onPressed:()=>Navigator.pop(sheet),child:const Text('إلغاء'))),
+            const SizedBox(width:10),
+            Expanded(child:FilledButton.icon(onPressed:()async{
+              try{
+                final price=double.tryParse(p.text)??0;
+                if(n.text.trim().isEmpty||price<=0)throw Exception('اكتب اسم المنتج والسعر.');
+                await NovaSupabase.updateMenuItem(x['id'].toString(),name:n.text,description:d.text,price:price);
+                if(imageBytes!=null){
+                  final url=await NovaSupabase.uploadMenuImage(x['id'].toString(),imageBytes!);
+                  if(url!=null)await NovaSupabase.updateMenuItem(x['id'].toString(),imageUrl:url);
+                }
+                if(sheet.mounted)Navigator.pop(sheet);
+                await reload();await widget.onRefresh();
+              }catch(e){
+                if(sheet.mounted)ScaffoldMessenger.of(sheet).showSnackBar(SnackBar(content:Text('تعذر الحفظ: '+e.toString())));
+              }
+            },icon:const Icon(Icons.check_rounded),label:const Text('حفظ التعديلات'))),
+          ]),
+        ]),
+      )))),
+    );
+    n.dispose();p.dispose();d.dispose();
+  }
+  Future<void> remove(Map<String,dynamic> x)async{
+    final ok=await showDialog<bool>(context:context,builder:(d)=>AlertDialog(
+      title:const Text('إخفاء المنتج؟'),
+      content:Text('سيختفي "'+(x['name']??'المنتج').toString()+'" من منيو العملاء.'),
+      actions:[TextButton(onPressed:()=>Navigator.pop(d,false),child:const Text('إلغاء')),FilledButton(onPressed:()=>Navigator.pop(d,true),child:const Text('إخفاء'))],
+    ));
+    if(ok==true){await NovaSupabase.deleteMenuItem(x['id'].toString());await reload();await widget.onRefresh();}
+  }
+  Widget itemCard(Map<String,dynamic> x){
+    final available=x['is_available']==true;
+    return Container(margin:const EdgeInsets.only(bottom:12),decoration:BoxDecoration(color:Colors.white,borderRadius:BorderRadius.circular(24),border:Border.all(color:const Color(0xFFE5E7EB))),child:Column(crossAxisAlignment:CrossAxisAlignment.stretch,children:[
+      Stack(children:[
+        ClipRRect(borderRadius:const BorderRadius.vertical(top:Radius.circular(24)),child:Image.network((x['image_url']??'').toString(),height:145,width:double.infinity,fit:BoxFit.cover,errorBuilder:(_,__,___)=>Container(height:145,color:const Color(0xFFF4F5F7),child:const Icon(Icons.restaurant_menu_rounded,size:52,color:ownerOrange)))),
+        Positioned(right:12,top:12,child:Container(padding:const EdgeInsets.symmetric(horizontal:10,vertical:7),decoration:BoxDecoration(color:Colors.white.withValues(alpha:.95),borderRadius:BorderRadius.circular(13)),child:Row(children:[Icon(Icons.circle,size:9,color:available?Colors.green:Colors.redAccent),const SizedBox(width:5),Text(available?'متاح الآن':'مخفي',style:const TextStyle(fontSize:10,fontWeight:FontWeight.w900))]))),
+      ]),
+      Padding(padding:const EdgeInsets.fromLTRB(14,12,14,14),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
+        Text((x['name']??'منتج').toString(),style:const TextStyle(fontSize:16,fontWeight:FontWeight.w900)),const SizedBox(height:4),
+        Text((x['description']??'').toString(),maxLines:2,overflow:TextOverflow.ellipsis,style:const TextStyle(color:ownerMuted,fontSize:10)),const SizedBox(height:8),
+        Row(children:[Text((x['price']??0).toString()+' ج.م',style:const TextStyle(color:ownerOrange,fontSize:17,fontWeight:FontWeight.w900)),const Spacer(),Switch(value:available,onChanged:(b)async{await NovaSupabase.setMenuItemAvailability(x['id'].toString(),b);await reload();await widget.onRefresh();}),IconButton(onPressed:()=>edit(x),tooltip:'تعديل',icon:const Icon(Icons.edit_rounded,color:ownerOrange)),IconButton(onPressed:()=>remove(x),tooltip:'إخفاء',icon:const Icon(Icons.delete_outline_rounded,color:Colors.redAccent))]),
+      ])),
+    ]));
+  }
+  @override Widget build(BuildContext c)=>Directionality(textDirection:TextDirection.rtl,child:Scaffold(
+    backgroundColor:const Color(0xFFF7F8FA),
+    appBar:AppBar(
+      title:Text((widget.restaurant['name']??'المنيو').toString(),style:const TextStyle(fontWeight:FontWeight.w900)),
+      actions:[IconButton(onPressed:reload,icon:const Icon(Icons.refresh_rounded)),Padding(padding:const EdgeInsets.only(left:8),child:IconButton(onPressed:add,style:IconButton.styleFrom(backgroundColor:ownerOrange,foregroundColor:Colors.white),icon:const Icon(Icons.add_rounded)))],
+    ),
+    body:items.isEmpty
+      ? Center(child:Column(mainAxisSize:MainAxisSize.min,children:[const Icon(Icons.restaurant_menu_rounded,size:70,color:ownerOrange),const SizedBox(height:10),const Text('المنيو فاضية',style:TextStyle(fontSize:20,fontWeight:FontWeight.w900)),const SizedBox(height:5),const Text('ابدأ بإضافة أول منتج بالصور والسعر.',style:TextStyle(color:ownerMuted)),const SizedBox(height:16),FilledButton.icon(onPressed:add,icon:const Icon(Icons.add),label:const Text('إضافة أول منتج'))])
+      :GridView.builder(
+          padding:const EdgeInsets.all(16),
+          gridDelegate:const SliverGridDelegateWithMaxCrossAxisExtent(maxCrossAxisExtent:430,mainAxisExtent:330,crossAxisSpacing:12,mainAxisSpacing:12),
+          itemCount:items.length,itemBuilder:(_,i)=>itemCard(items[i]),
+        ),
+  ));
 }
 class NovaOwnerChat extends StatefulWidget{final String conversationId;const NovaOwnerChat({super.key,required this.conversationId});@override State<NovaOwnerChat> createState()=>_NovaOwnerChatState();}
 class _NovaOwnerChatState extends State<NovaOwnerChat>{
