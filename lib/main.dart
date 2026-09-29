@@ -491,22 +491,139 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>{
   bool busy=false;
   final email=TextEditingController();
   @override void dispose(){email.dispose();super.dispose();}
+
   Future<void> send() async {
     final e=email.text.trim();
     if(e.isEmpty||!e.contains('@')){snack(context,'اكتب بريد إلكتروني صحيح');return;}
     setState(()=>busy=true);
     try{
       await NovaSupabase.sendPasswordReset(e);
-      if(mounted)await showDialog(context:context,builder:(_)=>AlertDialog(title:const Text('تم إرسال رابط الاستعادة'),content:Text('لو البريد $e مسجل، هتوصلك رسالة استعادة كلمة المرور. افتح الرابط من نفس الهاتف للعودة إلى نوفا.'),actions:[TextButton(onPressed:()=>Navigator.pop(context),child:const Text('حسناً'))]));
-    }on AuthException catch(e){if(mounted)snack(context,_authMessage(e.message));}
-    catch(_){if(mounted)snack(context,'تعذر إرسال رسالة الاستعادة. حاول مرة أخرى.');}
-    finally{if(mounted)setState(()=>busy=false);}
+      if(!mounted)return;
+      await Navigator.push(
+        context,
+        MaterialPageRoute(builder:(_)=>PasswordRecoveryOtpScreen(email:e,role:widget.role)),
+      );
+    }on AuthException catch(e){
+      if(mounted)snack(context,_authMessage(e.message));
+    }catch(_){
+      if(mounted)snack(context,'تعذر إرسال رمز الاستعادة. حاول مرة أخرى.');
+    }finally{
+      if(mounted)setState(()=>busy=false);
+    }
   }
+
   @override Widget build(BuildContext c)=>AuthScaffold(
-    onBack:()=>Navigator.pop(c),eyebrow:'استعادة الحساب',title:'نسيت كلمة المرور؟',subtitle:'اكتب بريدك وسنرسل لك رابطاً آمناً لإعادة تعيينها.',
+    onBack:()=>Navigator.pop(c),
+    eyebrow:'استعادة الحساب',
+    title:'نسيت كلمة المرور؟',
+    subtitle:'اكتب بريدك وسنرسل لك رمزاً من 6 أرقام لإعادة تعيين كلمة المرور.',
     child:Column(children:[
       AuthField(controller:email,label:'البريد الإلكتروني',hint:'name@example.com',icon:Icons.mail_outline_rounded,keyboardType:TextInputType.emailAddress),
-      const SizedBox(height:18),FilledButton(onPressed:busy?null:send,child:busy?const SizedBox(width:22,height:22,child:CircularProgressIndicator(strokeWidth:2,color:Colors.white)):const Text('إرسال رابط الاستعادة')),
+      const SizedBox(height:18),
+      FilledButton(
+        onPressed:busy?null:send,
+        child:busy?const SizedBox(width:22,height:22,child:CircularProgressIndicator(strokeWidth:2,color:Colors.white)):const Text('إرسال رمز الاستعادة'),
+      ),
+    ]),
+  );
+}
+
+class PasswordRecoveryOtpScreen extends StatefulWidget{
+  final String email;
+  final UserRole role;
+  const PasswordRecoveryOtpScreen({super.key,required this.email,required this.role});
+  @override State<PasswordRecoveryOtpScreen> createState()=>_PasswordRecoveryOtpScreenState();
+}
+class _PasswordRecoveryOtpScreenState extends State<PasswordRecoveryOtpScreen>{
+  final code=TextEditingController();
+  bool busy=false,resending=false;
+  @override void dispose(){code.dispose();super.dispose();}
+
+  Future<void> verify() async {
+    final token=code.text.trim();
+    if(token.length!=6){snack(context,'اكتب رمز الاستعادة المكوّن من 6 أرقام');return;}
+    setState(()=>busy=true);
+    try{
+      final res=await NovaSupabase.verifyPasswordRecoveryOtp(email:widget.email,token:token);
+      if(res.session==null)throw const AuthException('تعذر إنشاء جلسة الاستعادة.');
+      if(!mounted)return;
+      await Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder:(_)=>UpdatePasswordScreen(onDone:()=>Navigator.pop(context)),
+        ),
+      );
+    }on AuthException catch(e){
+      if(mounted)snack(context,_authMessage(e.message));
+    }catch(_){
+      if(mounted)snack(context,'رمز الاستعادة غير صحيح أو انتهت صلاحيته.');
+    }finally{
+      if(mounted)setState(()=>busy=false);
+    }
+  }
+
+  Future<void> resend() async {
+    if(resending)return;
+    setState(()=>resending=true);
+    try{
+      await NovaSupabase.resendPasswordResetOtp(widget.email);
+      if(mounted)snack(context,'تم إرسال رمز استعادة جديد إلى بريدك الإلكتروني.');
+    }on AuthException catch(e){
+      if(mounted)snack(context,_authMessage(e.message));
+    }catch(_){
+      if(mounted)snack(context,'تعذر إرسال رمز جديد حالياً.');
+    }finally{
+      if(mounted)setState(()=>resending=false);
+    }
+  }
+
+  @override Widget build(BuildContext c)=>AuthScaffold(
+    onBack:()=>Navigator.pop(c),
+    eyebrow:'استعادة الحساب',
+    title:'أدخل رمز الاستعادة',
+    subtitle:'تم إرسال رمز مكوّن من 6 أرقام إلى بريدك الإلكتروني.',
+    child:Column(children:[
+      Container(
+        width:double.infinity,
+        padding:const EdgeInsets.all(16),
+        decoration:BoxDecoration(color:orange.withValues(alpha:.07),borderRadius:BorderRadius.circular(18)),
+        child:Row(children:[
+          const Icon(Icons.mark_email_read_rounded,color:orange),
+          const SizedBox(width:10),
+          Expanded(child:Text(widget.email,textDirection:TextDirection.ltr,textAlign:TextAlign.left,style:const TextStyle(fontWeight:FontWeight.w800))),
+        ]),
+      ),
+      const SizedBox(height:18),
+      TextField(
+        controller:code,
+        autofocus:true,
+        keyboardType:TextInputType.number,
+        textDirection:TextDirection.ltr,
+        textAlign:TextAlign.center,
+        maxLength:6,
+        inputFormatters:[FilteringTextInputFormatter.digitsOnly],
+        style:const TextStyle(fontSize:28,fontWeight:FontWeight.w900,letterSpacing:8),
+        decoration:const InputDecoration(
+          labelText:'رمز الاستعادة',
+          hintText:'000000',
+          counterText:'',
+          prefixIcon:Icon(Icons.password_rounded),
+        ),
+        onSubmitted:(_)=>verify(),
+      ),
+      const SizedBox(height:18),
+      FilledButton(
+        onPressed:busy?null:verify,
+        child:busy?const SizedBox(width:22,height:22,child:CircularProgressIndicator(strokeWidth:2,color:Colors.white)):const Text('متابعة'),
+      ),
+      const SizedBox(height:10),
+      TextButton.icon(
+        onPressed:resending?null:resend,
+        icon:resending?const SizedBox(width:16,height:16,child:CircularProgressIndicator(strokeWidth:2,color:orange)):const Icon(Icons.refresh_rounded),
+        label:const Text('إرسال رمز جديد'),
+      ),
+      const SizedBox(height:4),
+      const Text('لو لم يصل الرمز، راجع البريد غير المرغوب فيه وتأكد من صحة البريد.',textAlign:TextAlign.center,style:TextStyle(color:muted,fontSize:11,height:1.5)),
     ]),
   );
 }
