@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:typed_data';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -390,7 +391,7 @@ class NovaSupabase {
     await client.from('support_messages').insert({'conversation_id':conversationId,'sender_type':'customer','sender_id':currentUser!.id,'body':text});
     final conversation=await client.from('support_conversations').select('status').eq('id',conversationId).single();
     if(conversation['status']=='ai'){
-      await client.functions.invoke('nova-ai-support-v2', body:{'conversation_id':conversationId,'message':text});
+      unawaited(client.functions.invoke('nova-ai-support-v2', body:{'conversation_id':conversationId,'message':text}).catchError((_) => FunctionResponse(data:null, status: 500)));
     }
   }
 
