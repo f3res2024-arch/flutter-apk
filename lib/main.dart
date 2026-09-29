@@ -648,10 +648,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>{
     try{
       await NovaSupabase.sendPasswordReset(e);
       if(!mounted)return;
-      await Navigator.push(
-        context,
-        MaterialPageRoute(builder:(_)=>PasswordRecoveryOtpScreen(email:e,role:widget.role)),
-      );
+      snack(context,'تم إرسال رابط استعادة كلمة المرور إلى بريدك الإلكتروني. افتح الرابط لإكمال الاستعادة.');
     }on AuthException catch(e){
       if(mounted)snack(context,_authMessage(e.message));
     }catch(_){
@@ -665,7 +662,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>{
     onBack:()=>Navigator.pop(c),
     eyebrow:'استعادة الحساب',
     title:'نسيت كلمة المرور؟',
-    subtitle:'اكتب بريدك وسنرسل لك رمزاً من 6 أرقام لإعادة تعيين كلمة المرور.',
+    subtitle:'اكتب بريدك وسنرسل لك رابطاً آمناً لإعادة تعيين كلمة المرور.',
     child:Column(children:[
       AuthField(controller:email,label:'البريد الإلكتروني',hint:'name@example.com',icon:Icons.mail_outline_rounded,keyboardType:TextInputType.emailAddress),
       const SizedBox(height:18),
