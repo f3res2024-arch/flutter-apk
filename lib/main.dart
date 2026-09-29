@@ -413,7 +413,7 @@ class LoginScreen extends StatefulWidget {
   @override State<LoginScreen> createState()=>_LoginScreenState();
 }
 class _LoginScreenState extends State<LoginScreen>{
-  bool hide=true,busy=false,googleBusy=false;
+  bool hide=true,busy=false;
   final email=TextEditingController(),pass=TextEditingController();
   @override void dispose(){email.dispose();pass.dispose();super.dispose();}
   Future<void> submit() async {
@@ -434,33 +434,25 @@ class _LoginScreenState extends State<LoginScreen>{
       if(mounted)snack(context,_authMessage(e.message));
     }catch(e){
       if(mounted)snack(context,'خطأ الاتصال: ${e.toString().replaceFirst('Exception: ', '')}');
-    }
-    finally{if(mounted)setState(()=>busy=false);}
-  }
-  Future<void> google() async {
-    setState(()=>googleBusy=true);
-    try{await NovaSupabase.signInWithGoogle();}
-    on AuthException catch(e){if(mounted)snack(context,_authMessage(e.message));}
-    catch(_){if(mounted)snack(context,'تعذر فتح تسجيل Google. تأكد من إعداد OAuth في Supabase.');}
-    finally{if(mounted)setState(()=>googleBusy=false);}
+    }finally{if(mounted)setState(()=>busy=false);}
   }
   @override Widget build(BuildContext c)=>AuthScaffold(
-    onBack:widget.onBack,eyebrow:'تسجيل الدخول',
+    onBack:widget.onBack,
+    eyebrow:'تسجيل الدخول',
     title:'مرحباً بك',
     subtitle:widget.role==UserRole.customer?'سجّل دخولك وخلّي أكلك علينا.':'سجّل دخولك واستقبل طلباتك بسهولة.',
     child:Column(children:[
       AuthField(controller:email,label:'البريد الإلكتروني',hint:'name@example.com',icon:Icons.mail_outline_rounded,keyboardType:TextInputType.emailAddress),
       const SizedBox(height:13),
       AuthField(controller:pass,label:'كلمة المرور',hint:'••••••••',icon:Icons.lock_outline_rounded,obscureText:hide,suffix:IconButton(onPressed:()=>setState(()=>hide=!hide),icon:Icon(hide?Icons.visibility_outlined:Icons.visibility_off_outlined))),
-      Align(alignment:Alignment.centerLeft,child:TextButton(onPressed:()=>Navigator.push(c,MaterialPageRoute(builder:(_)=>ForgotPasswordScreen(role:widget.role))),child:const Text('نسيت كلمة المرور؟',style:TextStyle(color:orange,fontWeight:FontWeight.w800)))),
+      Align(alignment:Alignment.centerRight,child:TextButton(onPressed:()=>Navigator.push(c,MaterialPageRoute(builder:(_)=>ForgotPasswordScreen(role:widget.role))),child:const Text('نسيت كلمة المرور؟',style:TextStyle(color:orange,fontWeight:FontWeight.w800)))),
       const SizedBox(height:3),
       FilledButton(onPressed:busy?null:submit,child:busy?const SizedBox(width:22,height:22,child:CircularProgressIndicator(strokeWidth:2,color:Colors.white)):const Text('تسجيل الدخول')),
       const SizedBox(height:18),
-      Row(children:[const Expanded(child:Divider()),Padding(padding:const EdgeInsets.symmetric(horizontal:12),child:Text('أو',style:TextStyle(color:muted,fontWeight:FontWeight.w700))),const Expanded(child:Divider())]),
-      const SizedBox(height:15),
-      OutlinedButton.icon(onPressed:googleBusy?null:google,icon:googleBusy?const SizedBox(width:18,height:18,child:CircularProgressIndicator(strokeWidth:2)):const _GoogleMark(),label:const Text('المتابعة باستخدام Google')),
-      const SizedBox(height:18),
-      Row(mainAxisAlignment:MainAxisAlignment.center,children:[const Text('ليس لديك حساب؟',style:TextStyle(color:muted)),TextButton(onPressed:()=>Navigator.push(c,MaterialPageRoute(builder:(_)=>SignupScreen(role:widget.role))),child:const Text('إنشاء حساب',style:TextStyle(color:orange,fontWeight:FontWeight.w900)))])
+      Row(mainAxisAlignment:MainAxisAlignment.center,children:[
+        const Text('ليس لديك حساب؟',style:TextStyle(color:muted)),
+        TextButton(onPressed:()=>Navigator.push(c,MaterialPageRoute(builder:(_)=>SignupScreen(role:widget.role))),child:const Text('إنشاء حساب',style:TextStyle(color:orange,fontWeight:FontWeight.w900))),
+      ]),
     ]),
   );
 }
@@ -812,18 +804,29 @@ class AuthScaffold extends StatelessWidget{
                     boxShadow:[BoxShadow(color:Colors.black.withValues(alpha:.16),blurRadius:30,offset:const Offset(0,18))],
                   ),
                   child:Column(
-                    crossAxisAlignment:CrossAxisAlignment.start,
+                    crossAxisAlignment:CrossAxisAlignment.stretch,
                     mainAxisAlignment:MainAxisAlignment.center,
                     children:[
-                      Container(
-                        padding:const EdgeInsets.symmetric(horizontal:11,vertical:7),
-                        decoration:BoxDecoration(color:orange.withValues(alpha:.10),borderRadius:BorderRadius.circular(30)),
-                        child:Text(eyebrow,style:const TextStyle(color:orange,fontSize:11,fontWeight:FontWeight.w900)),
+                      Row(
+                        crossAxisAlignment:CrossAxisAlignment.center,
+                        children:[
+                          Container(
+                            padding:const EdgeInsets.symmetric(horizontal:11,vertical:7),
+                            decoration:BoxDecoration(color:orange.withValues(alpha:.10),borderRadius:BorderRadius.circular(30)),
+                            child:Text(eyebrow,style:const TextStyle(color:orange,fontSize:11,fontWeight:FontWeight.w900)),
+                          ),
+                          const SizedBox(width:10),
+                          Expanded(
+                            child:Text(
+                              title,
+                              textAlign:TextAlign.right,
+                              style:const TextStyle(fontSize:30,fontWeight:FontWeight.w900,height:1.1),
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(height:14),
-                      Text(title,style:const TextStyle(fontSize:30,fontWeight:FontWeight.w900,height:1.1)),
                       const SizedBox(height:7),
-                      Text(subtitle,style:const TextStyle(color:muted,fontSize:13,height:1.5)),
+                      Text(subtitle,textAlign:TextAlign.right,style:const TextStyle(color:muted,fontSize:13,height:1.5)),
                       const SizedBox(height:23),
                       child,
                     ],
