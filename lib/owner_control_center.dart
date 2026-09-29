@@ -504,7 +504,7 @@ class _NovaMenuManagerState extends State<NovaMenuManager>{
       actions:[IconButton(onPressed:reload,icon:const Icon(Icons.refresh_rounded)),Padding(padding:const EdgeInsets.only(left:8),child:IconButton(onPressed:add,style:IconButton.styleFrom(backgroundColor:ownerOrange,foregroundColor:Colors.white),icon:const Icon(Icons.add_rounded)))],
     ),
     body:items.isEmpty
-      ? Center(child:Column(mainAxisSize:MainAxisSize.min,children:[const Icon(Icons.restaurant_menu_rounded,size:70,color:ownerOrange),const SizedBox(height:10),const Text('المنيو فاضية',style:TextStyle(fontSize:20,fontWeight:FontWeight.w900)),const SizedBox(height:5),const Text('ابدأ بإضافة أول منتج بالصور والسعر.',style:TextStyle(color:ownerMuted)),const SizedBox(height:16),FilledButton.icon(onPressed:add,icon:const Icon(Icons.add),label:const Text('إضافة أول منتج'))])
+      ? Center(child:Column(mainAxisSize:MainAxisSize.min,children:[const Icon(Icons.restaurant_menu_rounded,size:70,color:ownerOrange),const SizedBox(height:10),const Text('المنيو فاضية',style:TextStyle(fontSize:20,fontWeight:FontWeight.w900)),const SizedBox(height:5),const Text('ابدأ بإضافة أول منتج بالصور والسعر.',style:TextStyle(color:ownerMuted)),const SizedBox(height:16),FilledButton.icon(onPressed:add,icon:const Icon(Icons.add),label:const Text('إضافة أول منتج'))]))
       :GridView.builder(
           padding:const EdgeInsets.all(16),
           gridDelegate:const SliverGridDelegateWithMaxCrossAxisExtent(maxCrossAxisExtent:430,mainAxisExtent:330,crossAxisSpacing:12,mainAxisSpacing:12),
