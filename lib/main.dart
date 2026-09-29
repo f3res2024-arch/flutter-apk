@@ -1442,9 +1442,10 @@ class _HomeState extends State<Home>{
       child:ClipRRect(
         borderRadius:BorderRadius.circular(28),
         child:Stack(fit:StackFit.expand,children:[
-          (appMedia['home_hero_image']??'').isNotEmpty
-            ? Image.network(appMedia['home_hero_image']!,fit:BoxFit.cover,errorBuilder:(_,__,___)=>Image.asset('assets/nova_rider.webp',fit:BoxFit.cover))
-            : Image.asset('assets/nova_rider.webp',fit:BoxFit.cover),
+          if((appMedia['home_hero_image']??'').isNotEmpty)
+            Image.network((appMedia['home_hero_image']??''),fit:BoxFit.cover,errorBuilder:(_,__,___)=>Image.asset('assets/nova_rider.webp',fit:BoxFit.cover))
+          else
+            Image.asset('assets/nova_rider.webp',fit:BoxFit.cover),
           const DecoratedBox(decoration:BoxDecoration(gradient:LinearGradient(begin:Alignment.topCenter,end:Alignment.bottomCenter,colors:[Color(0x22000000),Color(0xD9000000)]))),
           Positioned(right:18,top:18,child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
             Text(appCopy['home_hero_subtitle']??'كل اللي نفسك فيه…',style:const TextStyle(color:Colors.white70)),
@@ -1515,13 +1516,13 @@ class _LivePromoCard extends StatelessWidget{
       }
     }
     if(type=='category' && value.isNotEmpty){
-      Navigator.push(c,MaterialPageRoute(builder:(_)=>CategoryPage(title:value,category:value,onAdd:(r,m)=>snack(c,'أضف الصنف للسلة من صفحة المطعم.'))));
+      Navigator.push(c,MaterialPageRoute(builder:(_)=>CategoryPage(title:value!,category:value!,onAdd:(r,m)=>snack(c,'أضف الصنف للسلة من صفحة المطعم.'))));
       return;
     }
     if(type=='map'){Navigator.push(c,MaterialPageRoute(builder:(_)=>const MapPage()));return;}
     if(type=='home'){Navigator.popUntil(c,(route)=>route.isFirst);return;}
     final coupon=offer['coupons'] is Map?Map<String,dynamic>.from(offer['coupons'] as Map):null;
-    final code=coupon?['code']?.toString();
+    final code=coupon==null?null:coupon['code']?.toString();
     final codeText=code??'';
     showDialog(context:c,builder:(_)=>AlertDialog(
       title:Text((offer['title']??'عرض نوفا').toString()),
