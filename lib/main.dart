@@ -897,10 +897,6 @@ class AuthField extends StatelessWidget{
   }
 }
 
-class _GoogleMark extends StatelessWidget{
-  const _GoogleMark();
-  @override Widget build(BuildContext c)=>Image.network('https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.png',width:22,height:22,errorBuilder:(_,__,___)=>const Text('G',style:TextStyle(color:Color(0xFF4285F4),fontWeight:FontWeight.w900,fontSize:19)));
-}
 String _authMessage(String message){
   final m=message.toLowerCase();
   if(m.contains('إعدادات الخادم غير موجودة'))return 'نسخة التطبيق الحالية لا تحتوي إعدادات الخادم. ثبّت أحدث APK.';
