@@ -90,7 +90,7 @@ class _NovaOwnerControlCenterState extends State<NovaOwnerControlCenter>{
             final x=await ImagePicker().pickImage(source:ImageSource.gallery,imageQuality:88,maxWidth:1800);
             if(x==null)return;
             final bytes=await x.readAsBytes();
-            if(d.mounted)setD(()=>{imageBytes=bytes,imageName=x.name});
+            if(d.mounted)setD(() { imageBytes=bytes; imageName=x.name; });
           },
           icon:const Icon(Icons.image_outlined),
           label:Text(imageName==null?'إضافة صورة للعرض':'تغيير الصورة'),
@@ -120,7 +120,7 @@ class _NovaOwnerControlCenterState extends State<NovaOwnerControlCenter>{
             final p=await ImagePicker().pickImage(source:ImageSource.gallery,imageQuality:88,maxWidth:1800);
             if(p==null)return;
             final bytes=await p.readAsBytes();
-            if(d.mounted)setD(()=>{imageBytes=bytes,imageName=p.name});
+            if(d.mounted)setD(() { imageBytes=bytes; imageName=p.name; });
           },
           icon:const Icon(Icons.image_outlined),
           label:Text(imageName==null?'تغيير/إضافة صورة':'تغيير الصورة'),
