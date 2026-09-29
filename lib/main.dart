@@ -1494,11 +1494,12 @@ class _LivePromoCard extends StatelessWidget{
     if(type=='home'){Navigator.popUntil(c,(route)=>route.isFirst);return;}
     final coupon=offer['coupons'] is Map?Map<String,dynamic>.from(offer['coupons'] as Map):null;
     final code=coupon?['code']?.toString();
+    final codeText=code??'';
     showDialog(context:c,builder:(_)=>AlertDialog(
       title:Text((offer['title']??'عرض نوفا').toString()),
-      content:Text(code==null?(offer['subtitle']??'').toString():'كود العرض: '+code+'\n\n'+(offer['subtitle']??'').toString()),
+      content:Text(codeText.isEmpty?(offer['subtitle']??'').toString():'كود العرض: '+codeText+'\n\n'+(offer['subtitle']??'').toString()),
       actions:[
-        if(code!=null)TextButton(onPressed:(){Clipboard.setData(ClipboardData(text:code));Navigator.pop(c);snack(c,'تم نسخ الكود '+code);},child:const Text('نسخ')),
+        if(codeText.isNotEmpty)TextButton(onPressed:(){Clipboard.setData(ClipboardData(text:codeText));Navigator.pop(c);snack(c,'تم نسخ الكود '+codeText);},child:const Text('نسخ')),
         TextButton(onPressed:()=>Navigator.pop(c),child:const Text('إغلاق')),
       ],
     ));
