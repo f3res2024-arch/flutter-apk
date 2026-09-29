@@ -1,11 +1,13 @@
 import 'dart:async';
 import 'dart:typed_data';
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class NovaSupabase {
   static const url = String.fromEnvironment('SUPABASE_URL');
   static const key = String.fromEnvironment('SUPABASE_PUBLISHABLE_KEY');
-  static const authRedirectUrl = 'nova://auth-callback';
+  static const mobileAuthRedirectUrl = 'nova://auth-callback';
+  static String? get authRedirectUrl => kIsWeb ? null : mobileAuthRedirectUrl;
 
   static bool _initialized = false;
   static Object? _initializationError;
