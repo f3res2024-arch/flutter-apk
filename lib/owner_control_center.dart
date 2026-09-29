@@ -184,33 +184,63 @@ class _NovaOwnerControlCenterState extends State<NovaOwnerControlCenter>{
   ]);
   Widget ordersPage()=>ListView(children:[pageTitle('إدارة الطلبات','متابعة وتغيير حالات الطلبات.'),const SizedBox(height:14),Row(children:[Expanded(child:metric('كل الطلبات',orders.length.toString(),Icons.receipt_long,ownerOrange)),const SizedBox(width:8),Expanded(child:metric('نشطة',active.toString(),Icons.bolt,Colors.green))]),const SizedBox(height:12),...orders.map((o)=>card(ListTile(title:Text(s(o,'restaurant_name'),style:const TextStyle(fontWeight:FontWeight.w900)),subtitle:Text('#'+id(o['id'])+' • '+s(o,'customer_name')),leading:const Icon(Icons.receipt_long,color:ownerOrange),trailing:PopupMenuButton<String>(onSelected:(x)async{await NovaSupabase.ownerUpdateOrderStatus(s(o,'id'),x);await refresh();},itemBuilder:(_)=>const['pending','accepted','preparing','ready','picked_up','on_the_way','delivered','cancelled'].map((x)=>PopupMenuItem(value:x,child:Text(x))).toList(),child:Chip(label:Text(s(o,'status')))))) )]);
   Widget restaurantsPage()=>ListView(children:[
-    pageTitle('المطاعم والفروع','إضافة وتعديل المطاعم والفروع وإدارة منيو كل مطعم.'),
+    pageTitle('المطاعم والفروع','إدارة الصور، البيانات، الفروع والمنيو من مكان واحد.'),
     const SizedBox(height:14),
-    FilledButton.icon(onPressed:addRestaurant,icon:const Icon(Icons.add_business),label:const Text('إضافة مطعم جديد')),
-    const SizedBox(height:12),
-    ...restaurants.map((r)=>card(Column(children:[
-      Row(children:[
-        ClipRRect(borderRadius:BorderRadius.circular(16),child:Image.network((r['cover_url']??r['logo_url']??'').toString(),width:70,height:70,fit:BoxFit.cover,errorBuilder:(_,error,stack)=>Container(width:70,height:70,color:const Color(0xFFF1F2F4),child:const Icon(Icons.storefront,color:ownerOrange)))),
-        const SizedBox(width:10),
+    Container(
+      padding:const EdgeInsets.all(18),
+      decoration:BoxDecoration(gradient:const LinearGradient(colors:[ownerInk,Color(0xFF303746)]),borderRadius:BorderRadius.circular(26)),
+      child:Row(children:[
+        Container(width:54,height:54,decoration:BoxDecoration(color:ownerOrange,borderRadius:BorderRadius.circular(18)),child:const Icon(Icons.storefront_rounded,color:Colors.white,size:28)),
+        const SizedBox(width:12),
         Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
-          Text(s(r,'name'),style:const TextStyle(fontWeight:FontWeight.w900,fontSize:16)),
+          const Text('استوديو المطاعم',style:TextStyle(color:Colors.white,fontSize:18,fontWeight:FontWeight.w900)),
+          Text(restaurants.length.toString()+' مطعم نشط • الصور والمنيو قابلة للتعديل فوراً',style:const TextStyle(color:Colors.white70,fontSize:11)),
+        ])),
+        IconButton(onPressed:addRestaurant,style:IconButton.styleFrom(backgroundColor:ownerOrange,foregroundColor:Colors.white),icon:const Icon(Icons.add_rounded)),
+      ]),
+    ),
+    const SizedBox(height:14),
+    ...restaurants.map((r)=>card(Column(crossAxisAlignment:CrossAxisAlignment.stretch,children:[
+      Stack(children:[
+        ClipRRect(borderRadius:BorderRadius.circular(20),child:Image.network((r['cover_url']??r['logo_url']??'').toString(),width:double.infinity,height:150,fit:BoxFit.cover,errorBuilder:(_,__,___)=>Container(height:150,color:const Color(0xFFF1F2F4),child:const Icon(Icons.storefront_rounded,size:55,color:ownerOrange)))),
+        Positioned(right:12,top:12,child:Container(padding:const EdgeInsets.symmetric(horizontal:10,vertical:7),decoration:BoxDecoration(color:Colors.white.withValues(alpha:.95),borderRadius:BorderRadius.circular(14)),child:const Row(children:[Icon(Icons.circle,size:9,color:Colors.green),SizedBox(width:6),Text('نشط',style:TextStyle(fontSize:10,fontWeight:FontWeight.w900))]))),
+      ]),
+      const SizedBox(height:12),
+      Row(children:[
+        Container(width:54,height:54,decoration:BoxDecoration(color:const Color(0xFFFFF3EF),borderRadius:BorderRadius.circular(17),border:Border.all(color:const Color(0xFFFFDDD3))),child:ClipRRect(borderRadius:BorderRadius.circular(16),child:Image.network((r['logo_url']??r['cover_url']??'').toString(),fit:BoxFit.cover,errorBuilder:(_,__,___)=>const Icon(Icons.restaurant_rounded,color:ownerOrange)))),
+        const SizedBox(width:11),
+        Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
+          Text(s(r,'name'),style:const TextStyle(fontWeight:FontWeight.w900,fontSize:17)),
+          const SizedBox(height:3),
           Text(s(r,'description'),maxLines:2,overflow:TextOverflow.ellipsis,style:const TextStyle(color:ownerMuted,fontSize:10)),
         ])),
         PopupMenuButton<String>(
-          onSelected:(x)async{if(x=='edit')await editRestaurant(r);if(x=='branch')await addBranch(r);if(x=='menu')await menu(r);if(x=='delete'){await NovaSupabase.deleteRestaurant(s(r,'id'));await refresh();}},
+          onSelected:(x)async{
+            if(x=='edit')await editRestaurant(r);
+            if(x=='branch')await addBranch(r);
+            if(x=='menu')await menu(r);
+            if(x=='delete'){
+              final ok=await showDialog<bool>(context:context,builder:(d)=>AlertDialog(
+                title:const Text('إيقاف المطعم؟'),
+                content:Text('سيختفي '+s(r,'name')+' من التطبيق للعملاء.'),
+                actions:[TextButton(onPressed:()=>Navigator.pop(d,false),child:const Text('إلغاء')),FilledButton(onPressed:()=>Navigator.pop(d,true),child:const Text('إيقاف'))],
+              ));
+              if(ok==true){await NovaSupabase.deleteRestaurant(s(r,'id'));await refresh();}
+            }
+          },
           itemBuilder:(_)=>const[
-            PopupMenuItem(value:'edit',child:Text('تعديل')),
+            PopupMenuItem(value:'edit',child:Text('تعديل البيانات والصور')),
             PopupMenuItem(value:'branch',child:Text('إضافة فرع')),
-            PopupMenuItem(value:'menu',child:Text('المنيو')),
-            PopupMenuItem(value:'delete',child:Text('إيقاف')),
+            PopupMenuItem(value:'menu',child:Text('إدارة المنيو')),
+            PopupMenuItem(value:'delete',child:Text('إيقاف المطعم')),
           ],
         ),
       ]),
-      const SizedBox(height:10),
+      const SizedBox(height:12),
       Row(children:[
-        Expanded(child:OutlinedButton.icon(onPressed:()=>addBranch(r),icon:const Icon(Icons.location_on_outlined),label:const Text('فرع جديد'))),
+        Expanded(child:OutlinedButton.icon(onPressed:()=>addBranch(r),icon:const Icon(Icons.location_on_outlined),label:const Text('إضافة فرع'))),
         const SizedBox(width:8),
-        Expanded(child:FilledButton.icon(onPressed:()=>menu(r),icon:const Icon(Icons.restaurant_menu),label:const Text('المنيو'))),
+        Expanded(child:FilledButton.icon(onPressed:()=>menu(r),icon:const Icon(Icons.restaurant_menu_rounded),label:const Text('إدارة المنيو'))),
       ]),
     ]))),
   ]);
