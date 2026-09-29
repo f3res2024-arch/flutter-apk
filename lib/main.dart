@@ -1515,7 +1515,7 @@ class _LivePromoCard extends StatelessWidget{
       }
     }
     if(type=='category' && value.isNotEmpty){
-      Navigator.push(c,MaterialPageRoute(builder:(_)=>CategoryPage(title:value!,category:value!,onAdd:(r,m)=>snack(c,'أضف الصنف للسلة من صفحة المطعم.'))));
+      Navigator.push(c,MaterialPageRoute(builder:(_)=>CategoryPage(title:value,category:value,onAdd:(r,m)=>snack(c,'أضف الصنف للسلة من صفحة المطعم.'))));
       return;
     }
     if(type=='map'){Navigator.push(c,MaterialPageRoute(builder:(_)=>const MapPage()));return;}
