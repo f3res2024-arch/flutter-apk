@@ -1,1 +1,35 @@
-<!doctype html><html><body style="margin:0;background:#f7f7f7;font-family:Arial,sans-serif;color:#171717"><div style="max-width:620px;margin:32px auto;background:#fff;border-radius:24px;overflow:hidden;border:1px solid #eee"><div style="padding:28px 24px 18px;text-align:center"><img src="https://raw.githubusercontent.com/f3res2024-arch/flutter-apk/main/assets/nova_delivery_email_logo.svg" width="260" alt="Nova Delivery" style="max-width:80%;height:auto"><h1 style="font-size:24px;margin:18px 0 8px">رمز استعادة الحساب</h1></div><div style="padding:8px 30px 34px;text-align:center;font-size:16px;line-height:1.7"><p>طلبنا رمزًا لإعادة تعيين كلمة مرور حسابك في Nova Delivery.</p><div style="display:inline-block;padding:14px 26px;border-radius:14px;background:#fff3e8;color:#ff6b00;font-size:30px;font-weight:800;letter-spacing:6px">{{ .Token }}</div><p>إذا لم تطلب هذا الرمز، تجاهل الرسالة.</p></div><div style="padding:18px;text-align:center;background:#fafafa;color:#777;font-size:12px">Nova Delivery</div></div></body></html>
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>رمز استعادة كلمة المرور — نوفا ديليفري</title>
+</head>
+<body style="margin:0;background:#f6f6f7;font-family:Arial,Tahoma,sans-serif;color:#171717;">
+  <div style="max-width:620px;margin:0 auto;padding:28px 14px;">
+    <div style="background:#ffffff;border-radius:24px;overflow:hidden;border:1px solid #eeeeef;box-shadow:0 10px 30px rgba(0,0,0,.06);">
+      <div style="padding:24px 24px 14px;text-align:center;">
+        <img src="https://raw.githubusercontent.com/f3res2024-arch/flutter-apk/main/assets/nova_delivery_email_logo.svg" alt="Nova Delivery" width="260" style="display:block;width:260px;max-width:85%;height:auto;margin:0 auto 14px;">
+        <div style="font-size:13px;color:#777;">نوفا ديليفري</div>
+      </div>
+      <img src="https://raw.githubusercontent.com/f3res2024-arch/flutter-apk/main/assets/nova_rider.webp" alt="نوفا ديليفري" width="620" style="display:block;width:100%;height:auto;max-height:260px;object-fit:cover;">
+      <div style="padding:30px 26px 34px;text-align:center;">
+        <div style="font-size:25px;font-weight:800;margin-bottom:10px;">إعادة تعيين كلمة المرور</div>
+        <div style="font-size:15px;line-height:1.9;color:#666;margin-bottom:22px;">استخدم رمز الاستعادة التالي داخل تطبيق نوفا ديليفري لإعادة تعيين كلمة المرور.</div>
+        <div style="display:inline-block;background:#fff4ee;border:2px dashed #ff6b00;border-radius:18px;padding:18px 30px;min-width:190px;">
+          <div style="font-size:12px;color:#8a5a43;margin-bottom:7px;">رمز الاستعادة</div>
+          <div style="direction:ltr;font-size:36px;letter-spacing:10px;font-weight:900;color:#ff6b00;">{{ .Token }}</div>
+        </div>
+        <div style="font-size:13px;line-height:1.8;color:#777;margin-top:22px;">
+          تم إرسال هذا الرمز إلى <span style="font-weight:700;color:#333;direction:ltr;display:inline-block;">{{ .Email }}</span>.
+          إذا لم تطلب إعادة تعيين كلمة المرور، يمكنك تجاهل هذه الرسالة بأمان.
+        </div>
+      </div>
+      <div style="background:#171717;color:#ffffff;padding:18px 24px;text-align:center;font-size:12px;line-height:1.8;">
+        <strong style="color:#ff6b00;">نوفا ديليفري</strong> — أكلك الحقيقي… في طريقه ليك 🚀<br>
+        هذه رسالة آلية، يرجى عدم الرد عليها.
+      </div>
+    </div>
+  </div>
+</body>
+</html>
