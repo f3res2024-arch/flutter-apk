@@ -467,8 +467,8 @@ class _LoginScreenState extends State<LoginScreen>{
   }
   @override Widget build(BuildContext c)=>AuthScaffold(
     onBack:widget.onBack,
-    eyebrow:'تسجيل الدخول',
-    title:'مرحباً بك',
+    eyebrow:'مرحباً بك',
+    title:'تسجيل الدخول',
     subtitle:widget.role==UserRole.customer?'سجّل دخولك وخلّي أكلك علينا.':'سجّل دخولك واستقبل طلباتك بسهولة.',
     child:Column(children:[
       AuthField(controller:email,label:'البريد الإلكتروني',hint:'name@example.com',icon:Icons.mail_outline_rounded,keyboardType:TextInputType.emailAddress),
@@ -889,8 +889,8 @@ class AuthField extends StatelessWidget{
       decoration:InputDecoration(
         labelText:label,
         hintText:hint,
-        prefixIcon:Icon(icon),
-        suffixIcon:suffix,
+        suffixIcon:Row(mainAxisSize:MainAxisSize.min,children:[Icon(icon),if(suffix!=null)suffix!]),
+        suffixIconConstraints:const BoxConstraints(minWidth:86),
         alignLabelWithHint:true,
       ),
     );
@@ -1339,10 +1339,10 @@ class _ShellState extends State<Shell> {
                 selectedIndex:tab,
                 onDestinationSelected:(v)=>setState(()=>tab=v),
                 destinations:const[
-                  NavigationDestination(icon:Icon(Icons.home_outlined,color:muted),selectedIcon:Icon(Icons.home_rounded,color:orange),label:'الرئيسية'),
+                  NavigationDestination(icon:Icon(Icons.home_outlined,color:orange),selectedIcon:Icon(Icons.home_rounded,color:orange),label:'الرئيسية'),
                   NavigationDestination(icon:Icon(Icons.search_rounded,color:muted),selectedIcon:Icon(Icons.search_rounded,color:orange),label:'اكتشف'),
                   NavigationDestination(icon:Icon(Icons.receipt_long_outlined,color:muted),selectedIcon:Icon(Icons.receipt_long_rounded,color:orange),label:'طلباتي'),
-                  NavigationDestination(icon:Icon(Icons.person_outline,color:muted),selectedIcon:Icon(Icons.person_rounded,color:orange),label:'حسابي'),
+                  NavigationDestination(icon:Icon(Icons.person_outline,color:orange),selectedIcon:Icon(Icons.person_rounded,color:orange),label:'حسابي'),
                 ],
               ),
               floatingActionButton:count==0?null:FloatingActionButton(
@@ -1377,10 +1377,10 @@ class _ShellState extends State<Shell> {
                       ),
                     ),
                     destinations:const[
-                      NavigationRailDestination(icon:Icon(Icons.home_outlined,color:muted),selectedIcon:Icon(Icons.home_rounded,color:orange),label:Text('الرئيسية')),
+                      NavigationRailDestination(icon:Icon(Icons.home_outlined,color:orange),selectedIcon:Icon(Icons.home_rounded,color:orange),label:Text('الرئيسية')),
                       NavigationRailDestination(icon:Icon(Icons.search_rounded,color:muted),selectedIcon:Icon(Icons.search_rounded,color:orange),label:Text('اكتشف')),
                       NavigationRailDestination(icon:Icon(Icons.receipt_long_outlined,color:muted),selectedIcon:Icon(Icons.receipt_long_rounded,color:orange),label:Text('طلباتي')),
-                      NavigationRailDestination(icon:Icon(Icons.person_outline,color:muted),selectedIcon:Icon(Icons.person_rounded,color:orange),label:Text('حسابي')),
+                      NavigationRailDestination(icon:Icon(Icons.person_outline,color:orange),selectedIcon:Icon(Icons.person_rounded,color:orange),label:Text('حسابي')),
                     ],
                   ),
                 ),
