@@ -42,22 +42,53 @@ class _NovaOwnerControlCenterState extends State<NovaOwnerControlCenter>{
   void _msg(String x){ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text(x),behavior:SnackBarBehavior.floating));}
   Future<void> form(String title,List<Widget> fields,Future<void> Function() save)async{
     bool busy=false;
-    await showDialog(context:context,builder:(d)=>StatefulBuilder(builder:(d,setD)=>Directionality(textDirection:TextDirection.rtl,child:AlertDialog(
-      shape:RoundedRectangleBorder(borderRadius:BorderRadius.circular(28)),title:Text(title,style:const TextStyle(fontWeight:FontWeight.w900)),
-      content:SingleChildScrollView(child:Column(mainAxisSize:MainAxisSize.min,children:fields)),
-      actions:[TextButton(onPressed:busy?null:()=>Navigator.pop(d),child:const Text('إلغاء')),FilledButton(onPressed:busy?null:()async{setD(()=>busy=true);try{await save();if(d.mounted)Navigator.pop(d);}catch(e){if(d.mounted)_msg('تعذر الحفظ: '+e.toString());}if(d.mounted)setD(()=>busy=false);},child:busy?const SizedBox(width:20,height:20,child:CircularProgressIndicator(strokeWidth:2,color:Colors.white)):const Text('حفظ'))],
-    ))));
+    await showModalBottomSheet(context:context,isScrollControlled:true,showDragHandle:true,backgroundColor:Colors.transparent,builder:(d)=>StatefulBuilder(builder:(d,setD)=>Directionality(textDirection:TextDirection.rtl,child:SafeArea(child:Container(
+      margin:const EdgeInsets.only(top:28),decoration:const BoxDecoration(color:Colors.white,borderRadius:BorderRadius.vertical(top:Radius.circular(34))),
+      padding:const EdgeInsets.fromLTRB(18,10,18,18),
+      child:Column(mainAxisSize:MainAxisSize.min,children:[
+        Row(children:[Container(width:46,height:46,decoration:BoxDecoration(color:ownerOrange.withValues(alpha:.1),borderRadius:BorderRadius.circular(15)),child:const Icon(Icons.auto_awesome_rounded,color:ownerOrange)),const SizedBox(width:12),Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text(title,style:const TextStyle(fontSize:23,fontWeight:FontWeight.w900,color:ownerInk)),const SizedBox(height:3),const Text('عدّل البيانات واحفظ التغييرات مباشرة في مركز نوفا.',style:TextStyle(color:ownerMuted,fontSize:11))])),IconButton(onPressed:busy?null:()=>Navigator.pop(d),icon:const Icon(Icons.close_rounded))]),
+        const SizedBox(height:12),
+        Flexible(child:SingleChildScrollView(padding:const EdgeInsets.only(bottom:8),child:Column(children:fields))),
+        const SizedBox(height:10),
+        Row(children:[Expanded(child:OutlinedButton(onPressed:busy?null:()=>Navigator.pop(d),child:const Text('إلغاء'))),const SizedBox(width:10),Expanded(child:FilledButton.icon(onPressed:busy?null:()async{setD(()=>busy=true);try{await save();if(d.mounted)Navigator.pop(d);}catch(e){if(d.mounted)_msg('تعذر الحفظ: '+e.toString());}if(d.mounted)setD(()=>busy=false);},icon:busy?const SizedBox(width:18,height:18,child:CircularProgressIndicator(strokeWidth:2,color:Colors.white)):const Icon(Icons.check_rounded),label:const Text('حفظ التغييرات')))]),
+      ]),
+    )))));
+  }
+  Widget imageChooser({String? existingUrl,required void Function(Uint8List bytes,String name) onPicked}) {
+    Uint8List? local; String name='';
+    return StatefulBuilder(builder:(d,setD)=>Column(crossAxisAlignment:CrossAxisAlignment.stretch,children:[
+      if(local!=null)ClipRRect(borderRadius:BorderRadius.circular(20),child:Image.memory(local!,height:150,width:double.infinity,fit:BoxFit.cover))
+      else if(existingUrl!=null&&existingUrl.isNotEmpty)ClipRRect(borderRadius:BorderRadius.circular(20),child:Image.network(existingUrl,height:150,width:double.infinity,fit:BoxFit.cover,errorBuilder:(_,__,___)=>Container(height:150,color:const Color(0xFFF1F2F4),child:const Icon(Icons.image_not_supported_rounded,size:42,color:ownerMuted))))
+      else Container(height:120,decoration:BoxDecoration(color:const Color(0xFFF7F7F8),borderRadius:BorderRadius.circular(20),border:Border.all(color:const Color(0xFFE5E7EB))),child:const Icon(Icons.add_photo_alternate_rounded,size:42,color:ownerOrange)),
+      const SizedBox(height:8),OutlinedButton.icon(onPressed:()async{final x=await ImagePicker().pickImage(source:ImageSource.gallery,imageQuality:92,maxWidth:2200);if(x==null)return;final bytes=await x.readAsBytes();if(d.mounted)setD(()=>local=bytes);onPicked(bytes,x.name);},icon:const Icon(Icons.photo_library_outlined),label:Text(name.isEmpty?'اختيار / تغيير الصورة':'تغيير الصورة • '+name)),
+      const SizedBox(height:8),
+    ]));
   }
   TextField field(TextEditingController c,String l,{int lines=1,TextInputType? type})=>TextField(controller:c,maxLines:lines,keyboardType:type,decoration:InputDecoration(labelText:l));
   Future<void> addRestaurant()async{
-    final a=TextEditingController(),b=TextEditingController(),p=TextEditingController(),f=TextEditingController(text:'0');
-    await form('إضافة مطعم',[field(a,'اسم المطعم'),field(b,'الوصف',lines:3),field(p,'الهاتف'),field(f,'رسوم التوصيل',type:TextInputType.number)],()async{await NovaSupabase.createRestaurant(name:a.text,description:b.text,phone:p.text,deliveryFee:n(f.text));await refresh();});
-    a.dispose();b.dispose();p.dispose();f.dispose();
+    final a=TextEditingController(),b=TextEditingController(),p=TextEditingController(),f=TextEditingController(text:'0');Uint8List? coverBytes,logoBytes;
+    await form('إضافة مطعم جديد',[
+      _section('بيانات المطعم',Icons.storefront_rounded),field(a,'اسم المطعم'),field(b,'وصف قصير للواجهة',lines:3),field(p,'الهاتف',type:TextInputType.phone),field(f,'رسوم التوصيل',type:TextInputType.number),
+      const SizedBox(height:8),_section('صور المطعم',Icons.photo_library_rounded),imageChooser(onPicked:(bytes,_)=>coverBytes=bytes),imageChooser(onPicked:(bytes,_)=>logoBytes=bytes),
+    ],()async{
+      final name=a.text.trim();if(name.isEmpty)throw Exception('اكتب اسم المطعم أولاً.');
+      final id=await NovaSupabase.createRestaurant(name:name,description:b.text,phone:p.text,deliveryFee:n(f.text));
+      if(coverBytes!=null){final url=await NovaSupabase.uploadRestaurantCover(id,coverBytes!);if(url!=null)await NovaSupabase.updateRestaurant(id,coverUrl:url);}
+      if(logoBytes!=null){final url=await NovaSupabase.uploadRestaurantImage(id,logoBytes!);if(url!=null)await NovaSupabase.updateRestaurant(id,logoUrl:url);}
+      await refresh();
+    });a.dispose();b.dispose();p.dispose();f.dispose();
   }
   Future<void> editRestaurant(Map<String,dynamic> r)async{
-    final a=TextEditingController(text:s(r,'name')),b=TextEditingController(text:s(r,'description')),p=TextEditingController(text:s(r,'phone'));
-    await form('تعديل المطعم',[field(a,'الاسم'),field(b,'الوصف',lines:3),field(p,'الهاتف')],()async{await NovaSupabase.updateRestaurant(s(r,'id'),name:a.text,description:b.text,phone:p.text);await refresh();});
-    a.dispose();b.dispose();p.dispose();
+    final a=TextEditingController(text:s(r,'name')),b=TextEditingController(text:s(r,'description')),p=TextEditingController(text:s(r,'phone'));Uint8List? coverBytes,logoBytes;
+    await form('تعديل المطعم',[
+      _section('المعلومات الأساسية',Icons.edit_note_rounded),field(a,'الاسم'),field(b,'الوصف',lines:3),field(p,'الهاتف',type:TextInputType.phone),
+      const SizedBox(height:8),_section('صور المطعم',Icons.photo_library_rounded),imageChooser(existingUrl:s(r,'cover_url'),onPicked:(bytes,_)=>coverBytes=bytes),imageChooser(existingUrl:s(r,'logo_url'),onPicked:(bytes,_)=>logoBytes=bytes),
+    ],()async{
+      await NovaSupabase.updateRestaurant(s(r,'id'),name:a.text,description:b.text,phone:p.text);
+      if(coverBytes!=null){final url=await NovaSupabase.uploadRestaurantCover(s(r,'id'),coverBytes!);if(url!=null)await NovaSupabase.updateRestaurant(s(r,'id'),coverUrl:url);}
+      if(logoBytes!=null){final url=await NovaSupabase.uploadRestaurantImage(s(r,'id'),logoBytes!);if(url!=null)await NovaSupabase.updateRestaurant(s(r,'id'),logoUrl:url);}
+      await refresh();
+    });a.dispose();b.dispose();p.dispose();
   }
   Future<void> addBranch(Map<String,dynamic> r)async{
     final a=TextEditingController(),b=TextEditingController(),p=TextEditingController();
@@ -65,9 +96,16 @@ class _NovaOwnerControlCenterState extends State<NovaOwnerControlCenter>{
     a.dispose();b.dispose();p.dispose();
   }
   Future<void> addProduct(Map<String,dynamic> r)async{
-    final a=TextEditingController(),b=TextEditingController(),p=TextEditingController();
-    await form('إضافة منتج',[field(a,'اسم المنتج'),field(b,'الوصف',lines:2),field(p,'السعر',type:TextInputType.number)],()async{final price=n(p.text);if(a.text.trim().isEmpty||price<=0)throw Exception('اكتب الاسم والسعر');await NovaSupabase.addMenuItemFull(s(r,'id'),name:a.text,description:b.text,price:price);await refresh();});
-    a.dispose();b.dispose();p.dispose();
+    final a=TextEditingController(),b=TextEditingController(),p=TextEditingController();Uint8List? imageBytes;
+    await form('إضافة منتج للمنيو',[
+      _section('تفاصيل المنتج',Icons.restaurant_menu_rounded),field(a,'اسم المنتج'),field(b,'الوصف',lines:2),field(p,'السعر',type:TextInputType.number),
+      const SizedBox(height:8),_section('صورة المنتج',Icons.image_rounded),imageChooser(onPicked:(bytes,_)=>imageBytes=bytes),
+    ],()async{
+      final price=n(p.text);if(a.text.trim().isEmpty||price<=0)throw Exception('اكتب اسم المنتج والسعر.');
+      final id=await NovaSupabase.addMenuItemFull(s(r,'id'),name:a.text,description:b.text,price:price);
+      if(imageBytes!=null){final url=await NovaSupabase.uploadMenuImage(id,imageBytes!);if(url!=null)await NovaSupabase.updateMenuItem(id,imageUrl:url);}
+      await refresh();
+    });a.dispose();b.dispose();p.dispose();
   }
   Future<void> menu(Map<String,dynamic> r)async{
     final m=await NovaSupabase.allRestaurantMenu(s(r,'id'));if(!mounted)return;
@@ -135,7 +173,8 @@ class _NovaOwnerControlCenterState extends State<NovaOwnerControlCenter>{
       await refresh();
     });a.dispose();
   }
-  Widget metric(String a,String b,IconData i,Color c)=>Container(padding:const EdgeInsets.all(14),decoration:BoxDecoration(color:Colors.white,borderRadius:BorderRadius.circular(22),border:Border.all(color:const Color(0xFFE5E7EB))),child:Row(children:[CircleAvatar(backgroundColor:c.withValues(alpha:.1),child:Icon(i,color:c)),const SizedBox(width:10),Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text(a,style:const TextStyle(color:ownerMuted,fontSize:10)),Text(b,style:const TextStyle(fontSize:18,fontWeight:FontWeight.w900))]))]));
+  Widget metric(String a,String b,IconData i,Color c)=>Container(padding:const EdgeInsets.all(14),decoration:BoxDecoration(color:Colors.white,borderRadius:BorderRadius.circular(22),border:Border.all(color:const Color(0xFFE5E7EB)),boxShadow:const[BoxShadow(color:Color(0x08000000),blurRadius:16,offset:Offset(0,6))]),child:Row(children:[Container(width:44,height:44,decoration:BoxDecoration(color:c.withValues(alpha:.1),borderRadius:BorderRadius.circular(14)),child:Icon(i,color:c)),const SizedBox(width:10),Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text(a,style:const TextStyle(color:ownerMuted,fontSize:10)),const SizedBox(height:2),Text(b,style:const TextStyle(fontSize:18,fontWeight:FontWeight.w900))]))]));
+  Widget _section(String title,IconData icon)=>Container(margin:const EdgeInsets.only(top:4,bottom:10),padding:const EdgeInsets.symmetric(horizontal:12,vertical:10),decoration:BoxDecoration(color:const Color(0xFFFFF4F0),borderRadius:BorderRadius.circular(15)),child:Row(children:[Icon(icon,color:ownerOrange,size:20),const SizedBox(width:8),Text(title,style:const TextStyle(color:ownerInk,fontWeight:FontWeight.w900,fontSize:12))]));
   Widget pageTitle(String a,String b)=>Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text(a,style:const TextStyle(fontSize:28,fontWeight:FontWeight.w900)),const SizedBox(height:4),Text(b,style:const TextStyle(color:ownerMuted,fontSize:12))]);
   Widget card(Widget child)=>Container(padding:const EdgeInsets.all(15),margin:const EdgeInsets.only(bottom:10),decoration:BoxDecoration(color:Colors.white,borderRadius:BorderRadius.circular(22),border:Border.all(color:const Color(0xFFE5E7EB))),child:child);
   Widget overview()=>ListView(children:[
