@@ -2,6 +2,7 @@ name: Build Nova APK
 # Trigger a fresh release build after manifest generation fix
 # Fresh validation trigger
 # Manual validation run requested by project owner
+# Fresh build 225 requested
 
 on:
   push:
