@@ -174,7 +174,7 @@ class _NovaState extends State<Nova>{
     debugShowCheckedModeBanner:false,
     title:'نوفا ديليفري',
     theme:ThemeData(
-      useMaterial3:true,brightness:Brightness.light,fontFamily:'sans',
+      useMaterial3:true,brightness:Brightness.light,
       colorScheme:ColorScheme.fromSeed(seedColor:orange,brightness:Brightness.light,surface:Colors.white),
       scaffoldBackgroundColor:Colors.white,
       appBarTheme:const AppBarTheme(elevation:0,scrolledUnderElevation:0,backgroundColor:Colors.white,surfaceTintColor:Colors.transparent,centerTitle:true,titleTextStyle:TextStyle(fontSize:20,fontWeight:FontWeight.w900,color:ink),iconTheme:IconThemeData(color:ink)),
