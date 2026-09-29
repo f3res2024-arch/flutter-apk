@@ -197,7 +197,8 @@ class NovaSupabase {
   }
 
   static Future<String?> uploadRestaurantImage(String restaurantId, Uint8List bytes) async {
-    if (!_initialized) return null;
+    _requireReady();
+    if(await currentUserRole()!='admin') throw const AuthException('هذه الصلاحية للمالك فقط.');
     final path = 'restaurants/' + restaurantId + '/' + DateTime.now().millisecondsSinceEpoch.toString() + '.jpg';
     await client.storage.from('nova-media').uploadBinary(
       path,
