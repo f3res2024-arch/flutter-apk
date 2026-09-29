@@ -134,7 +134,7 @@ class _NovaState extends State<Nova>{
   Future<void> _loadRealCatalog() async {
     try {
       final copy=await NovaSupabase.appContent();
-      for(final row in copy){ final k=(row['key']??'').toString(); final v=(row['text_value']??'').toString(); final image=(row['image_url']??'').toString(); if(k.isNotEmpty&&v.isNotEmpty)appCopy[k]=v; if(k.isNotEmpty&&image.isNotEmpty)appMedia[k]=image; }
+      for(final row in copy){ final k=(row['key']??'').toString(); final v=(row['text_value']??'').toString(); final image=(row['image_url']??'').toString(); if(k.isNotEmpty)appCopy[k]=v; if(k.isNotEmpty&&image.isNotEmpty)appMedia[k]=image; }
     } catch(_) {}
     try {
       final rows=await NovaSupabase.catalog();
@@ -1133,6 +1133,26 @@ class Home extends StatefulWidget {
   @override State<Home> createState()=>_HomeState();
 }
 class _HomeState extends State<Home>{
+  RealtimeChannel? contentChannel;
+  @override void initState(){
+    super.initState();
+    _refreshContent();
+    if(NovaSupabase.initialized) contentChannel=NovaSupabase.watchAppContent(_refreshContent);
+  }
+  @override void dispose(){contentChannel?.unsubscribe();super.dispose();}
+  Future<void> _refreshContent() async {
+    try{
+      final rows=await NovaSupabase.appContent();
+      for(final row in rows){
+        final k=(row['key']??'').toString();
+        if(k.isEmpty)continue;
+        appCopy[k]=(row['text_value']??'').toString();
+        final image=(row['image_url']??'').toString();
+        if(image.isNotEmpty)appMedia[k]=image;
+      }
+      if(mounted)setState((){});
+    }catch(_){}
+  }
   @override Widget build(BuildContext context)=>ListView(padding:const EdgeInsets.fromLTRB(18,10,18,110),children:[
     Row(children:[
       Expanded(child:Center(child:RichText(text:TextSpan(children:[
@@ -1149,12 +1169,14 @@ class _HomeState extends State<Home>{
       child:ClipRRect(
         borderRadius:BorderRadius.circular(28),
         child:Stack(fit:StackFit.expand,children:[
-          Image.asset('assets/nova_rider.webp',fit:BoxFit.cover),
+          (appMedia['home_hero_image']??'').isNotEmpty
+            ? Image.network(appMedia['home_hero_image']!,fit:BoxFit.cover,errorBuilder:(_,__,___)=>Image.asset('assets/nova_rider.webp',fit:BoxFit.cover))
+            : Image.asset('assets/nova_rider.webp',fit:BoxFit.cover),
           const DecoratedBox(decoration:BoxDecoration(gradient:LinearGradient(begin:Alignment.topCenter,end:Alignment.bottomCenter,colors:[Color(0x22000000),Color(0xD9000000)]))),
-          const Positioned(right:18,top:18,child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
-            Text('كل اللي نفسك فيه…',style:TextStyle(color:Colors.white70)),
-            SizedBox(height:4),
-            Text('يوصل لبابك بسرعة 🚀',style:TextStyle(color:Colors.white,fontSize:23,fontWeight:FontWeight.w900)),
+          Positioned(right:18,top:18,child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
+            Text(appCopy['home_hero_subtitle']??'كل اللي نفسك فيه…',style:const TextStyle(color:Colors.white70)),
+            const SizedBox(height:4),
+            Text(appCopy['home_hero_title']??'يوصل لبابك بسرعة 🚀',style:const TextStyle(color:Colors.white,fontSize:23,fontWeight:FontWeight.w900)),
           ])),
           Positioned(bottom:14,left:14,child:FilledButton(onPressed:widget.onMap,style:FilledButton.styleFrom(backgroundColor:orange,foregroundColor:Colors.white),child:const Text('افتح الخريطة'))),
         ]),
