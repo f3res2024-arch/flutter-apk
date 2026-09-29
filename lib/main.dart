@@ -199,78 +199,205 @@ enum UserRole { customer, courier }
 class RoleChooser extends StatelessWidget{
   final ValueChanged<UserRole> onRole;
   const RoleChooser({super.key,required this.onRole});
-  @override Widget build(BuildContext c)=>Scaffold(
+
+  @override
+  Widget build(BuildContext c)=>Scaffold(
     backgroundColor:Colors.white,
-    body:SafeArea(child:SingleChildScrollView(
-      padding:const EdgeInsets.fromLTRB(18,18,18,28),
-      child:Column(children:[
-        const Center(child:BrandHero()),
-        const SizedBox(height:4),
-        const SizedBox(height:18),
-        Container(
-          height:365,
-          decoration:BoxDecoration(borderRadius:BorderRadius.circular(34),boxShadow:const[BoxShadow(color:Color(0x66000000),blurRadius:36,offset:Offset(0,18))]),
-          child:ClipRRect(borderRadius:BorderRadius.circular(34),child:Stack(fit:StackFit.expand,children:[
-            (appMedia['home_hero_image']??'').isEmpty ? Image.asset('assets/nova_rider.webp',fit:BoxFit.cover) : Image.network(appMedia['home_hero_image']!,fit:BoxFit.cover,errorBuilder:(_,__,___)=>Image.asset('assets/nova_rider.webp',fit:BoxFit.cover)),
-            const DecoratedBox(decoration:BoxDecoration(gradient:LinearGradient(
-              begin:Alignment.topCenter,end:Alignment.bottomCenter,
-              colors:[Color(0x12000000),Color(0xE8000000)]))),
-            const Positioned(right:20,bottom:22,left:20,child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
-              Text('أكلك. مزاجك.\nيوصل أسرع.',style:TextStyle(color:Colors.white,fontSize:31,height:1.02,fontWeight:FontWeight.w900)),
-              SizedBox(height:8),
-              Text('من المطعم لبابك بتجربة مصممة على مزاجك.',style:TextStyle(color:Colors.white70,fontSize:12,fontWeight:FontWeight.w600)),
-            ])),
-          ])),
-        ),
-        const SizedBox(height:16),
-        const Row(children:[
-          _Pill(icon:Icons.flash_on_rounded,text:'توصيل سريع'),
-          SizedBox(width:7),_Pill(icon:Icons.location_on_rounded,text:'تتبع مباشر'),
-          SizedBox(width:7),_Pill(icon:Icons.support_agent_rounded,text:'دعم 24/7'),
-        ]),
-        const SizedBox(height:20),
-        const Align(alignment:Alignment.centerRight,child:Text('ابدأ رحلتك',style:TextStyle(color:Colors.white,fontSize:21,fontWeight:FontWeight.w900))),
-        const SizedBox(height:10),
-        _RoleButton(icon:Icons.person_rounded,title:'أنا عميل',sub:'اطلب، تابع، واستمتع',primary:true,onTap:()=>onRole(UserRole.customer)),
-        const SizedBox(height:10),
-        _RoleButton(icon:Icons.two_wheeler_rounded,title:'أنا مندوب',sub:'استقبل الطلبات واربح أكثر',primary:false,onTap:()=>onRole(UserRole.courier)),
-      ]),
-    )),
-  );
-}
-class _Pill extends StatelessWidget{
-  final IconData icon; final String text;
-  const _Pill({required this.icon,required this.text});
-  @override Widget build(BuildContext c)=>Expanded(child:Container(
-    padding:const EdgeInsets.symmetric(vertical:11,horizontal:5),
-    decoration:BoxDecoration(color:Colors.white.withValues(alpha:.055),borderRadius:BorderRadius.circular(16),border:Border.all(color:Colors.white10)),
-    child:Row(mainAxisAlignment:MainAxisAlignment.center,children:[Icon(icon,color:orange,size:15),const SizedBox(width:4),Flexible(child:Text(text,maxLines:1,overflow:TextOverflow.ellipsis,style:const TextStyle(color:Colors.white70,fontSize:9,fontWeight:FontWeight.w800)))])
-  ));
-}
-class _RoleButton extends StatelessWidget{
-  final IconData icon; final String title,sub; final bool primary; final VoidCallback onTap;
-  const _RoleButton({required this.icon,required this.title,required this.sub,required this.primary,required this.onTap});
-  @override Widget build(BuildContext c)=>Material(
-    color:Colors.transparent,
-    child:InkWell(onTap:onTap,borderRadius:BorderRadius.circular(21),child:Container(
-      padding:const EdgeInsets.all(13),
-      decoration:BoxDecoration(
-        gradient:primary?const LinearGradient(colors:[orange,Color(0xFFFF774F)]):null,
-        color:primary?null:Colors.white.withValues(alpha:.055),
-        borderRadius:BorderRadius.circular(21),border:Border.all(color:primary?Colors.transparent:Colors.white12),
-        boxShadow:primary?const[BoxShadow(color:Color(0x44FF5A36),blurRadius:24,offset:Offset(0,8))]:null,
+    body:SafeArea(
+      child:Column(
+        children:[
+          Container(
+            width:double.infinity,
+            padding:const EdgeInsets.fromLTRB(24,24,24,30),
+            decoration:const BoxDecoration(
+              gradient:LinearGradient(
+                begin:Alignment.topRight,
+                end:Alignment.bottomLeft,
+                colors:[Color(0xFFFF6B47),orange],
+              ),
+              borderRadius:BorderRadius.vertical(bottom:Radius.circular(38)),
+            ),
+            child:Column(
+              children:[
+                Row(
+                  mainAxisAlignment:MainAxisAlignment.spaceBetween,
+                  children:[
+                    Container(
+                      width:46,
+                      height:46,
+                      decoration:BoxDecoration(
+                        color:Colors.white.withValues(alpha:.16),
+                        shape:BoxShape.circle,
+                      ),
+                      child:const Icon(Icons.local_shipping_rounded,color:Colors.white,size:23),
+                    ),
+                    RichText(
+                      text:const TextSpan(children:[
+                        TextSpan(text:'نوفا ',style:TextStyle(color:Colors.white,fontSize:25,fontWeight:FontWeight.w900)),
+                        TextSpan(text:'ديليفري',style:TextStyle(color:Color(0xFFFFE4DC),fontSize:25,fontWeight:FontWeight.w900)),
+                      ]),
+                    ),
+                    const SizedBox(width:46),
+                  ],
+                ),
+                const SizedBox(height:28),
+                const Align(
+                  alignment:Alignment.centerRight,
+                  child:Text(
+                    'أهلاً بيك 👋',
+                    style:TextStyle(color:Colors.white,fontSize:30,fontWeight:FontWeight.w900,height:1.1),
+                  ),
+                ),
+                const SizedBox(height:8),
+                const Align(
+                  alignment:Alignment.centerRight,
+                  child:Text(
+                    'اختار طريقة استخدامك لنوفا\nوخلّينا نبدأها صح.',
+                    textAlign:TextAlign.right,
+                    style:TextStyle(color:Colors.white70,fontSize:14,fontWeight:FontWeight.w600,height:1.55),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Expanded(
+            child:SingleChildScrollView(
+              padding:const EdgeInsets.fromLTRB(20,26,20,24),
+              child:Column(
+                crossAxisAlignment:CrossAxisAlignment.start,
+                children:[
+                  const Text('إنت داخل نوفا بصفتك إيه؟',style:TextStyle(color:ink,fontSize:20,fontWeight:FontWeight.w900)),
+                  const SizedBox(height:6),
+                  const Text('اختار حسابك علشان نجهز لك التجربة المناسبة.',style:TextStyle(color:muted,fontSize:12)),
+                  const SizedBox(height:20),
+                  _NovaRoleCard(
+                    icon:Icons.person_rounded,
+                    title:'أنا عميل',
+                    subtitle:'اطلب أكلك، تابع طلبك، واستمتع',
+                    badge:'الأكثر استخداماً',
+                    onTap:()=>onRole(UserRole.customer),
+                  ),
+                  const SizedBox(height:14),
+                  _NovaRoleCard(
+                    icon:Icons.two_wheeler_rounded,
+                    title:'أنا مندوب',
+                    subtitle:'استقبل الطلبات، سلّم أسرع، واكسب أكثر',
+                    onTap:()=>onRole(UserRole.courier),
+                    secondary:true,
+                  ),
+                  const SizedBox(height:24),
+                  Container(
+                    width:double.infinity,
+                    padding:const EdgeInsets.all(15),
+                    decoration:BoxDecoration(
+                      color:const Color(0xFFFFF6F2),
+                      borderRadius:BorderRadius.circular(18),
+                      border:Border.all(color:const Color(0xFFFFE1D8)),
+                    ),
+                    child:const Row(
+                      children:[
+                        Icon(Icons.verified_user_rounded,color:orange,size:20),
+                        SizedBox(width:10),
+                        Expanded(
+                          child:Text(
+                            'تسجيلك آمن، وبيانات حسابك بتتخزن بشكل محمي.',
+                            style:TextStyle(color:ink,fontSize:11,fontWeight:FontWeight.w700,height:1.4),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
-      child:Row(children:[
-        Container(width:48,height:48,decoration:BoxDecoration(color:primary?Colors.white.withValues(alpha:.18):orange.withValues(alpha:.13),shape:BoxShape.circle),child:Icon(icon,color:Colors.white,size:24)),
-        const SizedBox(width:12),Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
-          Text(title,style:const TextStyle(color:Colors.white,fontSize:16,fontWeight:FontWeight.w900)),
-          const SizedBox(height:2),Text(sub,style:TextStyle(color:primary?Colors.white70:Colors.white54,fontSize:10)),
-        ])),
-        Container(width:34,height:34,decoration:BoxDecoration(color:Colors.white.withValues(alpha:.08),shape:BoxShape.circle),child:const Icon(Icons.arrow_back_rounded,color:Colors.white,size:17)),
-      ]),
-    )),
+    ),
   );
 }
+
+class _NovaRoleCard extends StatelessWidget{
+  final IconData icon;
+  final String title,subtitle;
+  final String? badge;
+  final VoidCallback onTap;
+  final bool secondary;
+
+  const _NovaRoleCard({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+    this.badge,
+    this.secondary=false,
+  });
+
+  @override
+  Widget build(BuildContext c)=>Material(
+    color:Colors.transparent,
+    child:InkWell(
+      onTap:onTap,
+      borderRadius:BorderRadius.circular(24),
+      child:Container(
+        padding:const EdgeInsets.all(16),
+        decoration:BoxDecoration(
+          color:Colors.white,
+          borderRadius:BorderRadius.circular(24),
+          border:Border.all(color:secondary?const Color(0xFFE8E8EA):const Color(0xFFFFD4C9),width:1.2),
+          boxShadow:const[
+            BoxShadow(color:Color(0x12000000),blurRadius:22,offset:Offset(0,10)),
+          ],
+        ),
+        child:Row(
+          children:[
+            Container(
+              width:58,
+              height:58,
+              decoration:BoxDecoration(
+                gradient:secondary
+                  ? const LinearGradient(colors:[Color(0xFFFFF0EB),Color(0xFFFFE2D9)])
+                  : const LinearGradient(colors:[orange,Color(0xFFFF784F)]),
+                borderRadius:BorderRadius.circular(19),
+              ),
+              child:Icon(icon,color:secondary?orange:Colors.white,size:28),
+            ),
+            const SizedBox(width:14),
+            Expanded(
+              child:Column(
+                crossAxisAlignment:CrossAxisAlignment.start,
+                children:[
+                  if(badge!=null) ...[
+                    Container(
+                      padding:const EdgeInsets.symmetric(horizontal:8,vertical:4),
+                      decoration:BoxDecoration(color:const Color(0xFFFFF0EB),borderRadius:BorderRadius.circular(20)),
+                      child:Text(badge!,style:const TextStyle(color:orange,fontSize:9,fontWeight:FontWeight.w900)),
+                    ),
+                    const SizedBox(height:6),
+                  ],
+                  Text(title,style:const TextStyle(color:ink,fontSize:18,fontWeight:FontWeight.w900)),
+                  const SizedBox(height:3),
+                  Text(subtitle,style:const TextStyle(color:muted,fontSize:11,fontWeight:FontWeight.w600,height:1.35)),
+                ],
+              ),
+            ),
+            const SizedBox(width:10),
+            Container(
+              width:38,
+              height:38,
+              decoration:BoxDecoration(
+                color:secondary?const Color(0xFFFFF3EF):orange,
+                shape:BoxShape.circle,
+              ),
+              child:Icon(Icons.arrow_back_rounded,color:secondary?orange:Colors.white,size:19),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+}
+
 class BrandHero extends StatelessWidget {
   const BrandHero({super.key});
   @override Widget build(BuildContext c)=>Center(child:RichText(text:TextSpan(children:[
