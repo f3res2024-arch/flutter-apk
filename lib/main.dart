@@ -245,7 +245,7 @@ class RoleChooser extends StatelessWidget{
                 const Align(
                   alignment:Alignment.centerRight,
                   child:Text(
-                    'أهلاً بيك 👋',
+                    'أهلاً بيك',
                     style:TextStyle(color:Colors.white,fontSize:30,fontWeight:FontWeight.w900,height:1.1),
                   ),
                 ),
@@ -487,7 +487,7 @@ class _SignupScreenState extends State<SignupScreen>{
       if(!mounted)return;
       if(res.session!=null){
         if(mounted)Navigator.pop(context);
-        if(mounted)snack(context,'تم إنشاء حسابك بنجاح 🎉');
+        if(mounted)snack(context,'تم إنشاء حسابك بنجاح');
       }else{
         if(!mounted)return;
         await Navigator.push(context,MaterialPageRoute(builder:(_)=>EmailOtpScreen(email:e,role:widget.role)));
@@ -536,7 +536,7 @@ class _EmailOtpScreenState extends State<EmailOtpScreen>{
       final res=await NovaSupabase.verifyEmailOtp(email:widget.email,token:token);
       if(res.session!=null){
         if(mounted){
-          snack(context,'تم تأكيد بريدك وإنشاء حسابك بنجاح 🎉');
+          snack(context,'تم تأكيد بريدك وإنشاء حسابك بنجاح');
           Navigator.pop(context);
         }
       }else if(mounted){
@@ -769,7 +769,7 @@ class _UpdatePasswordScreenState extends State<UpdatePasswordScreen>{
     if(pass.text.length<6){snack(context,'كلمة المرور يجب أن تكون 6 أحرف على الأقل');return;}
     if(pass.text!=confirm.text){snack(context,'كلمتا المرور غير متطابقتين');return;}
     setState(()=>busy=true);
-    try{await NovaSupabase.updatePassword(pass.text);if(mounted){snack(context,'تم تغيير كلمة المرور بنجاح 🎉');widget.onDone();}}
+    try{await NovaSupabase.updatePassword(pass.text);if(mounted){snack(context,'تم تغيير كلمة المرور بنجاح');widget.onDone();}}
     on AuthException catch(e){if(mounted)snack(context,_authMessage(e.message));}
     catch(_){if(mounted)snack(context,'تعذر تغيير كلمة المرور.');}
     finally{if(mounted)setState(()=>busy=false);}
@@ -1221,10 +1221,10 @@ class _CourierRoutePageState extends State<CourierRoutePage>{
                 if(step==0){
                   setState(()=>pickedUp=true);
                   setState(()=>step=1);
-                  snack(c,'تم تحديد الاستلام من المطعم. الآن وجهتك العميل 📍');
+                  snack(c,'تم تحديد الاستلام من المطعم. الآن وجهتك العميل');
                 }else{
                   setState(()=>delivered=true);
-                  snack(c,'تم تسليم الطلب بنجاح ✅');
+                  snack(c,'تم تسليم الطلب بنجاح');
                 }
               },
               style:FilledButton.styleFrom(backgroundColor:orange,minimumSize:const Size.fromHeight(52)),
@@ -1282,7 +1282,7 @@ class _ShellState extends State<Shell> {
     ));
     if(ok!=true||!mounted)return;
     setState((){final i=cart.indexWhere((x)=>x.r.name==r.name&&x.m.name==m.name);if(i>=0){cart[i].qty++;}else{cart.add(Line(r,m));}});
-    if(mounted)ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('تمت إضافة المنتج للسلة ✓'),duration:Duration(milliseconds:900)));
+    if(mounted)ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('تمت إضافة المنتج للسلة'),duration:Duration(milliseconds:900)));
   }
   void sub(Line x)=>setState((){if(x.qty>1){x.qty--;}else{cart.remove(x);}});
   void open(R r)=>Navigator.push(context,MaterialPageRoute(builder:(_)=>RestaurantPage(r:r,fav:favoriteRestaurants.contains(r.name),onFav:()=>setState((){if(!favoriteRestaurants.add(r.name))favoriteRestaurants.remove(r.name);}),onAdd:add)));
@@ -1421,7 +1421,7 @@ class _HomeState extends State<Home>{
           Positioned(right:18,top:18,child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
             Text(appCopy['home_hero_subtitle']??'كل اللي نفسك فيه…',style:const TextStyle(color:Colors.white70)),
             const SizedBox(height:4),
-            Text(appCopy['home_hero_title']??'يوصل لبابك بسرعة 🚀',style:const TextStyle(color:Colors.white,fontSize:23,fontWeight:FontWeight.w900)),
+            Text(appCopy['home_hero_title']??'يوصل لبابك بسرعة',style:const TextStyle(color:Colors.white,fontSize:23,fontWeight:FontWeight.w900)),
           ])),
           Positioned(bottom:14,left:14,child:FilledButton(onPressed:widget.onMap,style:FilledButton.styleFrom(backgroundColor:orange,foregroundColor:Colors.white),child:const Text('افتح الخريطة'))),
         ]),
@@ -1885,7 +1885,7 @@ class _CustomerOrderTrackingPageState extends State<CustomerOrderTrackingPage>{
             Text((current['restaurant_name']??'مطعم نوفا').toString(),style:const TextStyle(fontSize:20,fontWeight:FontWeight.w900)),
             Text('#'+_shortId(current['id']),style:const TextStyle(color:muted,fontSize:10)),
             const SizedBox(height:12),
-            Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text(status=='delivered'?'تم التسليم بنجاح 🎉':status=='on_the_way'?'السائق في الطريق إليك 🚴':status=='pending'?'في انتظار قبول الطلب':'جاري تجهيز طلبك',style:const TextStyle(fontWeight:FontWeight.w900)),if(['accepted','preparing','ready','picked_up','on_the_way','delivering'].contains(status))const Padding(padding:EdgeInsets.only(top:5),child:Text('مدة التوصيل المتوقعة: 25–40 دقيقة',style:TextStyle(color:muted,fontSize:11,fontWeight:FontWeight.w700)))]),
+            Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text(status=='delivered'?'تم التسليم بنجاح':status=='on_the_way'?'السائق في الطريق إليك':status=='pending'?'في انتظار قبول الطلب':'جاري تجهيز طلبك',style:const TextStyle(fontWeight:FontWeight.w900)),if(['accepted','preparing','ready','picked_up','on_the_way','delivering'].contains(status))const Padding(padding:EdgeInsets.only(top:5),child:Text('مدة التوصيل المتوقعة: 25–40 دقيقة',style:TextStyle(color:muted,fontSize:11,fontWeight:FontWeight.w700)))]),
             const SizedBox(height:10),
             Row(children:List.generate(steps.length,(i)=>Expanded(child:Container(height:7,margin:const EdgeInsets.symmetric(horizontal:2),decoration:BoxDecoration(color:i<=idx?orange:Colors.black12,borderRadius:BorderRadius.circular(8)))))),
             const SizedBox(height:12),
@@ -2412,7 +2412,7 @@ Future<void> checkout(BuildContext c, List<Line> cart, double total, VoidCallbac
                 if(!sheet.mounted)return;
                 Navigator.pop(sheet);
                 onSuccess();
-                snack(c,'تم إنشاء الطلب الحقيقي #'+_shortId(id)+' بنجاح 🎉');
+                snack(c,'تم إنشاء الطلب الحقيقي #'+_shortId(id)+' بنجاح');
               }catch(e){
                 if(sheet.mounted)snack(sheet,'تعذر إنشاء الطلب: $e');
               }
