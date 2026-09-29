@@ -1,4 +1,6 @@
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'core/supabase_service.dart';
 
@@ -78,12 +80,60 @@ class _NovaOwnerControlCenterState extends State<NovaOwnerControlCenter>{
   }
   Future<void> offer()async{
     final a=TextEditingController(),b=TextEditingController();
-    await form('إنشاء عرض',[field(a,'عنوان العرض'),field(b,'الوصف',lines:3)],()async{await NovaSupabase.createOffer(title:a.text,subtitle:b.text,targetType:'home');await refresh();});
+    Uint8List? imageBytes;
+    String? imageName;
+    await form('إنشاء عرض',[field(a,'عنوان العرض'),field(b,'الوصف',lines:3),
+      StatefulBuilder(builder:(d,setD)=>Column(crossAxisAlignment:CrossAxisAlignment.stretch,children:[
+        if(imageBytes!=null)Container(height:130,margin:const EdgeInsets.only(top:12,bottom:8),clipBehavior:Clip.antiAlias,decoration:BoxDecoration(borderRadius:BorderRadius.circular(16)),child:Image.memory(imageBytes!,fit:BoxFit.cover)),
+        OutlinedButton.icon(
+          onPressed:()async{
+            final x=await ImagePicker().pickImage(source:ImageSource.gallery,imageQuality:88,maxWidth:1800);
+            if(x==null)return;
+            final bytes=await x.readAsBytes();
+            if(d.mounted)setD(()=>{imageBytes=bytes,imageName=x.name});
+          },
+          icon:const Icon(Icons.image_outlined),
+          label:Text(imageName==null?'إضافة صورة للعرض':'تغيير الصورة'),
+        ),
+      ])),
+    ],()async{
+      final id=await NovaSupabase.createOffer(title:a.text,subtitle:b.text,targetType:'home');
+      if(imageBytes!=null){
+        final url=await NovaSupabase.uploadOfferImage(id,imageBytes!);
+        if(url!=null)await NovaSupabase.updateOffer(id,{'image_url':url});
+      }
+      await refresh();
+    });
     a.dispose();b.dispose();
   }
   Future<void> contentEdit(Map<String,dynamic> x)async{
     final a=TextEditingController(text:s(x,'text_value'));
-    await form('تعديل محتوى '+s(x,'key'),[field(a,'النص',lines:5)],()async{await NovaSupabase.updateAppContent(s(x,'key'),a.text);await refresh();});a.dispose();
+    Uint8List? imageBytes;
+    String? imageName;
+    await form('تعديل محتوى '+s(x,'key'),[
+      field(a,'النص',lines:5),
+      StatefulBuilder(builder:(d,setD)=>Column(crossAxisAlignment:CrossAxisAlignment.stretch,children:[
+        if(s(x,'image_url').isNotEmpty)Container(height:130,margin:const EdgeInsets.only(top:12,bottom:8),clipBehavior:Clip.antiAlias,decoration:BoxDecoration(borderRadius:BorderRadius.circular(16)),child:Image.network(s(x,'image_url'),fit:BoxFit.cover)),
+        if(imageBytes!=null)Container(height:130,margin:const EdgeInsets.only(top:12,bottom:8),clipBehavior:Clip.antiAlias,decoration:BoxDecoration(borderRadius:BorderRadius.circular(16)),child:Image.memory(imageBytes!,fit:BoxFit.cover)),
+        OutlinedButton.icon(
+          onPressed:()async{
+            final p=await ImagePicker().pickImage(source:ImageSource.gallery,imageQuality:88,maxWidth:1800);
+            if(p==null)return;
+            final bytes=await p.readAsBytes();
+            if(d.mounted)setD(()=>{imageBytes=bytes,imageName=p.name});
+          },
+          icon:const Icon(Icons.image_outlined),
+          label:Text(imageName==null?'تغيير/إضافة صورة':'تغيير الصورة'),
+        ),
+      ])),
+    ],()async{
+      await NovaSupabase.updateAppContent(s(x,'key'),a.text);
+      if(imageBytes!=null){
+        final url=await NovaSupabase.uploadContentImage(s(x,'key'),imageBytes!);
+        if(url!=null)await NovaSupabase.updateAppContentImage(s(x,'key'),url);
+      }
+      await refresh();
+    });a.dispose();
   }
   Widget metric(String a,String b,IconData i,Color c)=>Container(padding:const EdgeInsets.all(14),decoration:BoxDecoration(color:Colors.white,borderRadius:BorderRadius.circular(22),border:Border.all(color:const Color(0xFFE5E7EB))),child:Row(children:[CircleAvatar(backgroundColor:c.withValues(alpha:.1),child:Icon(i,color:c)),const SizedBox(width:10),Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text(a,style:const TextStyle(color:ownerMuted,fontSize:10)),Text(b,style:const TextStyle(fontSize:18,fontWeight:FontWeight.w900))]))]));
   Widget pageTitle(String a,String b)=>Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text(a,style:const TextStyle(fontSize:28,fontWeight:FontWeight.w900)),const SizedBox(height:4),Text(b,style:const TextStyle(color:ownerMuted,fontSize:12))]);
