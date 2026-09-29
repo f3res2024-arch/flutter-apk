@@ -220,42 +220,62 @@ class RoleChooser extends StatelessWidget{
             ),
             child:Column(
               children:[
-                Row(
-                  mainAxisAlignment:MainAxisAlignment.spaceBetween,
-                  children:[
-                    Container(
-                      width:46,
-                      height:46,
-                      decoration:BoxDecoration(
-                        color:Colors.white.withValues(alpha:.16),
-                        shape:BoxShape.circle,
-                      ),
-                      child:const Icon(Icons.local_shipping_rounded,color:Colors.white,size:23),
-                    ),
-                    RichText(
-                      text:const TextSpan(children:[
-                        TextSpan(text:'نوفا ',style:TextStyle(color:Colors.white,fontSize:25,fontWeight:FontWeight.w900)),
-                        TextSpan(text:'ديليفري',style:TextStyle(color:Color(0xFFFFE4DC),fontSize:25,fontWeight:FontWeight.w900)),
-                      ]),
-                    ),
-                    const SizedBox(width:46),
-                  ],
-                ),
-                const SizedBox(height:28),
-                const Align(
-                  alignment:Alignment.centerRight,
-                  child:Text(
-                    'أهلاً بيك',
-                    style:TextStyle(color:Colors.white,fontSize:30,fontWeight:FontWeight.w900,height:1.1),
+                Container(
+                  padding:const EdgeInsets.symmetric(horizontal:20,vertical:14),
+                  decoration:BoxDecoration(
+                    color:Colors.white.withValues(alpha:.08),
+                    borderRadius:BorderRadius.circular(28),
+                    border:Border.all(color:Colors.white.withValues(alpha:.32),width:1.2),
+                    boxShadow:const[
+                      BoxShadow(color:Color(0x22000000),blurRadius:24,offset:Offset(0,10)),
+                      BoxShadow(color:Color(0x33FFFFFF),blurRadius:10,spreadRadius:-4),
+                    ],
                   ),
-                ),
-                const SizedBox(height:8),
-                const Align(
-                  alignment:Alignment.centerRight,
-                  child:Text(
-                    'اختار طريقة استخدامك لنوفا\nوخلّينا نبدأها صح.',
-                    textAlign:TextAlign.right,
-                    style:TextStyle(color:Colors.white70,fontSize:14,fontWeight:FontWeight.w600,height:1.55),
+                  child:Row(
+                    mainAxisSize:MainAxisSize.min,
+                    children:[
+                      const Text(
+                        'نوفا',
+                        style:TextStyle(
+                          color:Colors.white,
+                          fontSize:44,
+                          fontWeight:FontWeight.w900,
+                          letterSpacing:-1.2,
+                          shadows:[Shadow(color:Color(0x66000000),blurRadius:10,offset:Offset(0,3))],
+                        ),
+                      ),
+                      const SizedBox(width:9),
+                      Stack(
+                        alignment:Alignment.center,
+                        children:[
+                          Text(
+                            'ديليفري',
+                            style:TextStyle(
+                              foreground:Paint()
+                                ..style=PaintingStyle.stroke
+                                ..strokeWidth=4
+                                ..color=Colors.white.withValues(alpha:.78),
+                              fontSize:44,
+                              fontWeight:FontWeight.w900,
+                              letterSpacing:-1.2,
+                            ),
+                          ),
+                          const Text(
+                            'ديليفري',
+                            style:TextStyle(
+                              color:orange,
+                              fontSize:44,
+                              fontWeight:FontWeight.w900,
+                              letterSpacing:-1.2,
+                              shadows:[
+                                Shadow(color:Color(0x66FFFFFF),blurRadius:8,offset:Offset(0,1)),
+                                Shadow(color:Color(0x44000000),blurRadius:10,offset:Offset(0,3)),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
                 ),
               ],
